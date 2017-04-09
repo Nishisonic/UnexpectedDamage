@@ -1,6 +1,6 @@
 /**
  * 異常ダメ検知
- * @version 0.0.9β
+ * @version 0.1.0β
  * @author Nishisonic
  */
 
@@ -61,6 +61,7 @@ var dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 var CHANGE_CAP_DATE = getJstCalendar(2017, 3, 17, 12, 0, 0).getTime();
 var CHANGE_ID_DATE = getJstCalendar(2017, 4, 5, 12, 0, 0).getTime();
 var CHANGE_SUB_GUN_BONUS_DATE = getJstCalendar(2017, 3, 17, 12, 0, 0).getTime();
+var ADD_CL_LIGHT_GUN_BONUS_DATE = getJstCalendar(2015, 6, 13, 12, 0, 0).getTime();
 
 var MAELSTROM_MAP_LIST = [
     [1,3],
@@ -495,7 +496,7 @@ function isAbnormalHougekiDamage(atacks,friends,enemy,maxFriendHp,maxEnemyHp,fri
             writeData += "防御->" + ('000' + target.shipId).slice(-3) + ":" + target.fullName + crlf;
             writeData += toItemString(tItem2) + crlf;
             writeData += "耐久:" + nowOriginHp + " / " + maxOriginHp + " (" + toHPStateString(maxOriginHp,nowOriginHp) + ",x" + getHPPowerBonus(maxOriginHp,nowOriginHp,false).toFixed(1) + ") 弾薬:" + (isFriend ? (origin.bull + " / " + origin.bullMax + " (" + (origin.bull / origin.bullMax * 100).toFixed() + "%,x" + getAmmoBonus(origin,isFriend).toFixed(1) + ")") : "? / ? (100%,x" + getAmmoBonus(origin,isFriend).toFixed(1) + ")") + crlf;
-            writeData += "陸上特効:x" + getLandBonus(origin,target).toFixed(1) + " WG42加算特効:+" + getWGBonus(origin,target) + " 軽巡軽量砲補正:+" + getCLLightGunPowerBonus(origin).toFixed(1) + " Zara砲フィット補正:+" + getZaraGunFitPowerBonus(origin).toFixed(1) + crlf;
+            writeData += "陸上特効:x" + getLandBonus(origin,target).toFixed(1) + " WG42加算特効:+" + getWGBonus(origin,target) + " 軽巡軽量砲補正:+" + getCLLightGunPowerBonus(origin,date).toFixed(1) + " Zara砲フィット補正:+" + getZaraGunFitPowerBonus(origin).toFixed(1) + crlf;
             writeData += "集積地特効:x" + getShusekiBonus(origin,target).toFixed(1) + " 徹甲弾補正:x" + getAPshellBonus(origin,target).toFixed(2) + " PT小鬼補正:x" + getPtBonus(origin,target).toFixed(1) + crlf;
             writeData += "砲撃攻撃種別:" + toStrikingKindString(hougekiType) + crlf;
             writeData += "クリティカル:" + (isCritical ? "あり(x1.5)" : "なし(x1.0)") + crlf;
@@ -619,7 +620,7 @@ function isAbnormalYasenDamage(atacks,friends,enemy,maxFriendHp,maxEnemyHp,frien
             writeData += "防御->" + ('000' + target.shipId).slice(-3) + ":" + target.fullName + crlf;
             writeData += toItemString(tItem2) + crlf;
             writeData += "耐久:" + nowOriginHp + " / " + maxOriginHp + " (" + toHPStateString(maxOriginHp,nowOriginHp) + ",x" + getHPPowerBonus(maxOriginHp,nowOriginHp,false).toFixed(1) + ") 弾薬:" + (isFriend ? (origin.bull + " / " + origin.bullMax + " (" + (origin.bull / origin.bullMax * 100).toFixed() + "%,x" + getAmmoBonus(origin,isFriend).toFixed(1) + ")") : "? / ? (100%,x" + getAmmoBonus(origin,isFriend).toFixed(1) + ")") + crlf;
-            writeData += "陸上特効:x" + getLandBonus(origin,target).toFixed(1) + " WG42加算特効:+" + getWGBonus(origin,target) + " 軽巡軽量砲補正:+" + getCLLightGunPowerBonus(origin).toFixed(1) + " Zara砲フィット補正:+" + getZaraGunFitPowerBonus(origin).toFixed(1) + crlf;
+            writeData += "陸上特効:x" + getLandBonus(origin,target).toFixed(1) + " WG42加算特効:+" + getWGBonus(origin,target) + " 軽巡軽量砲補正:+" + getCLLightGunPowerBonus(origin,date).toFixed(1) + " Zara砲フィット補正:+" + getZaraGunFitPowerBonus(origin).toFixed(1) + crlf;
             writeData += "集積地特効:x" + getShusekiBonus(origin,target).toFixed(1) + " PT小鬼補正:x" + getPtBonus(origin,target).toFixed(1) + crlf;
             writeData += "夜戦攻撃種別:" + toSpAttackKindString(origin,spAttack) + crlf;
             writeData += "クリティカル:" + (isCritical ? "あり(x1.5)" : "なし(x1.0)") + crlf;
@@ -752,7 +753,7 @@ function getHougekiPower(origin,target,formationMatch,formation,friendCombinedKi
             break;
     }
     // キャップ前攻撃力 = (基本攻撃力*陸上特効+WG42加算特効)*交戦形態補正*攻撃側陣形補正*損傷状態補正+軽巡軽量砲補正
-    var power = (basicPower * getLandBonus(origin,target) + getWGBonus(origin,target)) * getFormationMatchBonus(formationMatch) * getFormationBonus(formation) * getHPPowerBonus(maxOriginHp,nowOriginHp,false) + getCLLightGunPowerBonus(origin) + getZaraGunFitPowerBonus(origin);
+    var power = (basicPower * getLandBonus(origin,target) + getWGBonus(origin,target)) * getFormationMatchBonus(formationMatch) * getFormationBonus(formation) * getHPPowerBonus(maxOriginHp,nowOriginHp,false) + getCLLightGunPowerBonus(origin,date) + getZaraGunFitPowerBonus(origin);
     var cap = CHANGE_CAP_DATE.before(date) ? 180 : 150;
     // キャップ後攻撃力 = min(キャップ値,キャップ値+√(キャップ前攻撃力-キャップ値))
     return softcap(power,cap);
@@ -768,7 +769,7 @@ function getYasenPower(origin,target,formationMatch,formation,friendCombinedKind
     var item2 = new LinkedList(origin.item2);
     if(origin instanceof ShipDto) item2.add(origin.slotExItem);
     var basicPower = (origin.karyoku + (target.param.soku > 0 ? origin.raisou : 0)) + getYasenKaishuPower(item2,date) + (isTouch ? 5 : 0);
-    var yasenPower = (basicPower * getLandBonus(origin,target) + getWGBonus(origin,target)) * getYasenCutinBonus(origin,spAttack) * getHPPowerBonus(maxOriginHp,nowOriginHp,false) + getCLLightGunPowerBonus(origin) + getZaraGunFitPowerBonus(origin);
+    var yasenPower = (basicPower * getLandBonus(origin,target) + getWGBonus(origin,target)) * getYasenCutinBonus(origin,spAttack) * getHPPowerBonus(maxOriginHp,nowOriginHp,false) + getCLLightGunPowerBonus(origin,date) + getZaraGunFitPowerBonus(origin);
     return softcap(yasenPower,300);
 }
 
@@ -1012,7 +1013,8 @@ function toHPStateString(max,now){
  * @param {logbook.dto.ShipDto} ship 艦娘のデータ
  * @return {Number} 補正火力
  */
-function getCLLightGunPowerBonus(origin){
+function getCLLightGunPowerBonus(origin,date){
+    if(ADD_CL_LIGHT_GUN_BONUS_DATE.before(date)) return 0;
     switch(origin.stype){
         case 3:  // 軽巡
         case 4:  // 雷巡
@@ -1845,7 +1847,7 @@ function toItemString(item2){
 function getEnemy(battle){
     var getEnemyList = function(shipKe,eSlots,eParams,eLevel,isKanmusu){
         var list = new LinkedList();
-        for(var i = 1;i < shipKe.length;i++){
+        for(var i = 1;i < shipKe.size();i++){
             var id = Number(shipKe[i]);
             if(id != -1){
                 var slot = toIntArray(eSlots[i - 1]);
