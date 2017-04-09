@@ -1,6 +1,6 @@
 /**
  * 異常ダメ検知
- * @version 0.0.5β
+ * @version 0.0.6β
  * @author Nishisonic
  */
 
@@ -19,9 +19,9 @@ Paths = Java.type("java.nio.file.Paths");
 Files = Java.type("java.nio.file.Files");
 StandardOpenOption = Java.type("java.nio.file.StandardOpenOption");
 PrintWriter = Java.type("java.io.PrintWriter");
-Charset = Java.type("java.nio.charset.Charset");
 System = Java.type("java.lang.System");
 SimpleDateFormat = Java.type("java.text.SimpleDateFormat");
+StandardCharsets = Java.type("java.nio.charset.StandardCharsets");
 
 var FILE_NAME = "AbnormalDamage.log";
 
@@ -1698,9 +1698,9 @@ function write(s,p){
         var pw;
         var path = p === undefined ? Paths.get(FILE_NAME) : p;
         if(Files.notExists(path)){
-            pw = new PrintWriter(Files.newBufferedWriter(path,Charset.defaultCharset()));
+            pw = new PrintWriter(Files.newBufferedWriter(path,StandardCharsets.UTF_8));
         } else {
-            pw = new PrintWriter(Files.newBufferedWriter(path,Charset.defaultCharset(),StandardOpenOption.WRITE,StandardOpenOption.APPEND));
+            pw = new PrintWriter(Files.newBufferedWriter(path,StandardCharsets.UTF_8,StandardOpenOption.WRITE,StandardOpenOption.APPEND));
         }
         pw.println(s);
         pw.close();
@@ -1731,7 +1731,7 @@ function iniFile(p){
     try{
         var path = p === undefined ? Paths.get(FILE_NAME) : p;
         if(Files.exists(path)){
-            var pw = new PrintWriter(Files.newBufferedWriter(path,Charset.defaultCharset(),StandardOpenOption.TRUNCATE_EXISTING));
+            var pw = new PrintWriter(Files.newBufferedWriter(path,StandardCharsets.UTF_8,StandardOpenOption.TRUNCATE_EXISTING));
             pw.close();
         }
     } catch(e) {
