@@ -1,6 +1,6 @@
 /**
  * 異常ダメ検知
- * @version 0.0.1β
+ * @version 0.0.2β
  * @author Nishisonic
  */
 
@@ -14,6 +14,7 @@ BattleExDto = Java.type("logbook.dto.BattleExDto");
 BattlePhaseKind = Java.type("logbook.dto.BattlePhaseKind");
 ShipDto = Java.type("logbook.dto.ShipDto");
 Collectors = Java.type("java.util.stream.Collectors");
+GregorianCalendar = Java.type("java.util.GregorianCalendar");
 
 var MODE = {
     /** 厳密に測ります。(1ダメでもずれたら検知します) falseにした場合、1ダメージは許容します。 */
@@ -76,10 +77,12 @@ function body(battle) {
         var enemy = new LinkedList(battle.getEnemy());
         for(var i = enemy.size();i < 6;i++) enemy.add(null);
         if(battle.getEnemyCombined() != null) enemy.addAll(battle.getEnemyCombined());
-        var maxFriendHp = Java.from(battle.getMaxFriendHp()).concat(new Array(6-battle.getMaxFriendHp().length),Java.from(battle.getMaxFriendHpCombined()));
-        var maxEnemyHp = Java.from(battle.getMaxEnemyHp()).concat(new Array(6-battle.getMaxEnemyHp().length),Java.from(battle.getMaxEnemyHpCombined()));
-        var friendHp = Java.from(battle.getStartFriendHp()).concat(new Array(6-battle.getStartFriendHp().length),Java.from(battle.getStartFriendHpCombined()));
-        var enemyHp = Java.from(battle.getStartEnemyHp()).concat(new Array(6-battle.getStartEnemyHp().length),Java.from(battle.getStartEnemyHpCombined()));
+        var isCombined = battle.isCombined();
+        var isEnemyCombined = battle.isEnemyCombined();
+        var maxFriendHp = Java.from(battle.getMaxFriendHp()).concat(new Array(6-battle.getMaxFriendHp().length),isCombined ? Java.from(battle.getMaxFriendHpCombined()) : new Array(0));
+        var maxEnemyHp = Java.from(battle.getMaxEnemyHp()).concat(new Array(6-battle.getMaxEnemyHp().length),isEnemyCombined ? Java.from(battle.getMaxEnemyHpCombined()) : new Array(0));
+        var friendHp = Java.from(battle.getStartFriendHp()).concat(new Array(6-battle.getStartFriendHp().length),isCombined ? Java.from(battle.getStartFriendHpCombined()) : new Array(0));
+        var enemyHp = Java.from(battle.getStartEnemyHp()).concat(new Array(6-battle.getStartEnemyHp().length),isEnemyCombined ? Java.from(battle.getStartEnemyHpCombined()) : new Array(0));
         var formationMatch = fromFormationMatch(battle.getFormationMatch());
         var formations = fromFormations(battle.getFormation());
         var friendCombinedKind = battle.isCombined() ? (battle.getCombinedKind() > 0 ? battle.getCombinedKind() : -1) : 0;
@@ -120,6 +123,9 @@ function genDayBattle(battle,result,friends,enemy,maxFriendHp,maxEnemyHp,friendH
         return !phase.isNight();
     }).findFirst().orElse(null);
     if(dayPhase == null) return result;
+
+    var date = battle.getBattleDate();
+
     // 基地航空隊(噴式)
     var airBaseInjection = dayPhase.getAirBaseInjection();
     if(airBaseInjection != null){
@@ -159,7 +165,7 @@ function genDayBattle(battle,result,friends,enemy,maxFriendHp,maxEnemyHp,friendH
     // 先制爆雷
     var openingTaisen = dayPhase.getOpeningTaisen();
     if(openingTaisen != null && friendCombinedKind >= 0){
-        isAbnormalHougekiDamage(openingTaisen,friends,enemy,maxFriendHp,maxEnemyHp,friendHp,enemyHp,formationMatch,formations,friendCombinedKind,enemyCombinedKind,battle);
+        isAbnormalHougekiDamage(openingTaisen,friends,enemy,maxFriendHp,maxEnemyHp,friendHp,enemyHp,formationMatch,formations,friendCombinedKind,enemyCombinedKind,date,battle);
     }
     // 開幕雷撃
     var openingRaigeki = dayPhase.getOpening();
@@ -169,7 +175,7 @@ function genDayBattle(battle,result,friends,enemy,maxFriendHp,maxEnemyHp,friendH
     // 砲撃戦
     var hougeki1 = dayPhase.getHougeki1();
     if(hougeki1 != null && friendCombinedKind >= 0){
-        result.hougeki |= isAbnormalHougekiDamage(hougeki1,friends,enemy,maxFriendHp,maxEnemyHp,friendHp,enemyHp,formationMatch,formations,friendCombinedKind,enemyCombinedKind,battle);
+        result.hougeki |= isAbnormalHougekiDamage(hougeki1,friends,enemy,maxFriendHp,maxEnemyHp,friendHp,enemyHp,formationMatch,formations,friendCombinedKind,enemyCombinedKind,date,battle);
     }
     // 雷撃戦
     var raigeki = dayPhase.getRaigeki();
@@ -178,14 +184,14 @@ function genDayBattle(battle,result,friends,enemy,maxFriendHp,maxEnemyHp,friendH
     }
     var hougeki2 = dayPhase.getHougeki2();
     if(hougeki2 != null && friendCombinedKind >= 0){
-        result.hougeki |= isAbnormalHougekiDamage(hougeki2,friends,enemy,maxFriendHp,maxEnemyHp,friendHp,enemyHp,formationMatch,formations,friendCombinedKind,enemyCombinedKind,battle);
+        result.hougeki |= isAbnormalHougekiDamage(hougeki2,friends,enemy,maxFriendHp,maxEnemyHp,friendHp,enemyHp,formationMatch,formations,friendCombinedKind,enemyCombinedKind,date,battle);
     }
     if(raigeki != null && friendCombinedKind >= 0 && raigekiOrder == 2){
         result.raigeki |= isAbnormalRaigekiDamage(raigeki,friends,enemy,maxFriendHp,maxEnemyHp,friendHp,enemyHp,formationMatch,formations,friendCombinedKind,enemyCombinedKind,battle);
     }
     var hougeki3 = dayPhase.getHougeki3();
     if(hougeki3 != null && friendCombinedKind >= 0){
-        result.hougeki |= isAbnormalHougekiDamage(hougeki3,friends,enemy,maxFriendHp,maxEnemyHp,friendHp,enemyHp,formationMatch,formations,friendCombinedKind,enemyCombinedKind,battle);
+        result.hougeki |= isAbnormalHougekiDamage(hougeki3,friends,enemy,maxFriendHp,maxEnemyHp,friendHp,enemyHp,formationMatch,formations,friendCombinedKind,enemyCombinedKind,date,battle);
     }
     if(raigeki != null && friendCombinedKind >= 0 && raigekiOrder == -1){
         result.raigeki |= isAbnormalRaigekiDamage(raigeki,friends,enemy,maxFriendHp,maxEnemyHp,friendHp,enemyHp,formationMatch,formations,friendCombinedKind,enemyCombinedKind,battle);
@@ -337,6 +343,48 @@ function isAbnormalRaigekiDamage(atacks,friends,enemy,maxFriendHp,maxEnemyHp,fri
             targetHp[targetIdx] -= atack.ydam[i];
         });
     });
+    // フレンズ
+    for(var targetIdx = 0;targetIdx < friendHp.length;targetIdx++){
+        if(friendHp[targetIdx] <= 0){
+            var target = friends.get(targetIdx);
+            for(var k = 0;k < target.item2.size();k++){
+                var item = target.item2.get(k);
+                if(item != null){
+                    var slotitemId = item.slotitemId;
+                    if(slotitemId == 43){
+                        // 応急修理要員
+                        friendHp[targetIdx] = Math.floor(maxFriendHp[targetIdx] * 0.2);
+                        break;
+                    } else if(slotitemId == 44){
+                        // 応急修理女神
+                        friendHp[targetIdx] = maxFriendHp[targetIdx];
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    // セルリアン
+    for(var targetIdx = 0;targetIdx < enemyHp.length;targetIdx++){
+        if(enemyHp[targetIdx] <= 0){
+            var target = enemy.get(targetIdx);
+            for(var k = 0;k < target.item2.size();k++){
+                var item = target.item2.get(k);
+                if(item != null){
+                    var slotitemId = item.slotitemId;
+                    if(slotitemId == 43){
+                        // 応急修理要員
+                        enemyHp[targetIdx] = Math.floor(maxEnemyHp[targetIdx] * 0.2);
+                        break;
+                    } else if(slotitemId == 44){
+                        // 応急修理女神
+                        enemyHp[targetIdx] = maxEnemyHp[targetIdx];
+                        break;
+                    }
+                }
+            }
+        }
+    }
     return isFriendAbnormalDamage || isEnemyAbnormalDamage;
 }
 
@@ -355,13 +403,13 @@ function isAbnormalRaigekiDamage(atacks,friends,enemy,maxFriendHp,maxEnemyHp,fri
  * @param {Number} friendCombinedKind 
  * @param {Number} enemyCombinedKind 
  */
-function isAbnormalHougekiDamage(atacks,friends,enemy,maxFriendHp,maxEnemyHp,friendHp,enemyHp,formationMatch,formations,friendCombinedType,enemyCombinedType,battle){
-    var _isAbnormalHougekiDamage = function(origin,target,targetIdx,targetHp,damage,hougekiType,formationMatch,formation,friendCombinedKind,enemyCombinedKind,isFriend,maxOriginHp,nowOriginHp,critical){
+function isAbnormalHougekiDamage(atacks,friends,enemy,maxFriendHp,maxEnemyHp,friendHp,enemyHp,formationMatch,formations,friendCombinedType,enemyCombinedType,date,battle){
+    var _isAbnormalHougekiDamage = function(origin,target,targetIdx,targetHp,damage,hougekiType,formationMatch,formation,friendCombinedKind,enemyCombinedKind,isFriend,maxOriginHp,nowOriginHp,critical,date){
         var stype = target.getStype();
         // 対潜攻撃
          if(stype == 13 || stype == 14 || (getHougekiKind(origin) == 7 && isCritical(critical) && !MODE.CV_CL_STRICT)) return false;
         // 砲撃
-        var hougekiPower = getHougekiPower(origin,target,formationMatch,formation,friendCombinedKind,enemyCombinedKind,isFriend,maxOriginHp,nowOriginHp);
+        var hougekiPower = getHougekiPower(origin,target,formationMatch,formation,friendCombinedKind,enemyCombinedKind,isFriend,maxOriginHp,nowOriginHp,date);
         var minFinalHougekiPower = Math.floor(Math.floor(Math.floor(hougekiPower * getShusekiBonus(origin,target)) * getAPshellBonus(origin,target)) * (isCritical(critical) ? (getCriticalBonus(critical) * getSkilledBonus(origin,true)) : 1.0)) * getStrikingBonus(hougekiType) * getPtBonus(origin,target);
         var maxFinalHougekiPower = Math.floor(Math.floor(Math.floor(hougekiPower * getShusekiBonus(origin,target)) * getAPshellBonus(origin,target)) * (isCritical(critical) ? (getCriticalBonus(critical) * getSkilledBonus(origin,false)) : 1.0)) * getStrikingBonus(hougekiType) * getPtBonus(origin,target);
         var minDefensePower = target.soukou * 0.7;
@@ -439,9 +487,27 @@ function isAbnormalHougekiDamage(atacks,friends,enemy,maxFriendHp,maxEnemyHp,fri
                 isFriend,
                 maxOriginHp,
                 nowOriginHp,
-                atack.critical != null ? atack.critical[j] : 0);
+                atack.critical != null ? atack.critical[j] : 0,
+                date);
             // ダメージ処理
             targetHp[targetIdx] -= atack.damage[j];
+        }
+        if(targetHp[targetIdx] <= 0){
+            for(var k = 0;k < target.item2.size();k++){
+                var item = target.item2.get(k);
+                if(item != null){
+                    var slotitemId = item.slotitemId;
+                    if(slotitemId == 43){
+                        // 応急修理要員
+                        targetHp[targetIdx] = Math.floor(maxFriendHp[targetIdx] * 0.2);
+                        break;
+                    } else if(slotitemId == 44){
+                        // 応急修理女神
+                        targetHp[targetIdx] = maxFriendHp[targetIdx];
+                        break;
+                    }
+                }
+            }
         }
     }
     return _isAbnormalDamage;
@@ -550,6 +616,23 @@ function isAbnormalYasenDamage(atacks,friends,enemy,maxFriendHp,maxEnemyHp,frien
             // ダメージ処理
             targetHp[targetIdx] -= atack.damage[j];
         }
+        if(targetHp[targetIdx] <= 0){
+            for(var k = 0;k < target.item2.size();k++){
+                var item = target.item2.get(k);
+                if(item != null){
+                    var slotitemId = item.slotitemId;
+                    if(slotitemId == 43){
+                        // 応急修理要員
+                        targetHp[targetIdx] = Math.floor(maxFriendHp[targetIdx] * 0.2);
+                        break;
+                    } else if(slotitemId == 44){
+                        // 応急修理女神
+                        targetHp[targetIdx] = maxFriendHp[targetIdx];
+                        break;
+                    }
+                }
+            }
+        }
     }
     return _isAbnormalDamage;
 }
@@ -569,7 +652,8 @@ function isAbnormalYasenDamage(atacks,friends,enemy,maxFriendHp,maxEnemyHp,frien
  * @param {Boolean} isFriend 攻撃が味方側か
  * @return {Number} 砲撃戦火力
  */
-function getHougekiPower(origin,target,formationMatch,formation,friendCombinedKind,enemyCombinedKind,isFriend,maxOriginHp,nowOriginHp){
+function getHougekiPower(origin,target,formationMatch,formation,friendCombinedKind,enemyCombinedKind,isFriend,maxOriginHp,nowOriginHp,date){
+    var CHANGE_CAP_DATE = new GregorianCalendar(2017, 3 - 1, 17, 17, 30, 0).getTime();
     // 基本攻撃力
     var basicPower;
     var item2 = new LinkedList(origin.item2);
@@ -588,8 +672,9 @@ function getHougekiPower(origin,target,formationMatch,formation,friendCombinedKi
     }
     // キャップ前攻撃力 = (基本攻撃力*陸上特効+WG42加算特効)*交戦形態補正*攻撃側陣形補正*損傷状態補正+軽巡軽量砲補正
     var power = (basicPower * getLandBonus(origin,target) + getWGBonus(origin,target)) * getFormationMatchBonus(formationMatch) * getFormationBonus(formation) * getHPPowerBonus(maxOriginHp,nowOriginHp,false) + getCLLightGunPowerBonus(origin);
+    var cap = CHANGE_CAP_DATE.compareTo(date) < 0 ? 180 : 150;
     // キャップ後攻撃力 = min(キャップ値,キャップ値+√(キャップ前攻撃力-キャップ値))
-    return softcap(power,150);
+    return softcap(power,cap);
 }
 
 /**
