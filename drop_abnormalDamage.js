@@ -1,6 +1,6 @@
 /**
  * 異常ダメ検知
- * @version 0.0.3β
+ * @version 0.0.4α
  * @author Nishisonic
  */
 
@@ -20,12 +20,14 @@ Files = Java.type("java.nio.file.Files");
 StandardOpenOption = Java.type("java.nio.file.StandardOpenOption");
 PrintWriter = Java.type("java.io.PrintWriter");
 Charset = Java.type("java.nio.charset.Charset");
+System = Java.type("java.lang.System");
+SimpleDateFormat = Java.type("java.text.SimpleDateFormat");
 
 var FILE_NAME = "AbnormalDamage.log";
 
 var MODE = {
     /** 厳密に測ります。(1ダメでもずれたら検知します) falseにした場合、1ダメージは許容します。 */
-    STRICT:false,
+    STRICT:true,
     /** 空母のクリティカル砲撃も測るか */
     CV_CL_STRICT:false,
     /** 演習も測るか */
@@ -37,6 +39,10 @@ var MODE = {
     /** 敵からの攻撃に限定するか */
     ENEMY_ATTACK_ONLY:false,
 };
+
+// 変更禁止
+var crlf = System.getProperty("line.separator");
+var dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
 var MAELSTROM_MAP_LIST = [
     [1,3],
@@ -244,21 +250,27 @@ function isAbnormalRaigekiDamage(atacks,friends,enemy,maxFriendHp,maxEnemyHp,fri
         var _isAbnormalDamage = isAbnormalDamage(damage,minDmg,maxDmg,minPropDmg,maxPropDmg,targetHp,minSunkDmg,maxSunkDmg,isFriend,isHp1Obj);
         if(_isAbnormalDamage){
             var writeData = "";
-            writeData += "日付:" + battle.getBattleDate() + "\r\n";
-            writeData += "戦闘場所:" + (battle.isPractice() ? "演習" : (battle.getMapCellDto().getMap()[0] + "-" + battle.getMapCellDto().getMap()[1] + "-" + battle.getMapCellDto().getMap()[2])) + "\r\n";
-            writeData += "艦隊:味方->" + toFriendCombinedKindString(friendCombinedKind) + " 敵->" + toEnemyCombinedKindString(enemyCombinedKind) + " 連合艦隊補正:" + getCombinedRaigekiPoewrBonus(friendCombinedKind,enemyCombinedKind,isFriend) + "\r\n";
-            writeData += "交戦形態:" + toFormationMatchString(formationMatch) + " 自陣形:" + toFormationString(formation) + "\r\n";
-            var item2 = new LinkedList(origin.item2);
-            if(origin instanceof ShipDto) item2.add(origin.slotExItem);
-            writeData += "雷撃:" + origin.fullName + "[雷装(装備含):" + origin.raisou + ",改修火力:" + getRaigekiKaishuPower(item2).toFixed(1) + "] -> " + target.fullName + "[装甲(装備含):" + target.soukou + ",HP:" + targetHp + "-" + damage + "=>" + (targetHp-damage) + "]\r\n";
-            writeData += "耐久:" + nowOriginHp + " / " + maxOriginHp + " (" + toHPStateString(maxOriginHp,nowOriginHp) + ",x" + getHPPowerBonus(maxOriginHp,nowOriginHp,false).toFixed(1) + ") 弾薬:" + (isFriend ? (origin.bull + " / " + origin.bullMax + " (" + (origin.bull / origin.bullMax * 100).toFixed() + "%,x" + getAmmoBonus(origin,isFriend).toFixed(1) + ")") : "? / ? (100%,x" + getAmmoBonus(origin,isFriend).toFixed(1) + ")") + "\r\n";
-            writeData += "クリティカル:" + (isCritical ? "あり(x1.5)" : "なし(x1.0)") + "\r\n";
-            writeData += "雷撃火力:" + raigekiPower.toFixed(1) + " 最終雷撃火力:" + finalRaigekiPower.toFixed(1) + "\r\n";
-            writeData += "防御力範囲:" + minDefensePower.toFixed(1) + " - " + maxDefensePower.toFixed(1) + "\r\n";
-            writeData += "想定通常dmg:" + minDmg + " - " + maxDmg + "\r\n";
-            writeData += "想定割合dmg:" + minPropDmg + " - " + maxPropDmg + "\r\n";
-            writeData += "想定轟スdmg:" + minSunkDmg + " - " + maxSunkDmg + "\r\n";
-            writeData += "HP1置き換え:" + "残HP->" + (targetHp - damage) + "\r\n";
+            writeData += "日付:" + dateFormat.format(battle.getBattleDate()) + crlf;
+            writeData += "戦闘場所:" + (battle.isPractice() ? "演習" : (battle.getMapCellDto().getMap()[0] + "-" + battle.getMapCellDto().getMap()[1] + "-" + battle.getMapCellDto().getMap()[2])) + crlf;
+            writeData += "艦隊:味方->" + toFriendCombinedKindString(friendCombinedKind) + " 敵->" + toEnemyCombinedKindString(enemyCombinedKind) + " 連合艦隊補正:" + getCombinedRaigekiPoewrBonus(friendCombinedKind,enemyCombinedKind,isFriend) + crlf;
+            writeData += "交戦形態:" + toFormationMatchString(formationMatch) + " 自陣形:" + toFormationString(formation) + crlf;
+            var oItem2 = new LinkedList(origin.item2);
+            if(origin instanceof ShipDto) oItem2.add(origin.slotExItem);
+            var tItem2 = new LinkedList(target.item2);
+            if(target instanceof ShipDto) tItem2.add(target.slotExItem);
+            writeData += "雷撃:" + origin.fullName + "[雷装(装備含):" + origin.raisou + ",改修火力:" + getRaigekiKaishuPower(oItem2).toFixed(1) + "] -> " + target.fullName + "[装甲(装備含):" + target.soukou + ",HP:" + targetHp + "-" + damage + "=>" + (targetHp-damage) + "]" + crlf;
+            writeData += "攻撃->" + ('000' + origin.shipId).slice(-3) + ":" + origin.fullName + crlf;
+            writeData += toItemString(oItem2) + crlf;
+            writeData += "防御->" + ('000' + target.shipId).slice(-3) + ":" + target.fullName + crlf;
+            writeData += toItemString(tItem2) + crlf;
+            writeData += "耐久:" + nowOriginHp + " / " + maxOriginHp + " (" + toHPStateString(maxOriginHp,nowOriginHp) + ",x" + getHPPowerBonus(maxOriginHp,nowOriginHp,false).toFixed(1) + ") 弾薬:" + (isFriend ? (origin.bull + " / " + origin.bullMax + " (" + (origin.bull / origin.bullMax * 100).toFixed() + "%,x" + getAmmoBonus(origin,isFriend).toFixed(1) + ")") : "? / ? (100%,x" + getAmmoBonus(origin,isFriend).toFixed(1) + ")") + crlf;
+            writeData += "クリティカル:" + (isCritical ? "あり(x1.5)" : "なし(x1.0)") + crlf;
+            writeData += "雷撃火力:" + raigekiPower.toFixed(1) + " 最終雷撃火力:" + finalRaigekiPower.toFixed(1) + crlf;
+            writeData += "防御力範囲:" + minDefensePower.toFixed(1) + " - " + maxDefensePower.toFixed(1) + crlf;
+            writeData += "想定通常dmg:" + minDmg + " - " + maxDmg + crlf;
+            writeData += "想定割合dmg:" + minPropDmg + " - " + maxPropDmg + crlf;
+            writeData += "想定轟スdmg:" + minSunkDmg + " - " + maxSunkDmg + crlf;
+            writeData += "HP1置き換え:" + "残HP->" + (targetHp - damage) + crlf;
             write(writeData);
         }
         return _isAbnormalDamage;
@@ -436,25 +448,31 @@ function isAbnormalHougekiDamage(atacks,friends,enemy,maxFriendHp,maxEnemyHp,fri
         var _isAbnormalDamage = isAbnormalDamage(damage,minDmg,maxDmg,minPropDmg,maxPropDmg,targetHp,minSunkDmg,maxSunkDmg,isFriend,isHp1Obj);
         if(_isAbnormalDamage){
             var writeData = "";
-            writeData += "日付:" + battle.getBattleDate() + "\r\n";
-            writeData += "戦闘場所:" + (battle.isPractice() ? "演習" : (battle.getMapCellDto().getMap()[0] + "-" + battle.getMapCellDto().getMap()[1] + "-" + battle.getMapCellDto().getMap()[2])) + "\r\n";
-            writeData += "艦隊:味方->" + toFriendCombinedKindString(friendCombinedKind) + " 敵->" + toEnemyCombinedKindString(enemyCombinedKind) + " 連合艦隊補正:" + getCombinedHougekiPoewrBonus(friendCombinedKind,enemyCombinedKind,isFriend) + "\r\n";
-            writeData += "交戦形態:" + toFormationMatchString(formationMatch) + " 自陣形:" + toFormationString(formation) + "\r\n";
-            var item2 = new LinkedList(origin.item2);
-            if(origin instanceof ShipDto) item2.add(origin.slotExItem);
-            writeData += "砲撃:" + origin.fullName + "[火力(装備含):" + origin.karyoku + ",改修火力:" + getHougekiKaishuPower(item2).toFixed(1) + ",空母用->雷装:" + origin.slotParam.raig + ",爆装:" + origin.slotParam.baku + "] -> " + target.fullName + "[装甲(装備含):" + target.soukou + ",HP:" + targetHp + "-" + damage + "=>" + (targetHp-damage) + "]\r\n";
-            writeData += "耐久:" + nowOriginHp + " / " + maxOriginHp + " (" + toHPStateString(maxOriginHp,nowOriginHp) + ",x" + getHPPowerBonus(maxOriginHp,nowOriginHp,false).toFixed(1) + ") 弾薬:" + (isFriend ? (origin.bull + " / " + origin.bullMax + " (" + (origin.bull / origin.bullMax * 100).toFixed() + "%,x" + getAmmoBonus(origin,isFriend).toFixed(1) + ")") : "? / ? (100%,x" + getAmmoBonus(origin,isFriend).toFixed(1) + ")") + "\r\n";
-            writeData += "陸上特効:x" + getLandBonus(origin,target).toFixed(1) + " WG42加算特効:+" + getWGBonus(origin,target) + " 軽巡軽量砲補正:+" + getCLLightGunPowerBonus(origin).toFixed(1) + "\r\n";
-            writeData += "集積地特効:x" + getShusekiBonus(origin,target).toFixed(1) + " 徹甲弾補正:x" + getAPshellBonus(origin,target).toFixed(2) + " PT小鬼補正:x" + getPtBonus(origin,target).toFixed(1) + "\r\n";
-            writeData += "砲撃攻撃種別:" + toStrikingKindString(hougekiType) + "\r\n";
-            writeData += "クリティカル:" + (isCritical ? "あり(x1.5)" : "なし(x1.0)") + "\r\n";
-            writeData += "熟練度倍率:x" + getSkilledBonus(origin,false).toFixed(1) + " - x" + getSkilledBonus(origin,true).toFixed(1) + "\r\n";
-            writeData += "砲撃火力:" + hougekiPower.toFixed(1) + " 最終砲撃火力:" + minFinalHougekiPower.toFixed(1) + " - " + maxFinalHougekiPower.toFixed(1) + "\r\n";
-            writeData += "防御力範囲:" + minDefensePower.toFixed(1) + " - " + maxDefensePower.toFixed(1) + "\r\n";
-            writeData += "想定通常dmg:" + minDmg + " - " + maxDmg + "\r\n";
-            writeData += "想定割合dmg:" + minPropDmg + " - " + maxPropDmg + "\r\n";
-            writeData += "想定轟スdmg:" + minSunkDmg + " - " + maxSunkDmg + "\r\n";
-            writeData += "HP1置き換え:" + "残HP->" + (targetHp - damage) + "\r\n";
+            writeData += "日付:" + dateFormat.format(battle.getBattleDate()) + crlf;
+            writeData += "戦闘場所:" + (battle.isPractice() ? "演習" : (battle.getMapCellDto().getMap()[0] + "-" + battle.getMapCellDto().getMap()[1] + "-" + battle.getMapCellDto().getMap()[2])) + crlf;
+            writeData += "艦隊:味方->" + toFriendCombinedKindString(friendCombinedKind) + " 敵->" + toEnemyCombinedKindString(enemyCombinedKind) + " 連合艦隊補正:" + getCombinedHougekiPoewrBonus(friendCombinedKind,enemyCombinedKind,isFriend) + crlf;
+            writeData += "交戦形態:" + toFormationMatchString(formationMatch) + " 自陣形:" + toFormationString(formation) + crlf;
+            var oItem2 = new LinkedList(origin.item2);
+            if(origin instanceof ShipDto) oItem2.add(origin.slotExItem);
+            var tItem2 = new LinkedList(target.item2);
+            if(target instanceof ShipDto) tItem2.add(target.slotExItem);
+            writeData += "砲撃:" + origin.fullName + "[火力(装備含):" + origin.karyoku + ",改修火力:" + getHougekiKaishuPower(oItem2).toFixed(1) + ",空母用->雷装:" + origin.slotParam.raig + ",爆装:" + origin.slotParam.baku + "] -> " + target.fullName + "[装甲(装備含):" + target.soukou + ",HP:" + targetHp + "-" + damage + "=>" + (targetHp-damage) + "]" + crlf;
+            writeData += "攻撃->" + ('000' + origin.shipId).slice(-3) + ":" + origin.fullName + crlf;
+            writeData += toItemString(oItem2) + crlf;
+            writeData += "防御->" + ('000' + target.shipId).slice(-3) + ":" + target.fullName + crlf;
+            writeData += toItemString(tItem2) + crlf;
+            writeData += "耐久:" + nowOriginHp + " / " + maxOriginHp + " (" + toHPStateString(maxOriginHp,nowOriginHp) + ",x" + getHPPowerBonus(maxOriginHp,nowOriginHp,false).toFixed(1) + ") 弾薬:" + (isFriend ? (origin.bull + " / " + origin.bullMax + " (" + (origin.bull / origin.bullMax * 100).toFixed() + "%,x" + getAmmoBonus(origin,isFriend).toFixed(1) + ")") : "? / ? (100%,x" + getAmmoBonus(origin,isFriend).toFixed(1) + ")") + crlf;
+            writeData += "陸上特効:x" + getLandBonus(origin,target).toFixed(1) + " WG42加算特効:+" + getWGBonus(origin,target) + " 軽巡軽量砲補正:+" + getCLLightGunPowerBonus(origin).toFixed(1) + crlf;
+            writeData += "集積地特効:x" + getShusekiBonus(origin,target).toFixed(1) + " 徹甲弾補正:x" + getAPshellBonus(origin,target).toFixed(2) + " PT小鬼補正:x" + getPtBonus(origin,target).toFixed(1) + crlf;
+            writeData += "砲撃攻撃種別:" + toStrikingKindString(hougekiType) + crlf;
+            writeData += "クリティカル:" + (isCritical ? "あり(x1.5)" : "なし(x1.0)") + crlf;
+            writeData += "熟練度倍率:x" + getSkilledBonus(origin,false).toFixed(1) + " - x" + getSkilledBonus(origin,true).toFixed(1) + crlf;
+            writeData += "砲撃火力:" + hougekiPower.toFixed(1) + " 最終砲撃火力:" + minFinalHougekiPower.toFixed(1) + " - " + maxFinalHougekiPower.toFixed(1) + crlf;
+            writeData += "防御力範囲:" + minDefensePower.toFixed(1) + " - " + maxDefensePower.toFixed(1) + crlf;
+            writeData += "想定通常dmg:" + minDmg + " - " + maxDmg + crlf;
+            writeData += "想定割合dmg:" + minPropDmg + " - " + maxPropDmg + crlf;
+            writeData += "想定轟スdmg:" + minSunkDmg + " - " + maxSunkDmg + crlf;
+            writeData += "HP1置き換え:" + "残HP->" + (targetHp - damage) + crlf;
             write(writeData);
         }
         return _isAbnormalDamage;
@@ -550,24 +568,30 @@ function isAbnormalYasenDamage(atacks,friends,enemy,maxFriendHp,maxEnemyHp,frien
         var _isAbnormalDamage = isAbnormalDamage(damage,minDmg,maxDmg,minPropDmg,maxPropDmg,targetHp,minSunkDmg,maxSunkDmg,isFriend,isHp1Obj);
         if(_isAbnormalDamage){
             var writeData = "";
-            writeData += "日付:" + battle.getBattleDate() + "\r\n";
-            writeData += "戦闘場所:" + (battle.isPractice() ? "演習" : (battle.getMapCellDto().getMap()[0] + "-" + battle.getMapCellDto().getMap()[1] + "-" + battle.getMapCellDto().getMap()[2])) + "\r\n";
-            writeData += "艦隊:味方->" + toFriendCombinedKindString(friendCombinedKind) + " 敵->" + toEnemyCombinedKindString(enemyCombinedKind) + "\r\n";
-            writeData += "交戦形態:" + toFormationMatchString(formationMatch) + " 自陣形:" + toFormationString(formation) + "\r\n";
-            var item2 = new LinkedList(origin.item2);
-            if(origin instanceof ShipDto) item2.add(origin.slotExItem);
-            writeData += "夜戦:" + origin.fullName + "[火力(装備含):" + origin.karyoku + ",雷装(装備含):" + origin.raisou + ",改修火力:" + getYasenKaishuPower(item2).toFixed(1) + "] -> " + target.fullName + "[装甲(装備含):" + target.soukou + ",HP:" + targetHp + "-" + damage + "=>" + (targetHp-damage) + "]\r\n";
-            writeData += "耐久:" + nowOriginHp + " / " + maxOriginHp + " (" + toHPStateString(maxOriginHp,nowOriginHp) + ",x" + getHPPowerBonus(maxOriginHp,nowOriginHp,false).toFixed(1) + ") 弾薬:" + (isFriend ? (origin.bull + " / " + origin.bullMax + " (" + (origin.bull / origin.bullMax * 100).toFixed() + "%,x" + getAmmoBonus(origin,isFriend).toFixed(1) + ")") : "? / ? (100%,x" + getAmmoBonus(origin,isFriend).toFixed(1) + ")") + "\r\n";
-            writeData += "陸上特効:x" + getLandBonus(origin,target).toFixed(1) + " WG42加算特効:+" + getWGBonus(origin,target) + " 軽巡軽量砲補正:+" + getCLLightGunPowerBonus(origin).toFixed(1) + "\r\n";
-            writeData += "集積地特効:x" + getShusekiBonus(origin,target).toFixed(1) + " PT小鬼補正:x" + getPtBonus(origin,target).toFixed(1) + "\r\n";
-            writeData += "夜戦攻撃種別:" + toSpAttackKindString(origin,spAttack) + "\r\n";
-            writeData += "クリティカル:" + (isCritical ? "あり(x1.5)" : "なし(x1.0)") + "\r\n";
-            writeData += "夜戦火力:" + yasenPower.toFixed(1) + " 最終夜戦火力:" + finalYasenPower.toFixed(1) + "\r\n";
-            writeData += "防御力範囲:" + minDefensePower.toFixed(1) + " - " + maxDefensePower.toFixed(1) + "\r\n";
-            writeData += "想定通常dmg:" + minDmg + " - " + maxDmg + "\r\n";
-            writeData += "想定割合dmg:" + minPropDmg + " - " + maxPropDmg + "\r\n";
-            writeData += "想定轟スdmg:" + minSunkDmg + " - " + maxSunkDmg + "\r\n";
-            writeData += "HP1置き換え:" + "残HP->" + (targetHp - damage) + "\r\n";
+            writeData += "日付:" + dateFormat.format(battle.getBattleDate()) + crlf;
+            writeData += "戦闘場所:" + (battle.isPractice() ? "演習" : (battle.getMapCellDto().getMap()[0] + "-" + battle.getMapCellDto().getMap()[1] + "-" + battle.getMapCellDto().getMap()[2])) + crlf;
+            writeData += "艦隊:味方->" + toFriendCombinedKindString(friendCombinedKind) + " 敵->" + toEnemyCombinedKindString(enemyCombinedKind) + crlf;
+            writeData += "交戦形態:" + toFormationMatchString(formationMatch) + " 自陣形:" + toFormationString(formation) + crlf;
+            var oItem2 = new LinkedList(origin.item2);
+            if(origin instanceof ShipDto) oItem2.add(origin.slotExItem);
+            var tItem2 = new LinkedList(target.item2);
+            if(target instanceof ShipDto) tItem2.add(target.slotExItem);
+            writeData += "夜戦:" + origin.fullName + "[火力(装備含):" + origin.karyoku + ",雷装(装備含):" + origin.raisou + ",改修火力:" + getYasenKaishuPower(oItem2).toFixed(1) + "] -> " + target.fullName + "[装甲(装備含):" + target.soukou + ",HP:" + targetHp + "-" + damage + "=>" + (targetHp-damage) + "]" + crlf;
+            writeData += "攻撃->" + ('000' + origin.shipId).slice(-3) + ":" + origin.fullName + crlf;
+            writeData += toItemString(oItem2) + crlf;
+            writeData += "防御->" + ('000' + target.shipId).slice(-3) + ":" + target.fullName + crlf;
+            writeData += toItemString(tItem2) + crlf;
+            writeData += "耐久:" + nowOriginHp + " / " + maxOriginHp + " (" + toHPStateString(maxOriginHp,nowOriginHp) + ",x" + getHPPowerBonus(maxOriginHp,nowOriginHp,false).toFixed(1) + ") 弾薬:" + (isFriend ? (origin.bull + " / " + origin.bullMax + " (" + (origin.bull / origin.bullMax * 100).toFixed() + "%,x" + getAmmoBonus(origin,isFriend).toFixed(1) + ")") : "? / ? (100%,x" + getAmmoBonus(origin,isFriend).toFixed(1) + ")") + crlf;
+            writeData += "陸上特効:x" + getLandBonus(origin,target).toFixed(1) + " WG42加算特効:+" + getWGBonus(origin,target) + " 軽巡軽量砲補正:+" + getCLLightGunPowerBonus(origin).toFixed(1) + crlf;
+            writeData += "集積地特効:x" + getShusekiBonus(origin,target).toFixed(1) + " PT小鬼補正:x" + getPtBonus(origin,target).toFixed(1) + crlf;
+            writeData += "夜戦攻撃種別:" + toSpAttackKindString(origin,spAttack) + crlf;
+            writeData += "クリティカル:" + (isCritical ? "あり(x1.5)" : "なし(x1.0)") + crlf;
+            writeData += "夜戦火力:" + yasenPower.toFixed(1) + " 最終夜戦火力:" + finalYasenPower.toFixed(1) + crlf;
+            writeData += "防御力範囲:" + minDefensePower.toFixed(1) + " - " + maxDefensePower.toFixed(1) + crlf;
+            writeData += "想定通常dmg:" + minDmg + " - " + maxDmg + crlf;
+            writeData += "想定割合dmg:" + minPropDmg + " - " + maxPropDmg + crlf;
+            writeData += "想定轟スdmg:" + minSunkDmg + " - " + maxSunkDmg + crlf;
+            writeData += "HP1置き換え:" + "残HP->" + (targetHp - damage) + crlf;
             write(writeData);
         }
         return  _isAbnormalDamage;
@@ -1232,7 +1256,7 @@ function getCombinedRaigekiPoewrBonus(friendCombinedKind,enemyCombinedKind,isFri
         }
     } else {
         if(enemyCombinedKind > 0){
-            // 敵:連合艦隊(第二艦隊) -> 味方:連合艦隊(第一艦隊/第二艦隊)
+            // 敵:連合艦隊(第二艦隊) -> 味方:Any
             return 5;
         } else {
             if(friendCombinedKind > 0){
@@ -1713,4 +1737,37 @@ function iniFile(p){
     } catch(e) {
         e.printStackTrace();
     }
+}
+
+function toItemString(item2){
+    var getLevelText = function(lv){
+        switch(lv){
+            case 0: return "";
+            case 1: return " ★+1";
+            case 2: return " ★+2";
+            case 3: return " ★+3";
+            case 4: return " ★+4";
+            case 5: return " ★+5";
+            case 6: return " ★+6";
+            case 7: return " ★+7";
+            case 8: return " ★+8";
+            case 9: return " ★+9";
+            case 10:return " ★max";
+        }
+    }
+    var getAlvText = function(alv){
+        switch(alv){
+            case 0: return "";
+            case 1: return " |";
+            case 2: return " ||";
+            case 3: return " |||";
+            case 4: return " \\";
+            case 5: return " \\\\";
+            case 6: return " \\\\\\";
+            case 7: return " >>";
+        }
+    }
+    return item2.stream().map(function(item){
+        return (item != null ? (("000" + item.slotitemId).slice(-3) + ":" + item.name + getAlvText(item.alv) + getLevelText(item.level)) : "---:装備なし");
+    }).collect(Collectors.joining(crlf));
 }
