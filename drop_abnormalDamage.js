@@ -1,6 +1,6 @@
 /**
  * 異常ダメ検知
- * @version 0.0.4α
+ * @version 0.0.5β
  * @author Nishisonic
  */
 
@@ -27,7 +27,7 @@ var FILE_NAME = "AbnormalDamage.log";
 
 var MODE = {
     /** 厳密に測ります。(1ダメでもずれたら検知します) falseにした場合、1ダメージは許容します。 */
-    STRICT:true,
+    STRICT:false,
     /** 空母のクリティカル砲撃も測るか */
     CV_CL_STRICT:false,
     /** 演習も測るか */
@@ -554,7 +554,7 @@ function isAbnormalYasenDamage(atacks,friends,enemy,maxFriendHp,maxEnemyHp,frien
         // 砲撃
         //print("夜戦",origin.fullName,target.fullName,targetHp+"-"+damage+"=>"+(targetHp-damage));
         var yasenPower = getYasenPower(origin,target,formationMatch,formation,friendCombinedKind,enemyCombinedKind,isFriend,maxOriginHp,nowOriginHp,isTouch,spAttack);
-        var finalYasenPower = Math.floor(Math.floor(yasenPower * getShusekiBonus(origin,target))) * (isCritical(critical) ? getCriticalBonus(critical) : 1.0) * getPtBonus(origin,target);
+        var finalYasenPower = Math.floor(Math.floor(yasenPower * getShusekiBonus(origin,target)) * (isCritical(critical) ? getCriticalBonus(critical) : 1.0)) * getPtBonus(origin,target);
         var minDefensePower = target.soukou * 0.7;
         var maxDefensePower = target.soukou * 1.3 - 0.6;
         var minDmg = Math.floor((finalYasenPower - maxDefensePower) * getAmmoBonus(origin,isFriend));
