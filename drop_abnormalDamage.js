@@ -1,6 +1,6 @@
 /**
  * 異常ダメ検知
- * @version 0.0.7β
+ * @version 0.0.8β
  * @author Nishisonic
  */
 
@@ -1718,6 +1718,7 @@ function isMaelstromMap(battle){
 }
 
 function isException(battle){
+    if(battle.isPractice()) return false;
     var area = battle.getMapCellDto().getMap()[0];
     var info = battle.getMapCellDto().getMap()[1];
     // PT初登場マップ除去
