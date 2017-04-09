@@ -1,6 +1,6 @@
 /**
  * 異常ダメ検知
- * @version 0.1.0β
+ * @version 0.1.1β
  * @author Nishisonic
  */
 
@@ -1014,7 +1014,7 @@ function toHPStateString(max,now){
  * @return {Number} 補正火力
  */
 function getCLLightGunPowerBonus(origin,date){
-    if(ADD_CL_LIGHT_GUN_BONUS_DATE.before(date)) return 0;
+    if(ADD_CL_LIGHT_GUN_BONUS_DATE.after(date)) return 0;
     switch(origin.stype){
         case 3:  // 軽巡
         case 4:  // 雷巡
