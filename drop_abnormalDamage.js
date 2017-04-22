@@ -1,6 +1,6 @@
 /**
  * 異常ダメ検知
- * @version 0.1.3β
+ * @version 0.1.4β
  * @author Nishisonic
  */
 
@@ -71,7 +71,7 @@ var MODE = {
      * 昼戦の最終攻撃力の計算式を仮説ver.に変えるか
      * (STRICT:true推奨)
      */
-    HYPOTHESIS_ATK:true,
+    HYPOTHESIS_ATK:false,
 };
 
 // 変更禁止
@@ -501,13 +501,13 @@ function isAbnormalHougekiDamage(atacks,friends,enemy,maxFriendHp,maxEnemyHp,fri
         var minFinalHougekiPower = Math.floor(Math.floor(Math.floor(hougekiPower * getShusekiBonus(origin,target)) * getAPshellBonus(origin,target)) * (isCritical(critical) ? (getCriticalBonus(critical) * getSkilledBonus(origin,true)) : 1.0)) * getStrikingBonus(hougekiType) * getPtBonus(origin,target);
         var maxFinalHougekiPower = Math.floor(Math.floor(Math.floor(hougekiPower * getShusekiBonus(origin,target)) * getAPshellBonus(origin,target)) * (isCritical(critical) ? (getCriticalBonus(critical) * getSkilledBonus(origin,false)) : 1.0)) * getStrikingBonus(hougekiType) * getPtBonus(origin,target);
         // 仮説:最終攻撃力
-        if(MODE.HYPOTHESIS_ATK){
+        if(MODE.HYPOTHESIS_ATK && getSkilledBonus(origin,true) == 1 && !isPt(target)){
             if(isAPshellBonusTarget(target.stype)){
-                minFinalHougekiPower = maxFinalHougekiPower = Math.floor(Math.floor(Math.floor(hougekiPower * getShusekiBonus(origin,target)) * getStrikingBonus(hougekiType) * getAPshellBonus(origin,target)) * getCriticalBonus(critical))
+                minFinalHougekiPower = maxFinalHougekiPower = Math.floor(Math.floor(Math.floor(hougekiPower * getShusekiBonus(origin,target)) * getStrikingBonus(hougekiType) * getAPshellBonus(origin,target)) * getCriticalBonus(critical));
             } else if(isCritical(critical) && getStrikingBonus(hougekiType) > 1){
-                minFinalHougekiPower = maxFinalHougekiPower = Math.floor(Math.floor(hougekiPower) * getCriticalBonus(critical) * getStrikingBonus(hougekiType)) * getPtBonus(origin,target);
+                minFinalHougekiPower = maxFinalHougekiPower = Math.floor(Math.floor(hougekiPower) * getCriticalBonus(critical) * getStrikingBonus(hougekiType));
             } else {
-                minFinalHougekiPower = maxFinalHougekiPower = Math.floor(Math.floor(hougekiPower) * getCriticalBonus(critical)) * getStrikingBonus(hougekiType) * getPtBonus(origin,target);
+                minFinalHougekiPower = maxFinalHougekiPower = Math.floor(Math.floor(hougekiPower) * getCriticalBonus(critical)) * getStrikingBonus(hougekiType);
             }
         }
         var minDefensePower = target.soukou * 0.7;
