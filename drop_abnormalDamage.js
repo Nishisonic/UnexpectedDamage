@@ -31,8 +31,11 @@ URL = Java.type("java.net.URL");
 HttpURLConnection = Java.type("java.net.HttpURLConnection");
 StandardCopyOption = Java.type("java.nio.file.StandardCopyOption");
 
-var FILE_NAME = "AbnormalDamage.log";
-var VERSION = 0.141;
+var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/AbnormalDamage/master/update.txt";
+var FILE_URL = "https://raw.githubusercontent.com/Nishisonic/AbnormalDamage/master/drop_abnormalDamage.js";
+var EXECUTABLE_FILE = "script/drop_AbnormalDamage.js";
+var LOG_FILE = "AbnormalDamage.log";
+var VERSION = 0.142;
 data_prefix = "AbnormalDamage_";
 
 var MODE = {
@@ -1891,7 +1894,7 @@ function isHp1ReplacementObj(origin,idx){
 function write(s,p){
     try{
         var pw;
-        var path = p === undefined ? Paths.get(FILE_NAME) : p;
+        var path = p === undefined ? Paths.get(LOG_FILE) : p;
         if(Files.notExists(path)){
             pw = new PrintWriter(Files.newBufferedWriter(path,StandardCharsets.UTF_8));
         } else {
@@ -1924,7 +1927,7 @@ function toSpAttackKindString(origin,kind){
 
 function iniFile(p){
     try{
-        var path = p === undefined ? Paths.get(FILE_NAME) : p;
+        var path = p === undefined ? Paths.get(LOG_FILE) : p;
         if(Files.exists(path)){
             var pw = new PrintWriter(Files.newBufferedWriter(path,StandardCharsets.UTF_8,StandardOpenOption.TRUNCATE_EXISTING));
             pw.close();
@@ -2107,15 +2110,14 @@ function calcCombinedKind(battle){
 }
 
 function updateFile(){
-    var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/AbnormalDamage/master/update.txt";
-    var FILE_URL = "https://raw.githubusercontent.com/Nishisonic/AbnormalDamage/master/drop_abnormalDamage.js";
     if(getData("isUpdate")) return;
     var nowVersion = IOUtils.toString(URI.create(UPDATE_CHECK_URL), Charset.forName("UTF-8"));
     setTmpData("isUpdate",true);
-    if(VERSION >= nowVersion) return;
+    print(VERSION,nowVersion,VERSION >= Number(nowVersion));
+    if(VERSION >= Number(nowVersion)) return;
     // URLを構築します。引数にダウンロード先のURLを指定します。
     var url = new URL(FILE_URL);
     var urlConnection= HttpURLConnection.class.cast(url.openConnection());
     urlConnection.connect();
-    Files.copy(urlConnection.getInputStream(), file, StandardCopyOption.REPLACE_EXISTING); //上書き設定
+    Files.copy(urlConnection.getInputStream(), Paths.get(EXECUTABLE_FILE), StandardCopyOption.REPLACE_EXISTING); //上書き設定
 }
