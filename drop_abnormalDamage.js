@@ -30,19 +30,23 @@ URI = Java.type("java.net.URI");
 URL = Java.type("java.net.URL");
 HttpURLConnection = Java.type("java.net.HttpURLConnection");
 StandardCopyOption = Java.type("java.nio.file.StandardCopyOption");
+ByteArrayInputStream = Java.type("java.io.ByteArrayInputStream");
 
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/AbnormalDamage/master/update.txt";
 var FILE_URL = "https://raw.githubusercontent.com/Nishisonic/AbnormalDamage/master/drop_abnormalDamage.js";
 var EXECUTABLE_FILE = "script/drop_AbnormalDamage.js";
+var SETTING_FILE = "script/setting_AbnormalDamage.json";
 var LOG_FILE = "AbnormalDamage.log";
-var VERSION = 0.142;
+var VERSION = 0.143;
 data_prefix = "AbnormalDamage_";
 
 var MODE = {
+    /** 設定用コメント */
+    ___COMMENT___:"設定の詳細はプログラムコードを参照して下さい",
     /** 厳密に測ります。(1ダメでもずれたら検知します) falseにした場合、1ダメージは許容します。 */
     STRICT:false,
-    /** 空母のクリティカル砲撃も測るか */
-    CV_CL_STRICT:false,
+    /** 熟練度補正のかかった砲撃も測るか[空母用] */
+    SKILLED:false,
     /** 演習も測るか */
     PLACTICE:false,
     /** うずしおマップも測るか */
@@ -85,6 +89,10 @@ var MODE = {
      * (STRICT:true推奨)
      */
     HYPOTHESIS_ATK:false,
+    /**
+     * 自動更新するか
+     */
+    AUTO_UPDATE:true,
 };
 
 // 変更禁止
@@ -118,6 +126,7 @@ function header() {
 }
 
 function begin() {
+    loadSetting();
     iniFile();
     updateFile();
 }
@@ -185,7 +194,7 @@ function genNightBattle(battle,result,friends,enemy,maxFriendHp,maxEnemyHp,frien
     // 夜戦
     var yasen = nightPhase.getHougeki();
     if(yasen != null && friendCombinedKind >= 0){
-        result.yasen = isAbnormalYasenDamage(yasen,friends,enemy,maxFriendHp,maxEnemyHp,friendHp,enemyHp,formationMatch,formations,friendCombinedKind,enemyCombinedKind,nightPhase.getTouchPlane(),nightPhase.getJson(),battle);
+        result.yasen = genAbnormalYasenDamage(yasen,friends,enemy,maxFriendHp,maxEnemyHp,friendHp,enemyHp,formationMatch,formations,friendCombinedKind,enemyCombinedKind,nightPhase.getTouchPlane(),nightPhase.getJson(),battle);
     }
 }
 
@@ -238,42 +247,42 @@ function genDayBattle(battle,result,friends,enemy,maxFriendHp,maxEnemyHp,friendH
     // 先制爆雷
     var openingTaisen = dayPhase.getOpeningTaisen();
     if(openingTaisen != null && friendCombinedKind >= 0){
-        isAbnormalHougekiDamage(openingTaisen,friends,enemy,maxFriendHp,maxEnemyHp,friendHp,enemyHp,formationMatch,formations,friendCombinedKind,enemyCombinedKind,date,battle);
+        genAbnormalHougekiDamage(openingTaisen,friends,enemy,maxFriendHp,maxEnemyHp,friendHp,enemyHp,formationMatch,formations,friendCombinedKind,enemyCombinedKind,date,battle);
     }
     // 開幕雷撃
     var openingRaigeki = dayPhase.getOpening();
     if(openingRaigeki != null && friendCombinedKind >= 0){
-        var _result = isAbnormalRaigekiDamage(openingRaigeki,friends,enemy,maxFriendHp,maxEnemyHp,friendHp,enemyHp,formationMatch,formations,friendCombinedKind,enemyCombinedKind,battle);
+        var _result = genAbnormalRaigekiDamage(openingRaigeki,friends,enemy,maxFriendHp,maxEnemyHp,friendHp,enemyHp,formationMatch,formations,friendCombinedKind,enemyCombinedKind,battle);
         if(result.raigeki == null || (_result != null && (Number(_result.match(/\d+$/g) > Number(result.raigeki.match(/\d+$/g)))))) result.raigeki = _result;
     }
     // 砲撃戦
     var hougeki1 = dayPhase.getHougeki1();
     if(hougeki1 != null && friendCombinedKind >= 0){
-        var _result = isAbnormalHougekiDamage(hougeki1,friends,enemy,maxFriendHp,maxEnemyHp,friendHp,enemyHp,formationMatch,formations,friendCombinedKind,enemyCombinedKind,date,battle);
+        var _result = genAbnormalHougekiDamage(hougeki1,friends,enemy,maxFriendHp,maxEnemyHp,friendHp,enemyHp,formationMatch,formations,friendCombinedKind,enemyCombinedKind,date,battle);
         if(result.hougeki == null || (_result != null && (Number(_result.match(/\d+$/g) > Number(result.hougeki.match(/\d+$/g)))))) result.hougeki = _result;
     }
     // 雷撃戦
     var raigeki = dayPhase.getRaigeki();
     if(raigeki != null && friendCombinedKind >= 0 && raigekiOrder == 1){
-        var _result = isAbnormalRaigekiDamage(raigeki,friends,enemy,maxFriendHp,maxEnemyHp,friendHp,enemyHp,formationMatch,formations,friendCombinedKind,enemyCombinedKind,battle);
+        var _result = genAbnormalRaigekiDamage(raigeki,friends,enemy,maxFriendHp,maxEnemyHp,friendHp,enemyHp,formationMatch,formations,friendCombinedKind,enemyCombinedKind,battle);
         if(result.raigeki == null || (_result != null && (Number(_result.match(/\d+$/g) > Number(result.raigeki.match(/\d+$/g)))))) result.raigeki = _result;
     }
     var hougeki2 = dayPhase.getHougeki2();
     if(hougeki2 != null && friendCombinedKind >= 0){
-        var _result = isAbnormalHougekiDamage(hougeki2,friends,enemy,maxFriendHp,maxEnemyHp,friendHp,enemyHp,formationMatch,formations,friendCombinedKind,enemyCombinedKind,date,battle);
+        var _result = genAbnormalHougekiDamage(hougeki2,friends,enemy,maxFriendHp,maxEnemyHp,friendHp,enemyHp,formationMatch,formations,friendCombinedKind,enemyCombinedKind,date,battle);
         if(result.hougeki == null || (_result != null && (Number(_result.match(/\d+$/g) > Number(result.hougeki.match(/\d+$/g)))))) result.hougeki = _result;
     }
     if(raigeki != null && friendCombinedKind >= 0 && raigekiOrder == 2){
-        var _result = isAbnormalRaigekiDamage(raigeki,friends,enemy,maxFriendHp,maxEnemyHp,friendHp,enemyHp,formationMatch,formations,friendCombinedKind,enemyCombinedKind,battle);
+        var _result = genAbnormalRaigekiDamage(raigeki,friends,enemy,maxFriendHp,maxEnemyHp,friendHp,enemyHp,formationMatch,formations,friendCombinedKind,enemyCombinedKind,battle);
         if(result.raigeki == null || (_result != null && (Number(_result.match(/\d+$/g) > Number(result.raigeki.match(/\d+$/g)))))) result.raigeki = _result;
     }
     var hougeki3 = dayPhase.getHougeki3();
     if(hougeki3 != null && friendCombinedKind >= 0){
-        var _result = isAbnormalHougekiDamage(hougeki3,friends,enemy,maxFriendHp,maxEnemyHp,friendHp,enemyHp,formationMatch,formations,friendCombinedKind,enemyCombinedKind,date,battle);
+        var _result = genAbnormalHougekiDamage(hougeki3,friends,enemy,maxFriendHp,maxEnemyHp,friendHp,enemyHp,formationMatch,formations,friendCombinedKind,enemyCombinedKind,date,battle);
         if(result.hougeki == null || (_result != null && (Number(_result.match(/\d+$/g) > Number(result.hougeki.match(/\d+$/g)))))) result.hougeki = _result;
     }
     if(raigeki != null && friendCombinedKind >= 0 && raigekiOrder == -1){
-        var _result = isAbnormalRaigekiDamage(raigeki,friends,enemy,maxFriendHp,maxEnemyHp,friendHp,enemyHp,formationMatch,formations,friendCombinedKind,enemyCombinedKind,battle);
+        var _result = genAbnormalRaigekiDamage(raigeki,friends,enemy,maxFriendHp,maxEnemyHp,friendHp,enemyHp,formationMatch,formations,friendCombinedKind,enemyCombinedKind,battle);
         if(result.raigeki == null || (_result != null && (Number(_result.match(/\d+$/g) > Number(result.raigeki.match(/\d+$/g)))))) result.raigeki = _result;
     }
 }
@@ -293,8 +302,8 @@ function genDayBattle(battle,result,friends,enemy,maxFriendHp,maxEnemyHp,friendH
  * @param {*} friendCombinedKind 
  * @param {*} enemyCombinedKind 
  */
-function isAbnormalRaigekiDamage(atacks,friends,enemy,maxFriendHp,maxEnemyHp,friendHp,enemyHp,formationMatch,formations,friendCombinedType,enemyCombinedType,battle){
-    var _isAbnormalRaigekiDamage = function(origin,target,targetIdx,targetHp,damage,formationMatch,formation,friendCombinedKind,enemyCombinedKind,isFriend,maxOriginHp,nowOriginHp,critical){
+function genAbnormalRaigekiDamage(atacks,friends,enemy,maxFriendHp,maxEnemyHp,friendHp,enemyHp,formationMatch,formations,friendCombinedType,enemyCombinedType,battle){
+    var _genAbnormalRaigekiDamage = function(origin,target,targetIdx,targetHp,damage,formationMatch,formation,friendCombinedKind,enemyCombinedKind,isFriend,maxOriginHp,nowOriginHp,critical){
         if((isFriend ? MODE.ENEMY_ATTACK_ONLY : MODE.FRIENDS_ATTACK_ONLY) || (!MODE.PT && isPt(target)) || (!MODE.CRITICAL && isCritical(critical)) || (!MODE.FORMATION_MATCH.some(function(e){ return e == formationMatch; }))) return null;
         var raigekiPower = getRaigekiPower(origin,target,formationMatch,formation,friendCombinedKind,enemyCombinedKind,isFriend,maxOriginHp,nowOriginHp);
         var finalRaigekiPower = Math.floor(Math.floor(raigekiPower) * (isCritical(critical) ? getCriticalBonus(critical) : 1.0));
@@ -361,7 +370,7 @@ function isAbnormalRaigekiDamage(atacks,friends,enemy,maxFriendHp,maxEnemyHp,fri
                 var origin = origins.get(originIdx);
                 var target = targets.get(targetIdx);
                 var critical = atack.critical != null ? atack.critical[j] : 0;
-                var _result = _isAbnormalRaigekiDamage(
+                var _result = _genAbnormalRaigekiDamage(
                     origin,
                     target,
                     targetIdx,
@@ -401,7 +410,7 @@ function isAbnormalRaigekiDamage(atacks,friends,enemy,maxFriendHp,maxEnemyHp,fri
                 var origin = origins.get(originIdx);
                 var target = targets.get(targetIdx);
                 var critical = atack.critical != null ? atack.critical[j] : 0;
-                var _result = _isAbnormalRaigekiDamage(
+                var _result = _genAbnormalRaigekiDamage(
                     origin,
                     target,
                     targetIdx,
@@ -498,13 +507,13 @@ function isAbnormalRaigekiDamage(atacks,friends,enemy,maxFriendHp,maxEnemyHp,fri
  * @param {Number} friendCombinedKind 
  * @param {Number} enemyCombinedKind 
  */
-function isAbnormalHougekiDamage(atacks,friends,enemy,maxFriendHp,maxEnemyHp,friendHp,enemyHp,formationMatch,formations,friendCombinedType,enemyCombinedType,date,battle){
-    var _isAbnormalHougekiDamage = function(origin,target,targetIdx,targetHp,damage,hougekiType,formationMatch,formation,friendCombinedKind,enemyCombinedKind,isFriend,maxOriginHp,nowOriginHp,critical,date){
+function genAbnormalHougekiDamage(atacks,friends,enemy,maxFriendHp,maxEnemyHp,friendHp,enemyHp,formationMatch,formations,friendCombinedType,enemyCombinedType,date,battle){
+    var _genAbnormalHougekiDamage = function(origin,target,targetIdx,targetHp,damage,hougekiType,formationMatch,formation,friendCombinedKind,enemyCombinedKind,isFriend,maxOriginHp,nowOriginHp,critical,date){
         var stype = target.getStype();
         // 対潜攻撃
          if(stype == 13 ||
             stype == 14 ||
-            (getHougekiKind(origin) == 7 && isCritical(critical) && !MODE.CV_CL_STRICT) ||
+            (getHougekiKind(origin) == 7 && isCritical(critical) && getSkilledBonus(origin,true) > 1 && !MODE.SKILLED) ||
             (isFriend ? MODE.ENEMY_ATTACK_ONLY : MODE.FRIENDS_ATTACK_ONLY) ||
             (!MODE.LAND && target.param.soku == 0) ||
             (!MODE.STRIKE && getStrikingBonus(hougekiType) != 1) ||
@@ -598,7 +607,7 @@ function isAbnormalHougekiDamage(atacks,friends,enemy,maxFriendHp,maxEnemyHp,fri
         }
         
         for(var j = 0;j < atack.damage.length;j++){
-            var result = _isAbnormalHougekiDamage(
+            var result = _genAbnormalHougekiDamage(
                 origin,
                 target,
                 targetIdx,
@@ -648,8 +657,8 @@ function isAbnormalHougekiDamage(atacks,friends,enemy,maxFriendHp,maxEnemyHp,fri
     return _isAbnormalDamage;
 }
 
-function isAbnormalYasenDamage(atacks,friends,enemy,maxFriendHp,maxEnemyHp,friendHp,enemyHp,formationMatch,formations,friendCombinedType,enemyCombinedType,touchPlane,json,battle){
-    var _isAbnormalYasenDamage = function(origin,target,targetIdx,targetHp,damage,formationMatch,formation,friendCombinedKind,enemyCombinedKind,isFriend,maxOriginHp,nowOriginHp,critical,isTouch,spAttack,date){
+function genAbnormalYasenDamage(atacks,friends,enemy,maxFriendHp,maxEnemyHp,friendHp,enemyHp,formationMatch,formations,friendCombinedType,enemyCombinedType,touchPlane,json,battle){
+    var _genAbnormalYasenDamage = function(origin,target,targetIdx,targetHp,damage,formationMatch,formation,friendCombinedKind,enemyCombinedKind,isFriend,maxOriginHp,nowOriginHp,critical,isTouch,spAttack,date){
         var stype = target.getStype();
         // 対潜攻撃
          if(stype == 13 || stype == 14 || (isFriend ? MODE.ENEMY_ATTACK_ONLY : MODE.FRIENDS_ATTACK_ONLY) || (!MODE.LAND && target.param.soku == 0) || (!MODE.PT && isPt(target)) || (!MODE.CRITICAL && isCritical(critical))) return null;
@@ -739,7 +748,7 @@ function isAbnormalYasenDamage(atacks,friends,enemy,maxFriendHp,maxEnemyHp,frien
         }
         // print(origin.fullName,target.fullName,atack.target.length," spAttack:",spAttack)
         for(var j = 0;j < atack.damage.length;j++){
-            var result = _isAbnormalYasenDamage(
+            var result = _genAbnormalYasenDamage(
                 origin,
                 target,
                 targetIdx,
@@ -2110,14 +2119,34 @@ function calcCombinedKind(battle){
 }
 
 function updateFile(){
-    if(getData("isUpdate")) return;
+    if(getData("isUpdate") || !MODE.AUTO_UPDATE) return;
     var nowVersion = IOUtils.toString(URI.create(UPDATE_CHECK_URL), Charset.forName("UTF-8"));
     setTmpData("isUpdate",true);
-    print(VERSION,nowVersion,VERSION >= Number(nowVersion));
     if(VERSION >= Number(nowVersion)) return;
     // URLを構築します。引数にダウンロード先のURLを指定します。
     var url = new URL(FILE_URL);
     var urlConnection= HttpURLConnection.class.cast(url.openConnection());
     urlConnection.connect();
     Files.copy(urlConnection.getInputStream(), Paths.get(EXECUTABLE_FILE), StandardCopyOption.REPLACE_EXISTING); //上書き設定
+}
+
+function loadSetting(){
+    if(getData("isSetting")) return;
+    setTmpData("isSetting",true);
+    var userPath = Paths.get(SETTING_FILE);
+    var user;
+    if(userPath.exists){
+        user = JSON.parse(Files.lines(userPath).collect(Collectors.joining()));
+    } else {
+        user = {};
+    }
+    var result = {};
+    Object.keys(MODE).forEach(function(key){
+        if(key in user){
+            this[key] = result[key] = user[key];
+        } else {
+            result[key] = this[key];
+        }
+    },MODE);
+    Files.copy(new ByteArrayInputStream(JSON.stringify(result, null , "    ").getBytes("utf-8")),Paths.get(SETTING_FILE), StandardCopyOption.REPLACE_EXISTING);
 }
