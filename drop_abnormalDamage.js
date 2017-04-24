@@ -4,6 +4,8 @@
  * @author Nishisonic
  */
 
+load("script/ScriptData.js");
+
 ComparableArrayType = Java.type("java.lang.Comparable[]");
 AppConstants = Java.type("logbook.constants.AppConstants");
 LinkedList = Java.type("java.util.LinkedList");
@@ -22,8 +24,16 @@ Calendar = Java.type("java.util.Calendar");
 TimeZone = Java.type("java.util.TimeZone");
 EnemyShipDto = Java.type("logbook.dto.EnemyShipDto");
 DataType = Java.type("logbook.data.DataType");
+IOUtils = Java.type("org.apache.commons.io.IOUtils");
+Charset = Java.type("java.nio.charset.Charset");
+URI = Java.type("java.net.URI");
+URL = Java.type("java.net.URL");
+HttpURLConnection = Java.type("java.net.HttpURLConnection");
+StandardCopyOption = Java.type("java.nio.file.StandardCopyOption");
 
 var FILE_NAME = "AbnormalDamage.log";
+var VERSION = 0.141;
+data_prefix = "AbnormalDamage_";
 
 var MODE = {
     /** 厳密に測ります。(1ダメでもずれたら検知します) falseにした場合、1ダメージは許容します。 */
@@ -106,6 +116,7 @@ function header() {
 
 function begin() {
     iniFile();
+    updateFile();
 }
 
 // 基本的にjavascriptは遅いので注意
@@ -437,6 +448,8 @@ function isAbnormalRaigekiDamage(atacks,friends,enemy,maxFriendHp,maxEnemyHp,fri
                     } else if(slotitemId == 43){
                         // 応急修理女神
                         friendHp[targetIdx] = maxFriendHp[targetIdx];
+                        // 攻撃側が自軍側でなければ、弾薬も回復
+                        target.bull = target.bullMax;
                         break;
                     }
                 }
@@ -607,7 +620,8 @@ function isAbnormalHougekiDamage(atacks,friends,enemy,maxFriendHp,maxEnemyHp,fri
         if(targetHp[targetIdx] <= 0){
             var item2 = new LinkedList(target.item2);
             if(target instanceof ShipDto) item2.add(target.slotExItem);
-            //print("ダメコン発動！:" + target.fullName)
+            // print("ダメコン発動！:" + target.fullName)
+            // print(target.bull,target.shipInfo.json.api_bull_max);
             for(var k = 0;k < item2.size();k++){
                 var item = item2.get(k);
                 if(item != null){
@@ -619,10 +633,13 @@ function isAbnormalHougekiDamage(atacks,friends,enemy,maxFriendHp,maxEnemyHp,fri
                     } else if(slotitemId == 43){
                         // 応急修理女神
                         targetHp[targetIdx] = maxFriendHp[targetIdx];
+                        // 攻撃側が自軍側でなければ、弾薬も回復
+                        if(!isFriend) target.bull = target.bullMax;
                         break;
                     }
                 }
             }
+            // print(target.bull,target.shipInfo.json.api_bull_max);
         }
     }
     return _isAbnormalDamage;
@@ -757,6 +774,8 @@ function isAbnormalYasenDamage(atacks,friends,enemy,maxFriendHp,maxEnemyHp,frien
                     } else if(slotitemId == 43){
                         // 応急修理女神
                         targetHp[targetIdx] = maxFriendHp[targetIdx];
+                        // 攻撃側が自軍側でなければ、弾薬も回復
+                        if(!isFriend) target.bull = target.bullMax;
                         break;
                     }
                 }
@@ -2085,4 +2104,18 @@ function calcCombinedKind(battle){
     }
     // 不明
     return -1;
+}
+
+function updateFile(){
+    var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/AbnormalDamage/master/update.txt";
+    var FILE_URL = "https://raw.githubusercontent.com/Nishisonic/AbnormalDamage/master/drop_abnormalDamage.js";
+    if(getData("isUpdate")) return;
+    var nowVersion = IOUtils.toString(URI.create(UPDATE_CHECK_URL), Charset.forName("UTF-8"));
+    setTmpData("isUpdate",true);
+    if(VERSION >= nowVersion) return;
+    // URLを構築します。引数にダウンロード先のURLを指定します。
+    var url = new URL(FILE_URL);
+    var urlConnection= HttpURLConnection.class.cast(url.openConnection());
+    urlConnection.connect();
+    Files.copy(urlConnection.getInputStream(), file, StandardCopyOption.REPLACE_EXISTING); //上書き設定
 }
