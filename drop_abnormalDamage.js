@@ -1,6 +1,6 @@
 /**
  * 異常ダメ検知
- * @version 0.1.5β
+ * @version 0.1.6β
  * @author Nishisonic
  */
 
@@ -37,7 +37,7 @@ var FILE_URL = "https://raw.githubusercontent.com/Nishisonic/AbnormalDamage/mast
 var EXECUTABLE_FILE = "script/drop_AbnormalDamage.js";
 var SETTING_FILE = "script/setting_AbnormalDamage.json";
 var LOG_FILE = "AbnormalDamage.log";
-var VERSION = 0.15;
+var VERSION = 0.16;
 data_prefix = "AbnormalDamage_";
 
 var MODE = {
@@ -45,7 +45,10 @@ var MODE = {
     ___COMMENT___:"設定の詳細はプログラムコードを参照して下さい",
     /** 厳密に測ります。(1ダメでもずれたら検知します) falseにした場合、1ダメージは許容します。 */
     STRICT:false,
-    /** 熟練度補正のかかった砲撃も測るか[空母用] */
+    /**
+     * 熟練度補正のかかった砲撃も測るか[空母用]
+     * (=空母のクリティカル砲撃を測るか)
+     */
     SKILLED:false,
     /** 演習も測るか */
     PLACTICE:false,
@@ -97,6 +100,26 @@ var MODE = {
      * ログを吐き出すか
      */
     LOG:true,
+    /**
+     * 調べる期間
+     * FROM_PERIOD:下限
+     * UNTIL_PERIOD:上限
+     * 見方について
+     * XXX_PERIOD:[年,月,日,時,分,秒]
+     * 例:2017冬イベの期間で調べたいとき
+     * FROM_PERIOD:[2017,2,11,21,30,0],
+     * UNTIL_PERIOD:[2017,2,28,11,0,0]
+     */
+    FROM_PERIOD:[0,1,1,0,0,0],
+    UNTIL_PERIOD:[9999,12,31,23,59,59],
+    /**
+     * 調べるのを除外したいマップ
+     * 例:3-5→[3,5]、出撃！北東方面 第五艦隊のE-5→[38,5]
+     */
+    EXCEPTION_MAP:[
+        // 例
+        [0,0],
+    ]
 };
 
 // 変更禁止
@@ -105,8 +128,11 @@ var dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 var CHANGE_CAP_DATE = getJstCalendar(2017, 3, 17, 12, 0, 0).getTime();
 var CHANGE_ID_DATE = getJstCalendar(2017, 4, 5, 12, 0, 0).getTime();
 var CHANGE_SUB_GUN_BONUS_DATE = getJstCalendar(2017, 3, 17, 12, 0, 0).getTime();
+var RETURN_TO_ORIGINAL_SUB_GUN_BONUS_DATE = getJstCalendar(2017, 5, 2, 12, 0, 0).getTime();
 var ADD_CL_LIGHT_GUN_BONUS_DATE = getJstCalendar(2015, 6, 13, 12, 0, 0).getTime();
 var ADD_TRANSPORTATION_FORCE_DATE = getJstCalendar(2015,11,18,12, 0, 0).getTime();
+var fromDate;
+var untilDate;
 
 var MAELSTROM_MAP_LIST = [
     [1,3],
@@ -135,6 +161,8 @@ function begin() {
         iniFile();
     }
     updateFile();
+    fromDate = getJstCalendar(MODE.FROM_PERIOD[0],MODE.FROM_PERIOD[1],MODE.FROM_PERIOD[2],MODE.FROM_PERIOD[3],MODE.FROM_PERIOD[4],MODE.FROM_PERIOD[5]).getTime();
+    untilDate = getJstCalendar(MODE.UNTIL_PERIOD[0],MODE.UNTIL_PERIOD[1],MODE.UNTIL_PERIOD[2],MODE.UNTIL_PERIOD[3],MODE.UNTIL_PERIOD[4],MODE.UNTIL_PERIOD[5]).getTime();
 }
 
 // 基本的にjavascriptは遅いので注意
@@ -155,9 +183,13 @@ function body(battle) {
         /** 夜戦 */
         yasen:null,
     };
+    var date = battle.getBattleDate();
     var ret = new ComparableArrayType(3);
     // -----
-    if(battle.getExVersion() >= 2 && !((!MODE.MAELSTROM && !battle.isPractice() && isMaelstromMap(battle)) || (!MODE.PLACTICE && battle.isPractice()) || (!MODE.EVENT && !battle.isPractice() && battle.getMapCellDto().getMap()[0] >= 22)) && !isException(battle)){
+    if(battle.getExVersion() >= 2
+        && !((!MODE.MAELSTROM && !battle.isPractice() && isMaelstromMap(battle)) || (!MODE.PLACTICE && battle.isPractice()) || (!MODE.EVENT && !battle.isPractice() && battle.getMapCellDto().getMap()[0] >= 22))
+        && !isException(battle)
+        && ((fromDate.before(date) && untilDate.after(date)) || (fromDate.equals(date) || untilDate.equals(date)))){
         var isCombined = battle.isCombined();
         var isEnemyCombined = battle.isEnemyCombined();
         var friends = new LinkedList(battle.getDock().getShips());
@@ -337,9 +369,9 @@ function genAbnormalRaigekiDamage(atacks,friends,enemy,maxFriendHp,maxEnemyHp,fr
                 if(target instanceof ShipDto) tItem2.add(target.slotExItem);
                 writeData += "雷撃:" + origin.fullName + "[雷装(装備含):" + origin.raisou + ",改修火力:" + getRaigekiKaishuPower(oItem2).toFixed(1) + "] -> " + target.fullName + "[装甲(装備含):" + target.soukou + ",HP:" + targetHp + "-" + damage + "=>" + (targetHp-damage) + "]" + crlf;
                 writeData += "攻撃->" + ('000' + origin.shipId).slice(-3) + ":" + origin.fullName + crlf;
-                writeData += toItemString(oItem2) + crlf;
+                writeData += toSlotString(origin);
                 writeData += "防御->" + ('000' + target.shipId).slice(-3) + ":" + target.fullName + crlf;
-                writeData += toItemString(tItem2) + crlf;
+                writeData += toSlotString(target);
                 writeData += "耐久:" + nowOriginHp + " / " + maxOriginHp + " (" + toHPStateString(maxOriginHp,nowOriginHp) + ",x" + getHPPowerBonus(maxOriginHp,nowOriginHp,false).toFixed(1) + ") 弾薬:" + (isFriend ? (origin.bull + " / " + origin.bullMax + " (" + (origin.bull / origin.bullMax * 100).toFixed() + "%,x" + getAmmoBonus(origin,isFriend).toFixed(1) + ")") : "? / ? (100%,x" + getAmmoBonus(origin,isFriend).toFixed(1) + ")") + crlf;
                 writeData += "クリティカル:" + (isCritical(critical) ? "あり(x1.5)" : "なし(x1.0)") + crlf;
                 writeData += "雷撃火力:" + raigekiPower.toFixed(1) + " 最終雷撃火力:" + finalRaigekiPower.toFixed(1) + crlf;
@@ -347,7 +379,6 @@ function genAbnormalRaigekiDamage(atacks,friends,enemy,maxFriendHp,maxEnemyHp,fr
                 writeData += "想定通常dmg:" + minDmg + " - " + maxDmg + crlf;
                 writeData += "想定割合dmg:" + minPropDmg + " - " + maxPropDmg + crlf;
                 writeData += "想定轟スdmg:" + minSunkDmg + " - " + maxSunkDmg + crlf;
-                writeData += "HP1置き換え:" + "残HP->" + (targetHp - damage) + crlf;
                 var basicPower = origin.raisou + getRaigekiKaishuPower(oItem2) + getCombinedRaigekiPoewrBonus(friendCombinedKind,enemyCombinedKind,isFriend) + 5;
                 var _raigekiPower = basicPower * getFormationMatchBonus(formationMatch) * getFormationBonus(formation,true) * getHPPowerBonus(maxOriginHp,nowOriginHp,true);
                 write(writeData);
@@ -521,7 +552,7 @@ function genAbnormalHougekiDamage(atacks,friends,enemy,maxFriendHp,maxEnemyHp,fr
         // 対潜攻撃
          if(stype == 13 ||
             stype == 14 ||
-            (getHougekiKind(origin) == 7 && isCritical(critical) && getSkilledBonus(origin,true) > 1 && !MODE.SKILLED) ||
+            (getHougekiKind(origin) == 7 && getSkilledBonus(origin,critical,false) > 1 && !MODE.SKILLED) ||
             (isFriend ? MODE.ENEMY_ATTACK_ONLY : MODE.FRIENDS_ATTACK_ONLY) ||
             (!MODE.LAND && target.param.soku == 0) ||
             (!MODE.STRIKE && getStrikingBonus(hougekiType) != 1) ||
@@ -531,17 +562,34 @@ function genAbnormalHougekiDamage(atacks,friends,enemy,maxFriendHp,maxEnemyHp,fr
             (!MODE.FORMATION_MATCH.some(function(e){ return e == formationMatch; }))) return null;
         // 砲撃
         var hougekiPower = getHougekiPower(origin,target,formationMatch,formation,friendCombinedKind,enemyCombinedKind,isFriend,maxOriginHp,nowOriginHp,date);
-        var minFinalHougekiPower = Math.floor(Math.floor(Math.floor(hougekiPower * getShusekiBonus(origin,target)) * getAPshellBonus(origin,target)) * (isCritical(critical) ? (getCriticalBonus(critical) * getSkilledBonus(origin,true)) : 1.0)) * getStrikingBonus(hougekiType) * getPtBonus(origin,target);
-        var maxFinalHougekiPower = Math.floor(Math.floor(Math.floor(hougekiPower * getShusekiBonus(origin,target)) * getAPshellBonus(origin,target)) * (isCritical(critical) ? (getCriticalBonus(critical) * getSkilledBonus(origin,false)) : 1.0)) * getStrikingBonus(hougekiType) * getPtBonus(origin,target);
+        var minFinalHougekiPower = Math.floor(Math.floor(Math.floor(hougekiPower * getShusekiBonus(origin,target)) * getAPshellBonus(origin,target)) * getCriticalBonus(critical) * getSkilledBonus(origin,critical,true)) * getStrikingBonus(hougekiType) * getPtBonus(origin,target);
+        var maxFinalHougekiPower = Math.floor(Math.floor(Math.floor(hougekiPower * getShusekiBonus(origin,target)) * getAPshellBonus(origin,target)) * getCriticalBonus(critical) * getSkilledBonus(origin,critical,false)) * getStrikingBonus(hougekiType) * getPtBonus(origin,target);
         // 仮説:最終攻撃力
-        if(MODE.HYPOTHESIS_ATK && getSkilledBonus(origin,true) == 1 && !isPt(target)){
+        if(MODE.HYPOTHESIS_ATK){
             if(isAPshellBonusTarget(target.stype)){
-                minFinalHougekiPower = maxFinalHougekiPower = Math.floor(Math.floor(Math.floor(hougekiPower * getShusekiBonus(origin,target)) * getStrikingBonus(hougekiType) * getAPshellBonus(origin,target)) * getCriticalBonus(critical));
+                // 「装甲の厚い敵大型艦艇」及び「地上施設」
+                // 最終攻撃力 = [[[キャップ後火力*集積地棲姫特効]*弾着観測射撃補正*徹甲弾補正]*クリティカル補正*熟練度補正]
+                minFinalHougekiPower = Math.floor(Math.floor(Math.floor(hougekiPower * getShusekiBonus(origin,target)) * getStrikingBonus(hougekiType) * getAPshellBonus(origin,target)) * getCriticalBonus(critical) * getSkilledBonus(origin,critical,true));
+                maxFinalHougekiPower = Math.floor(Math.floor(Math.floor(hougekiPower * getShusekiBonus(origin,target)) * getStrikingBonus(hougekiType) * getAPshellBonus(origin,target)) * getCriticalBonus(critical) * getSkilledBonus(origin,critical,false));
             } else if(isCritical(critical) && getStrikingBonus(hougekiType) > 1){
-                minFinalHougekiPower = maxFinalHougekiPower = Math.floor(Math.floor(hougekiPower) * getCriticalBonus(critical) * getStrikingBonus(hougekiType));
+                // クリティカルかつ弾着観測射撃
+                // 最終攻撃力 = [[キャップ後火力*PT小鬼群特効]*クリティカル補正*弾着観測射撃補正]
+                minFinalHougekiPower = maxFinalHougekiPower = Math.floor(Math.floor(hougekiPower * getPtBonus(origin,target)) * getCriticalBonus(critical) * getStrikingBonus(hougekiType));
             } else {
-                minFinalHougekiPower = maxFinalHougekiPower = Math.floor(Math.floor(hougekiPower) * getCriticalBonus(critical)) * getStrikingBonus(hougekiType);
-            }
+                // それ以外
+                // 最終攻撃力 = [[キャップ後攻撃力*PT小鬼群特効]*クリティカル補正*熟練度補正]*弾着観測射撃補正
+                minFinalHougekiPower = Math.floor(Math.floor(hougekiPower * getPtBonus(origin,target)) * getCriticalBonus(critical) * getSkilledBonus(origin,critical,true)) * getStrikingBonus(hougekiType);
+                maxFinalHougekiPower = Math.floor(Math.floor(hougekiPower * getPtBonus(origin,target)) * getCriticalBonus(critical) * getSkilledBonus(origin,critical,false)) * getStrikingBonus(hougekiType);
+            }/*
+            if(getHougekiKind(origin) == 7){
+                if(isAPshellBonusTarget(target.stype)){
+                    minFinalHougekiPower = Math.floor(Math.floor(hougekiPower) * getCriticalBonus(critical) * getSkilledBonus(origin,critical,true));
+                    maxFinalHougekiPower = Math.floor(Math.floor(hougekiPower) * getCriticalBonus(critical) * getSkilledBonus(origin,critical,false));
+                } else {
+                    minFinalHougekiPower = Math.floor(Math.floor(hougekiPower) * getSkilledBonus(origin,critical,true) * getCriticalBonus(critical));
+                    maxFinalHougekiPower = Math.floor(Math.floor(hougekiPower) * getSkilledBonus(origin,critical,false) * getCriticalBonus(critical));
+                }
+            }*/
         }
         var minDefensePower = target.soukou * 0.7;
         var maxDefensePower = target.soukou * 1.3 - 0.6;
@@ -567,21 +615,20 @@ function genAbnormalHougekiDamage(atacks,friends,enemy,maxFriendHp,maxEnemyHp,fr
                 if(target instanceof ShipDto) tItem2.add(target.slotExItem);
                 writeData += "砲撃:" + origin.fullName + "[火力(装備含):" + origin.karyoku + ",改修火力:" + getHougekiKaishuPower(oItem2,date).toFixed(1) + ",空母用->雷装:" + origin.slotParam.raig + ",爆装:" + origin.slotParam.baku + "] -> " + target.fullName + "[装甲(装備含):" + target.soukou + ",HP:" + targetHp + "-" + damage + "=>" + (targetHp-damage) + "]" + crlf;
                 writeData += "攻撃->" + ('000' + origin.shipId).slice(-3) + ":" + origin.fullName + crlf;
-                writeData += toItemString(oItem2) + crlf;
+                writeData += toSlotString(origin);
                 writeData += "防御->" + ('000' + target.shipId).slice(-3) + ":" + target.fullName + crlf;
-                writeData += toItemString(tItem2) + crlf;
+                writeData += toSlotString(target);
                 writeData += "耐久:" + nowOriginHp + " / " + maxOriginHp + " (" + toHPStateString(maxOriginHp,nowOriginHp) + ",x" + getHPPowerBonus(maxOriginHp,nowOriginHp,false).toFixed(1) + ") 弾薬:" + (isFriend ? (origin.bull + " / " + origin.bullMax + " (" + (origin.bull / origin.bullMax * 100).toFixed() + "%,x" + getAmmoBonus(origin,isFriend).toFixed(1) + ")") : "? / ? (100%,x" + getAmmoBonus(origin,isFriend).toFixed(1) + ")") + crlf;
                 writeData += "陸上特効:x" + getLandBonus(origin,target).toFixed(1) + " WG42加算特効:+" + getWGBonus(origin,target) + " 軽巡軽量砲補正:+" + getCLLightGunPowerBonus(origin,date).toFixed(1) + " Zara砲フィット補正:+" + getZaraGunFitPowerBonus(origin).toFixed(1) + crlf;
                 writeData += "集積地特効:x" + getShusekiBonus(origin,target).toFixed(1) + " 徹甲弾補正:x" + getAPshellBonus(origin,target).toFixed(2) + " PT小鬼補正:x" + getPtBonus(origin,target).toFixed(1) + crlf;
                 writeData += "砲撃攻撃種別:" + toStrikingKindString(hougekiType) + crlf;
                 writeData += "クリティカル:" + (isCritical(critical) ? "あり(x1.5)" : "なし(x1.0)") + crlf;
-                writeData += "熟練度倍率:x" + getSkilledBonus(origin,false).toFixed(1) + " - x" + getSkilledBonus(origin,true).toFixed(1) + crlf;
+                writeData += "熟練度倍率:x" + getSkilledBonus(origin,2,true).toFixed(3) + " - x" + getSkilledBonus(origin,2,false).toFixed(3) + crlf;
                 writeData += "砲撃火力:" + hougekiPower.toFixed(1) + " 最終砲撃火力:" + minFinalHougekiPower.toFixed(1) + " - " + maxFinalHougekiPower.toFixed(1) + crlf;
                 writeData += "防御力範囲:" + minDefensePower.toFixed(1) + " - " + maxDefensePower.toFixed(1) + crlf;
                 writeData += "想定通常dmg:" + minDmg + " - " + maxDmg + crlf;
                 writeData += "想定割合dmg:" + minPropDmg + " - " + maxPropDmg + crlf;
                 writeData += "想定轟スdmg:" + minSunkDmg + " - " + maxSunkDmg + crlf;
-                writeData += "HP1置き換え:" + "残HP->" + (targetHp - damage) + crlf;
                 write(writeData);
             }
             return origin.fullName + "→" + target.fullName + " dmg:" + damage + " 想定:" + (minDmg - damage > 0 ? ("-" + (minDmg - damage)) : ("+" + (damage - maxDmg)));
@@ -699,9 +746,9 @@ function genAbnormalYasenDamage(atacks,friends,enemy,maxFriendHp,maxEnemyHp,frie
                 if(target instanceof ShipDto) tItem2.add(target.slotExItem);
                 writeData += "夜戦:" + origin.fullName + "[火力(装備含):" + origin.karyoku + ",雷装(装備含):" + origin.raisou + ",改修火力:" + getYasenKaishuPower(oItem2,date).toFixed(1) + "] -> " + target.fullName + "[装甲(装備含):" + target.soukou + ",HP:" + targetHp + "-" + damage + "=>" + (targetHp-damage) + "]" + crlf;
                 writeData += "攻撃->" + ('000' + origin.shipId).slice(-3) + ":" + origin.fullName + crlf;
-                writeData += toItemString(oItem2) + crlf;
+                writeData += toSlotString(origin);
                 writeData += "防御->" + ('000' + target.shipId).slice(-3) + ":" + target.fullName + crlf;
-                writeData += toItemString(tItem2) + crlf;
+                writeData += toSlotString(target);
                 writeData += "耐久:" + nowOriginHp + " / " + maxOriginHp + " (" + toHPStateString(maxOriginHp,nowOriginHp) + ",x" + getHPPowerBonus(maxOriginHp,nowOriginHp,false).toFixed(1) + ") 弾薬:" + (isFriend ? (origin.bull + " / " + origin.bullMax + " (" + (origin.bull / origin.bullMax * 100).toFixed() + "%,x" + getAmmoBonus(origin,isFriend).toFixed(1) + ")") : "? / ? (100%,x" + getAmmoBonus(origin,isFriend).toFixed(1) + ")") + crlf;
                 writeData += "陸上特効:x" + getLandBonus(origin,target).toFixed(1) + " WG42加算特効:+" + getWGBonus(origin,target) + " 軽巡軽量砲補正:+" + getCLLightGunPowerBonus(origin,date).toFixed(1) + " Zara砲フィット補正:+" + getZaraGunFitPowerBonus(origin).toFixed(1) + crlf;
                 writeData += "集積地特効:x" + getShusekiBonus(origin,target).toFixed(1) + " PT小鬼補正:x" + getPtBonus(origin,target).toFixed(1) + crlf;
@@ -712,7 +759,6 @@ function genAbnormalYasenDamage(atacks,friends,enemy,maxFriendHp,maxEnemyHp,frie
                 writeData += "想定通常dmg:" + minDmg + " - " + maxDmg + crlf;
                 writeData += "想定割合dmg:" + minPropDmg + " - " + maxPropDmg + crlf;
                 writeData += "想定轟スdmg:" + minSunkDmg + " - " + maxSunkDmg + crlf;
-                writeData += "HP1置き換え:" + "残HP->" + (targetHp - damage) + crlf;
                 write(writeData);
             }
             return origin.fullName + "→" + target.fullName + " dmg:" + damage + " 想定:" + (minDmg - damage > 0 ? ("-" + (minDmg - damage)) : ("+" + (damage - maxDmg)));
@@ -912,7 +958,7 @@ function getHougekiKaishuPower(item2,date){
     return item2.stream().filter(function(item){
         return item != null;
     }).mapToDouble(function(item){
-        if(item.type2 == 4 && CHANGE_SUB_GUN_BONUS_DATE.before(date)){
+        if(item.type2 == 4 && CHANGE_SUB_GUN_BONUS_DATE.before(date) && RETURN_TO_ORIGINAL_SUB_GUN_BONUS_DATE.after(date)){
             switch(item.type3){
                 case  4: return 0.3 * item.level; // 副砲
                 case 16: return 0.2 * item.level; // 高角副砲
@@ -950,7 +996,7 @@ function getYasenKaishuPower(item2,date){
     return item2.stream().filter(function(item){
         return item != null;
     }).mapToDouble(function(item){
-        if(item.type2 == 4 && CHANGE_SUB_GUN_BONUS_DATE.before(date)){
+        if(item.type2 == 4 && CHANGE_SUB_GUN_BONUS_DATE.before(date) && RETURN_TO_ORIGINAL_SUB_GUN_BONUS_DATE.after(date)){
             switch(item.type3){
                 case  4: return 0.3 * item.level; // 副砲
                 case 16: return 0.2 * item.level; // 高角副砲
@@ -1175,12 +1221,18 @@ function getLandBonus(_origin,_target){
             case 1668:
             case 1669:
             case 1670:
-            case 1671: // 離島棲姫
-            case 1672: return 1.75;
+            case 1671:
+            case 1672: // 離島棲姫
+            //case 1725:
+            //case 1726:
+            //case 1727: // 北端上陸姫
+                return 1.75;
             case 1665:
-            case 1666: // 砲台小鬼
-            case 1667: return 1.0;
-            default:  return 2.5;
+            case 1666:
+            case 1667: // 砲台小鬼
+                return 1.0;
+            default:
+                return 2.5;
         }
     }(_origin,_target);
     var originalBonus = function(origin,target){
@@ -1202,6 +1254,9 @@ function getLandBonus(_origin,_target){
             case 1670:
             case 1671: 
             case 1672: // 離島棲姫
+            //case 1725:
+            //case 1726:
+            //case 1727: // 北端上陸姫
                 var wg42Bonus = (wg42 >= 2) ? 2.1 : (wg42 == 1 ? 1.4 : 1.0);
                 return wg42Bonus;
             case 1665:
@@ -1611,16 +1666,16 @@ function isCritical(critical){
  * @param {logbook.dto.ShipDto} ship 
  * @return {Number}
  */
-function getSkilledBonus(origin,isMin,isAir){
-    var SKILLED_BONUS = [
-        [0.00,0.03],
-        [0.04,0.05],
-        [0.07,0.08],
-        [0.09,0.10],
-        [0.11,0.12],
-        [0.13,0.16],
-        [0.16,0.16],
-        [0.20,0.20],
+function getSkilledBonus(origin,critical,isMin,isAir){
+    var SKILLED = [
+        { INTERNAL:[  0,  9], DEPENDENCE_BONUS:[ 0, 0] }, // なし [0.00-0.03]
+        { INTERNAL:[ 10, 24], DEPENDENCE_BONUS:[ 1, 1] }, // |    [0.04-0.05]
+        { INTERNAL:[ 25, 39], DEPENDENCE_BONUS:[ 2, 2] }, // ||   [0.07-0.08]
+        { INTERNAL:[ 40, 54], DEPENDENCE_BONUS:[ 3, 3] }, // |||  [0.09-0.10]
+        { INTERNAL:[ 55, 69], DEPENDENCE_BONUS:[ 4, 4] }, // \    [0.11-0.12]
+        { INTERNAL:[ 70, 84], DEPENDENCE_BONUS:[ 5, 7] }, // \\   [0.13-0.16]
+        { INTERNAL:[ 85, 99], DEPENDENCE_BONUS:[ 7, 7] }, // \\\  [0.16-0.16]
+        { INTERNAL:[100,120], DEPENDENCE_BONUS:[10,10] }, // >>   [0.20-0.20]
     ]
     var isSkilledObject = function(type2){
         switch(type2){
@@ -1638,18 +1693,18 @@ function getSkilledBonus(origin,isMin,isAir){
     var item2 = new LinkedList(origin.item2);
     if(origin instanceof ShipDto) item2.add(origin.slotExItem);
     var isAirBattle = typeof isAir != 'undefined' ? isAir : false;
-    if(getHougekiKind(origin) == 7 || isAirBattle){
+    if(((getHougekiKind(origin) == 7 || isAirBattle) && isCritical(critical)) && (origin instanceof ShipDto)){
+        var slots = origin.getOnSlot();
         for(var i = 0;i < item2.size();i++){
             var item = item2.get(i);
-            if(item != null && isSkilledObject(item.type2)){
+            // 補強増設対策
+            if(item != null && isSkilledObject(item.type2) && i < slots.length && slots[i] > 0){
                 // print(i,item.name,item.getAlv())
                 var alv = item.getAlv();
-                if(alv > 0){
-                    if(i == 0){
-                        result += SKILLED_BONUS[alv][(isMin ? 0 : 1)];
-                    } else {
-                        result += SKILLED_BONUS[alv][(isMin ? 0 : 1)] / 2;
-                    }
+                if(i == 0){
+                    result += Math.floor(Math.sqrt(SKILLED[alv].INTERNAL[(isMin ? 0 : 1)]) + SKILLED[alv].DEPENDENCE_BONUS[(isMin ? 0 : 1)]) / 100;
+                } else {
+                    result += Math.floor(Math.sqrt(SKILLED[alv].INTERNAL[(isMin ? 0 : 1)]) + SKILLED[alv].DEPENDENCE_BONUS[(isMin ? 0 : 1)]) / 200;
                 }
             }
         }
@@ -1899,6 +1954,8 @@ function isException(battle){
     ]
     return EXCEPTION_MAP_LIST.some(function(x,i,a){
         return area == x[0] && info == x[1];
+    }) || MODE.EXCEPTION_MAP.some(function(x,i,a){
+        return area == x[0] && info == x[1];
     }); // 強制除去
 }
 
@@ -1959,7 +2016,7 @@ function iniFile(p){
     }
 }
 
-function toItemString(item2){
+function toSlotString(origin){
     var getLevelText = function(lv){
         switch(lv){
             case 0: return "";
@@ -1987,9 +2044,28 @@ function toItemString(item2){
             case 7: return " >>";
         }
     }
-    return item2.stream().map(function(item){
-        return (item != null ? (("000" + item.slotitemId).slice(-3) + ":" + item.name + getAlvText(item.alv) + getLevelText(item.level)) : "---:装備なし");
-    }).collect(Collectors.joining(crlf));
+    var result = "";
+    for(var i = 0;i < origin.item2.size();i++){
+        var item = origin.item2.get(i);
+        if(item != null){
+            var now = ('   ' + (origin instanceof ShipDto ? origin.getOnSlot()[i] : origin.getMaxeq() == null ? '???' : origin.getMaxeq()[i])).slice(-3);
+            var max = ('   ' + (origin.getMaxeq() == null ? '???' : origin.getMaxeq()[i])).slice(-3);
+            result += "[" + now + "/" + max + "]:" + item.name + getAlvText(item.alv) + getLevelText(item.level);
+        } else {
+            result += "[   /   ]:装備なし";
+        }
+        result += crlf;
+    }
+    if(origin instanceof ShipDto){
+        var slotExItem = origin.slotExItem;
+        if(slotExItem != null){
+            result += " 補   強 :" + slotExItem.name + getAlvText(slotExItem.alv) + getLevelText(slotExItem.level);
+        } else {
+            result += " 補   強 :装備なし";
+        }
+        result += crlf;
+    }
+    return result;
 }
 
 function getEnemy(battle){
@@ -2154,6 +2230,7 @@ function loadSetting(){
         user = {};
     }
     var result = {};
+    
     Object.keys(MODE).forEach(function(key){
         if(key in user){
             this[key] = result[key] = user[key];
