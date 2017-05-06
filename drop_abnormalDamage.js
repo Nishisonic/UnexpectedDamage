@@ -1,6 +1,6 @@
 /**
  * 異常ダメ検知
- * @version 0.1.6β
+ * @version 0.1.7β
  * @author Nishisonic
  */
 
@@ -37,7 +37,7 @@ var FILE_URL = "https://raw.githubusercontent.com/Nishisonic/AbnormalDamage/mast
 var EXECUTABLE_FILE = "script/drop_AbnormalDamage.js";
 var SETTING_FILE = "script/setting_AbnormalDamage.json";
 var LOG_FILE = "AbnormalDamage.log";
-var VERSION = 0.16;
+var VERSION = 0.17;
 data_prefix = "AbnormalDamage_";
 
 var MODE = {
@@ -2225,7 +2225,7 @@ function loadSetting(){
     var userPath = Paths.get(SETTING_FILE);
     var user;
     if(Files.exists(userPath)){
-        user = JSON.parse(Files.lines(userPath).collect(Collectors.joining()));
+        user = JSON.parse(String(Files.lines(userPath).collect(Collectors.joining())).replace(/\uFEFF/,""));
     } else {
         user = {};
     }
