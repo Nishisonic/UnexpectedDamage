@@ -1,7 +1,7 @@
 # 異常ダメージ検知
 
-[![Release](https://img.shields.io/badge/gem-v0.1.7-brightgreen.svg)](https://github.com/Nishisonic/QuestStateEx/releases/latest)
-[![License](https://img.shields.io/npm/l/express.svg)](https://docs.google.com/spreadsheets/d/1gSYgCPTMV7_bDerWTs_KCgVnhdaJQnFVFXcw5cFCqos/edit#gid=761755938)
+[![Release](https://img.shields.io/badge/gem-v0.1.7-brightgreen.svg)](https://github.com/Nishisonic/AbnormalDamage/releases/latest)
+[![License](https://img.shields.io/npm/l/express.svg)](https://github.com/Nishisonic/AbnormalDamage/blob/master/LICENSE)
 
 ## 紹介
 
