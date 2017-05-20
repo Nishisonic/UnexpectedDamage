@@ -1,6 +1,6 @@
 /**
  * 異常ダメ検知
- * @version 0.2.0β
+ * @version 0.2.1β
  * @author Nishisonic
  */
 
@@ -37,7 +37,7 @@ var FILE_URL = "https://raw.githubusercontent.com/Nishisonic/AbnormalDamage/mast
 var EXECUTABLE_FILE = "script/drop_AbnormalDamage.js";
 var SETTING_FILE = "script/setting_AbnormalDamage.json";
 var LOG_FILE = "AbnormalDamage.log";
-var VERSION = 0.20;
+var VERSION = 0.21;
 data_prefix = "AbnormalDamage_";
 
 var MODE = {
@@ -919,10 +919,8 @@ function genAbnormalTaisenDamage(origin,target,targetIdx,targetHp,damage,formati
     // 対潜
     var taisenPower = getTaisenPower(origin,target,formationMatch,formation,friendCombinedKind,enemyCombinedKind,isFriend,maxOriginHp,nowOriginHp,battle.getBattleDate());
     // 仮置き_(:3」∠)_
-    var item2 = new LinkedList(origin.item2);
-    if(origin instanceof ShipDto) item2.add(origin.slotExItem);
-    var minFinalTaisenPower = Math.floor(Math.floor(taisenPower + get95BakuraiNum(item2) + get2BakuraiNum(item2) * 2) * getCriticalBonus(critical)) * getSkilledBonus(origin,critical,true,true);
-    var maxFinalTaisenPower = Math.floor(Math.floor(taisenPower + get95BakuraiNum(item2) + get2BakuraiNum(item2) * 2) * getCriticalBonus(critical)) * getSkilledBonus(origin,critical,false,true);
+    var minFinalTaisenPower = Math.floor(Math.floor(taisenPower + get95BakuraiNum(oItem2) + get2BakuraiNum(oItem2) * 2) * getCriticalBonus(critical)) * getSkilledBonus(origin,critical,true,true);
+    var maxFinalTaisenPower = Math.floor(Math.floor(taisenPower + get95BakuraiNum(oItem2) + get2BakuraiNum(oItem2) * 2) * getCriticalBonus(critical)) * getSkilledBonus(origin,critical,false,true);
     var minDefensePower = target.soukou * 0.7;
     var maxDefensePower = target.soukou * 1.3 - 0.6;
     var minDmg = Math.floor((minFinalTaisenPower - maxDefensePower) * getAmmoBonus(origin,isFriend));
@@ -939,7 +937,7 @@ function genAbnormalTaisenDamage(origin,target,targetIdx,targetHp,damage,formati
             var writeData = "";
             writeData += "日付:" + dateFormat.format(battle.getBattleDate()) + crlf;
             writeData += "戦闘場所:" + (battle.isPractice() ? "演習" : (battle.getMapCellDto().getMap()[0] + "-" + battle.getMapCellDto().getMap()[1] + "-" + battle.getMapCellDto().getMap()[2])) + crlf;
-            writeData += "艦隊:味方->" + toFriendCombinedKindString(friendCombinedKind) + " 敵->" + toEnemyCombinedKindString(enemyCombinedKind) + " 連合艦隊補正:" + getCombinedHougekiPoewrBonus(friendCombinedKind,enemyCombinedKind,isFriend) + crlf;
+            writeData += "艦隊:味方->" + toFriendCombinedKindString(friendCombinedKind) + " 敵->" + toEnemyCombinedKindString(enemyCombinedKind) + crlf;
             writeData += "交戦形態:" + toFormationMatchString(formationMatch) + " 攻撃側陣形:" + toFormationString(formation,false,true) + crlf;
             writeData += "対潜:" + origin.fullName + "[対潜(装備含):" + origin.taisen + ",改修火力:" + getTaisenKaishuPower(oItem2).toFixed(1) + ",空母用->対潜:" + origin.slotParam.taisen + "] -> " + target.fullName + "[装甲(装備含):" + target.soukou + ",HP:" + targetHp + "-" + damage + "=>" + (targetHp-damage) + "](想定:" + (damage > maxDmg ? "+" + (damage - maxDmg) : "-" + (minDmg - damage)) + ")" + crlf;
             writeData += "攻撃->" + ('0000' + origin.getShipId()).slice(-4) + ":" + origin.fullName + crlf;
@@ -949,7 +947,8 @@ function genAbnormalTaisenDamage(origin,target,targetIdx,targetHp,damage,formati
             writeData += "耐久:" + nowOriginHp + " / " + maxOriginHp + " (" + toHPStateString(maxOriginHp,nowOriginHp) + ",x" + getHPPowerBonus(maxOriginHp,nowOriginHp,false).toFixed(1) + ") 弾薬:" + (isFriend ? (origin.bull + " / " + origin.bullMax + " (" + (origin.bull / origin.bullMax * 100).toFixed() + "%,x" + getAmmoBonus(origin,isFriend).toFixed(1) + ")") : "? / ? (100%,x" + getAmmoBonus(origin,isFriend).toFixed(1) + ")") + crlf;
             writeData += "対潜攻撃種別:" + (getTaisenKind(origin) == 7 ? "航空攻撃(8)" : "爆雷攻撃(13)") + crlf;
             writeData += "対潜シナジー:" + (hasTaisenSynergy(oItem2) ? "発動(x1.15)" : "なし(x1.0)") + crlf;
-            writeData += "新爆雷シナジー:" + (hasBakuraiSynergy(oItem2) ? "発動(x1.1)" : "なし(x1.0)") + crlf;
+            writeData += "新対潜シナジー:" + (hasNewTaisenSynergy(oItem2) ? "発動(+(x0.1))" : "なし(+(x0.0))") + crlf;
+            writeData += "新爆雷シナジー:" + (hasBakuraiSynergy(oItem2) ? "発動(+(x0.15))" : "なし(+(x0.0))") + crlf;
             writeData += "九五式爆雷の数:" + get95BakuraiNum(oItem2) + " 二式爆雷の数:" + get2BakuraiNum(oItem2) + crlf;
             writeData += "クリティカル:" + (isCritical(critical) ? "あり(x1.5)" : "なし(x1.0)") + crlf;
             writeData += "熟練度倍率:x" + getSkilledBonus(origin,2,true,true).toFixed(3) + " - x" + getSkilledBonus(origin,2,false,true).toFixed(3) + crlf;
