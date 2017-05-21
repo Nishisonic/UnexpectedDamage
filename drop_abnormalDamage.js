@@ -1,6 +1,6 @@
 /**
  * 異常ダメ検知
- * @version 0.2.1β
+ * @version 0.2.2β
  * @author Nishisonic
  */
 
@@ -37,7 +37,7 @@ var FILE_URL = "https://raw.githubusercontent.com/Nishisonic/AbnormalDamage/mast
 var EXECUTABLE_FILE = "script/drop_AbnormalDamage.js";
 var SETTING_FILE = "script/setting_AbnormalDamage.json";
 var LOG_FILE = "AbnormalDamage.log";
-var VERSION = 0.21;
+var VERSION = 0.22;
 data_prefix = "AbnormalDamage_";
 
 var MODE = {
@@ -947,8 +947,8 @@ function genAbnormalTaisenDamage(origin,target,targetIdx,targetHp,damage,formati
             writeData += "耐久:" + nowOriginHp + " / " + maxOriginHp + " (" + toHPStateString(maxOriginHp,nowOriginHp) + ",x" + getHPPowerBonus(maxOriginHp,nowOriginHp,false).toFixed(1) + ") 弾薬:" + (isFriend ? (origin.bull + " / " + origin.bullMax + " (" + (origin.bull / origin.bullMax * 100).toFixed() + "%,x" + getAmmoBonus(origin,isFriend).toFixed(1) + ")") : "? / ? (100%,x" + getAmmoBonus(origin,isFriend).toFixed(1) + ")") + crlf;
             writeData += "対潜攻撃種別:" + (getTaisenKind(origin) == 7 ? "航空攻撃(8)" : "爆雷攻撃(13)") + crlf;
             writeData += "対潜シナジー:" + (hasTaisenSynergy(oItem2) ? "発動(x1.15)" : "なし(x1.0)") + crlf;
-            writeData += "新対潜シナジー:" + (hasNewTaisenSynergy(oItem2) ? "発動(+(x0.1))" : "なし(+(x0.0))") + crlf;
-            writeData += "新爆雷シナジー:" + (hasBakuraiSynergy(oItem2) ? "発動(+(x0.15))" : "なし(+(x0.0))") + crlf;
+            writeData += "新対潜シナジー:" + (hasNewTaisenSynergy(oItem2) ? "発動(+(x0.15))" : "なし(+(x0.0))") + crlf;
+            writeData += "新爆雷シナジー:" + (hasBakuraiSynergy(oItem2) ? "発動(+(x0.1))" : "なし(+(x0.0))") + crlf;
             writeData += "九五式爆雷の数:" + get95BakuraiNum(oItem2) + " 二式爆雷の数:" + get2BakuraiNum(oItem2) + crlf;
             writeData += "クリティカル:" + (isCritical(critical) ? "あり(x1.5)" : "なし(x1.0)") + crlf;
             writeData += "熟練度倍率:x" + getSkilledBonus(origin,2,true,true).toFixed(3) + " - x" + getSkilledBonus(origin,2,false,true).toFixed(3) + crlf;
@@ -1064,7 +1064,7 @@ function getTaisenPower(origin,target,formationMatch,formation,friendCombinedKin
     }).sum();
     var basicPower = 2 * Math.sqrt(taisenShip) + 1.5 * taisenItem + getTaisenKaishuPower(item2) + (getTaisenKind(origin) == 7 ? 8 : 13);
     // キャップ前攻撃力 = 基本攻撃力*交戦形態補正*攻撃側陣形補正*損傷状態補正*従来対潜シナジー*新爆雷シナジー
-    var power = basicPower * getFormationMatchBonus(formationMatch) * getFormationBonus(formation,false,true) * getHPPowerBonus(maxOriginHp,nowOriginHp,false) * (hasTaisenSynergy(item2) ? 1.15 : 1.0) * (1 + (hasNewTaisenSynergy(item2) ? 0.1 : 0) + (hasBakuraiSynergy(item2) ? 0.15 : 0));
+    var power = basicPower * getFormationMatchBonus(formationMatch) * getFormationBonus(formation,false,true) * getHPPowerBonus(maxOriginHp,nowOriginHp,false) * (hasTaisenSynergy(item2) ? 1.15 : 1.0) * (1 + (hasNewTaisenSynergy(item2) ? 0.15 : 0) + (hasBakuraiSynergy(item2) ? 0.1 : 0));
     // キャップ後攻撃力 = min(キャップ値,キャップ値+√(キャップ前攻撃力-キャップ値))
     return softcap(power,100);
 }
@@ -1083,7 +1083,7 @@ function hasTaisenSynergy(item2){
 /**
  * (新)対潜シナジー
  * ソナー + 爆雷 ← TDN爆雷なことに注意
- * 1.1倍補正
+ * 1.15倍補正
  */
 function hasNewTaisenSynergy(item2){
     // 爆雷,ソナー=18 両方必要なので、処理を変えないこと
@@ -1094,7 +1094,7 @@ function hasNewTaisenSynergy(item2){
 /**
  * 新爆雷シナジー
  * 爆雷"投射機" + 爆雷
- * 1.15倍補正
+ * 1.1倍補正
  */
 function hasBakuraiSynergy(item2){
     var bakuraiNum = get95BakuraiNum(item2) + get2BakuraiNum(item2);
