@@ -1,6 +1,6 @@
 /**
  * 異常ダメ検知
- * @version 0.2.4β
+ * @version 0.2.5β
  * @author Nishisonic
  */
 
@@ -37,7 +37,7 @@ var FILE_URL = "https://raw.githubusercontent.com/Nishisonic/AbnormalDamage/mast
 var EXECUTABLE_FILE = "script/drop_AbnormalDamage.js";
 var SETTING_FILE = "script/setting_AbnormalDamage.json";
 var LOG_FILE = "AbnormalDamage.log";
-var VERSION = 0.22;
+var VERSION = 0.25;
 data_prefix = "AbnormalDamage_";
 
 var MODE = {
@@ -156,7 +156,7 @@ var MODE = {
      * 数値でon
      * 
      * 例:バイト艦を省きたいとき
-     * SHIP_LV_FILTER:[2,3]
+     * SHIP_LV_FILTER:3
      */
     SHIP_LV_FILTER:null,
 };
@@ -966,7 +966,7 @@ function genAbnormalTaisenDamage(origin,target,targetIdx,targetHp,damage,formati
         writeData += "[ソナー/爆雷投射機]シナジー:" + (hasTaisenSynergy(oItem2) ? "発動(x1.15)" : "なし(x1.0)") + crlf;
         writeData += "[ソナー/爆雷]シナジー:" + (hasNewTaisenSynergy(oItem2) ? "発動(+(x0.15))" : "なし(+(x0.0))") + crlf;
         writeData += "[爆雷投射機/爆雷]シナジー:" + (hasBakuraiSynergy(oItem2) ? "発動(+(x0.1))" : "なし(+(x0.0))") + crlf;
-        writeData += "九五式爆雷の数:" + get95BakuraiNum(oItem2) + " 二式爆雷の数:" + get2BakuraiNum(oItem2) + crlf;
+        writeData += "九五式爆雷の数:" + get95BakuraiNum(oItem2) + " 二式爆雷の数:" + get2BakuraiNum(oItem2) + " 大型ソナー:" + (hasLargeSonar(oItem2) ? "所持" : "不所持") + crlf;
         writeData += "クリティカル:" + (isCritical(critical) ? "あり(x1.5)" : "なし(x1.0)") + crlf;
         writeData += "熟練度倍率:" + (isOpeningTaisen ? "先制対潜(x1.0)" : ("x" + getSkilledBonus(origin,2,true,true).toFixed(3) + " - x" + getSkilledBonus(origin,2,false,true).toFixed(3))) + crlf;
         writeData += "対潜火力:" + taisenPower.toFixed(1) + " 対潜火力:" + minFinalTaisenPower.toFixed(1) + " - " + maxFinalTaisenPower.toFixed(1) + crlf;
@@ -1104,9 +1104,19 @@ function hasTaisenSynergy(item2){
  * 1.15倍補正
  */
 function hasNewTaisenSynergy(item2){
+    // 対潜シナジーと新爆雷シナジーが発動かつ大型ソナー所持時は新対潜シナジーは発動しない
+    // 普通のソナーはかかる模様
+    if(hasTaisenSynergy(item2) && hasBakuraiSynergy(item2) && hasLargeSonar(item2)) return false;
     // 爆雷,ソナー=18 両方必要なので、処理を変えないこと
     return item2.stream().filter(function(item){ return item != null; }).anyMatch(function(item){ return isBakurai(item); })
         && item2.stream().filter(function(item){ return item != null; }).anyMatch(function(item){ return item.type3 === 18; });
+}
+
+/**
+ * 大型ソナーを所持しているか
+ */
+function hasLargeSonar(item2){
+    return item2.stream().filter(function(item){ return item != null; }).anyMatch(function(item){ return item.type2 == 40 });
 }
 
 /**
