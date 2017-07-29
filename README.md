@@ -1,6 +1,6 @@
 # 異常ダメージ検知
 
-[![Release](https://img.shields.io/badge/gem-v0.2.2-brightgreen.svg)](https://github.com/Nishisonic/AbnormalDamage/releases/latest)
+[![Release](https://img.shields.io/badge/gem-v0.2.3-brightgreen.svg)](https://github.com/Nishisonic/AbnormalDamage/releases/latest)
 [![License](https://img.shields.io/npm/l/express.svg)](https://github.com/Nishisonic/AbnormalDamage/blob/master/LICENSE)
 
 ## 紹介
