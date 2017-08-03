@@ -1,6 +1,6 @@
 /**
  * 異常ダメ検知
- * @version 0.2.5β
+ * @version 0.2.5.1β
  * @author Nishisonic
  */
 
@@ -37,7 +37,7 @@ var FILE_URL = "https://raw.githubusercontent.com/Nishisonic/AbnormalDamage/mast
 var EXECUTABLE_FILE = "script/drop_AbnormalDamage.js";
 var SETTING_FILE = "script/setting_AbnormalDamage.json";
 var LOG_FILE = "AbnormalDamage.log";
-var VERSION = 0.25;
+var VERSION = 0.251;
 data_prefix = "AbnormalDamage_";
 
 var MODE = {
@@ -149,7 +149,7 @@ var MODE = {
     /**
      * 通常、異常含めた全攻撃のログを吐き出すか。
      */
-    FULL_LOG:true,
+    FULL_LOG:false,
     /**
      * 指定されたlv以上の攻撃艦のみ測定します。
      * nullでoff
