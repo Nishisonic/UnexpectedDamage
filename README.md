@@ -1,6 +1,6 @@
 # 異常ダメージ検知
 
-[![Release](https://img.shields.io/badge/gem-v0.2.5.1-brightgreen.svg)](https://github.com/Nishisonic/AbnormalDamage/releases/latest)
+[![GitHub package version](https://img.shields.io/github/package-json/v/badges/shields.svg)](https://github.com/Nishisonic/AbnormalDamage/releases/latest)
 [![License](https://img.shields.io/npm/l/express.svg)](https://github.com/Nishisonic/AbnormalDamage/blob/master/LICENSE)
 
 ## 紹介
@@ -15,7 +15,7 @@
 
 拡張版にあるドロップ報告書に新たな列を追加し、異常ダメージが発生しているかどうかを調べ、結果を表示します。
 
-砲撃戦、雷撃戦、夜戦に対応しています。~~※対潜攻撃には対応していません。~~ 対応しました。
+砲撃戦、雷撃戦、夜戦に対応しています。
 
 * 動作イメージ
 
@@ -23,7 +23,8 @@
 
 ## 使い方
 
-Wikiページの[Manual](https://github.com/Nishisonic/AbnormalDamage/wiki/Manual)を参照して下さい。
+~~Wikiページの[Manual](https://github.com/Nishisonic/AbnormalDamage/wiki/Manual)を参照して下さい。~~
+新バージョンのため、書き直し中。
 
 ## ライセンス
 
