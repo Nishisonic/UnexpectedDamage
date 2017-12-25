@@ -1,7 +1,7 @@
 # 異常ダメージ検知
 
-[![GitHub release](https://img.shields.io/github/release/Nishisonic/AbnormalDamage.svg)](https://github.com/Nishisonic/AbnormalDamage/releases/latest)
-[![License](https://img.shields.io/npm/l/express.svg)](https://github.com/Nishisonic/AbnormalDamage/blob/master/LICENSE)
+[![GitHub release](https://img.shields.io/github/release/Nishisonic/UnexpectedDamage.svg)](https://github.com/Nishisonic/UnexpectedDamage/releases/latest)
+[![License](https://img.shields.io/npm/l/express.svg)](https://github.com/Nishisonic/UnexpectedDamage/blob/master/LICENSE)
 
 ## 紹介
 
@@ -23,12 +23,12 @@
 
 ## 使い方
 
-~~Wikiページの[Manual](https://github.com/Nishisonic/AbnormalDamage/wiki/Manual)を参照して下さい。~~
-新バージョンのため、書き直し中。
+~~Wikiページの[Manual](https://github.com/Nishisonic/UnexpectedDamage/wiki/Manual)を参照して下さい。~~
+新バージョンに伴い、書き直し中。
 
 ## ライセンス
 
-* [The MIT License (MIT)](https://github.com/Nishisonic/AbnormalDamage/blob/master/LICENSE)
+* [The MIT License (MIT)](https://github.com/Nishisonic/UnexpectedDamage/blob/master/LICENSE)
 
 ## 連絡先
 
