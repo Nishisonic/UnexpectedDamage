@@ -1,6 +1,6 @@
 # 異常ダメージ検知
 
-[![GitHub release](https://img.shields.io/github/release/Nishisonic/AbnormalDamage.svg?style=flat-square)](https://github.com/Nishisonic/AbnormalDamage/releases/latest)
+[![GitHub release](https://img.shields.io/github/release/Nishisonic/AbnormalDamage.svg)](https://github.com/Nishisonic/AbnormalDamage/releases/latest)
 [![License](https://img.shields.io/npm/l/express.svg)](https://github.com/Nishisonic/AbnormalDamage/blob/master/LICENSE)
 
 ## 紹介
