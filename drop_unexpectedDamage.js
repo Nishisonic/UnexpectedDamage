@@ -1,6 +1,6 @@
 /**
  * 異常ダメージ検知
- * @version 1.0.2
+ * @version 1.0.3
  * @author Nishisonic
  */
 ComparableArrayType = Java.type("java.lang.Comparable[]")
@@ -452,14 +452,6 @@ var parse = function (date, phaseList, friendNum, friendNumCombined, enemyNum, e
         // 夜戦
         nightBattle = nightBattle ? nightBattle : parseNight(phase, json.api_hougeki)
     }
-    // if(nightKind == BattlePhaseKind.SP_MIDNIGHT){
-    //     print(date)
-    //     nightBattle.forEach(function(_night){
-    //         _night.forEach(function(night){
-    //             print(night.kind,night.friendAttack,night.mainAttack,night.attacker,night.mainDefense,night.defender,night.damage,night.critical,night.critical,night.attackType,night.showItem)
-    //         })
-    //     })
-    // }
     return new Battle(dayKind, nightKind, friendCombinedKind, isEnemyCombined, dayFormation, nightFormation, nightTouchPlane, airDamagedFriendHp, airDamagedEnemyHp, supportDamagedFriendHp, supportDamagedEnemyHp, nightBattle1, nightBattle2, preAntiSubmarineAttack, preTorpedoAttack, dayBattle1, dayBattle2, dayBattle3, endTorpedoAttack, nightBattle)
 }
 
@@ -756,22 +748,25 @@ var detectDayBattle = function (date, kind, friendCombinedKind, isEnemyCombined,
         attackList.forEach(function (attacks) {
             attacks.filter(function (attack) {
                 // ダメージ=0を判定しても無駄なので除外
-                return Math.floor(attack.damage) > 0 && !(!attack.friendAttack && isSubMarine(getAtkDef(attack, friends, enemies).defender))
+                return Math.floor(attack.damage) > 0
             }).forEach(function (attack) {
                 var ship = getAtkDef(attack, friends, enemies)
                 var attackNum = (attack.friendAttack ? friendHp : enemyHp)[attack.mainAttack ? "main" : "escort"].length
                 var hp = getAtkDefHp(attack, friendHp, enemyHp)
-                var power = getDayBattlePower(date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, attack, ship.attacker, ship.defender, hp.attacker, shouldUseSkilled === undefined ? true : shouldUseSkilled)
-                var minDef = (ship.defender.soukou + getArmorBonus(ship.attacker, ship.defender)) * 0.7
-                var maxDef = (ship.defender.soukou + getArmorBonus(ship.attacker, ship.defender)) * 1.3 - 0.6
-                var minDmg = Math.floor((power[0] - maxDef) * getAmmoBonus(ship.attacker))
-                var maxDmg = Math.floor((power[1] - minDef) * getAmmoBonus(ship.attacker))
-                var minPropDmg = Math.floor(hp.defender.now * 0.06)
-                var maxPropDmg = Math.floor(hp.defender.now * 0.14 - 0.08)
-                var minSunkDmg = Math.floor(hp.defender.now * 0.5)
-                var maxSunkDmg = Math.floor(hp.defender.now * 0.8 - 0.3)
-                if (!(minDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxDmg || minPropDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxPropDmg || !attack.friendAttack && minSunkDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxSunkDmg || isHp1ReplacementShip(ship.defender, attack.defender == 0))) {
-                    result.push(new DetectDto(attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender))
+                // 味方潜水への攻撃は検出対象から除外(敵対潜値が不明のため)
+                if(!(!attack.friendAttack && isSubMarine(getAtkDef(attack, friends, enemies).defender))){
+                    var power = getDayBattlePower(date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, attack, ship.attacker, ship.defender, hp.attacker, shouldUseSkilled === undefined ? true : shouldUseSkilled)
+                    var minDef = (ship.defender.soukou + getArmorBonus(ship.attacker, ship.defender)) * 0.7
+                    var maxDef = (ship.defender.soukou + getArmorBonus(ship.attacker, ship.defender)) * 1.3 - 0.6
+                    var minDmg = Math.floor((power[0] - maxDef) * getAmmoBonus(ship.attacker))
+                    var maxDmg = Math.floor((power[1] - minDef) * getAmmoBonus(ship.attacker))
+                    var minPropDmg = Math.floor(hp.defender.now * 0.06)
+                    var maxPropDmg = Math.floor(hp.defender.now * 0.14 - 0.08)
+                    var minSunkDmg = Math.floor(hp.defender.now * 0.5)
+                    var maxSunkDmg = Math.floor(hp.defender.now * 0.8 - 0.3)
+                    if (!(minDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxDmg || minPropDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxPropDmg || !attack.friendAttack && minSunkDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxSunkDmg || isHp1ReplacementShip(ship.defender, attack.defender == 0))) {
+                        result.push(new DetectDto(attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender))
+                    }
                 }
                 processingShipHpDamage(ship.defender, hp.defender, attack.damage, attack.lastAttack) // ダメージ処理
             })
@@ -895,22 +890,25 @@ var detectNightBattle = function (date, kind, friendCombinedKind, isEnemyCombine
         attackList.forEach(function (attacks) {
             attacks.filter(function (attack) {
                 // ダメージ=0を判定しても無駄なので除外
-                return Math.floor(attack.damage) > 0 && !(!attack.friendAttack && isSubMarine(getAtkDef(attack, friends, enemies).defender))
+                return Math.floor(attack.damage) > 0
             }).forEach(function (attack) {
                 var ship = getAtkDef(attack, friends, enemies)
                 var attackNum = (attack.friendAttack ? friendHp : enemyHp)[attack.mainAttack ? "main" : "escort"].length
                 var hp = getAtkDefHp(attack, friendHp, enemyHp)
-                var power = getNightBattlePower(date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, touchPlane, attack, ship.attacker, ship.defender, hp.attacker, shouldUseSkilled === undefined ? true : shouldUseSkilled)
-                var minDef = (ship.defender.soukou + getArmorBonus(ship.attacker, ship.defender)) * 0.7
-                var maxDef = (ship.defender.soukou + getArmorBonus(ship.attacker, ship.defender)) * 1.3 - 0.6
-                var minDmg = Math.floor((power[0] - maxDef) * getAmmoBonus(ship.attacker))
-                var maxDmg = Math.floor((power[1] - minDef) * getAmmoBonus(ship.attacker))
-                var minPropDmg = Math.floor(hp.defender.now * 0.06)
-                var maxPropDmg = Math.floor(hp.defender.now * 0.14 - 0.08)
-                var minSunkDmg = Math.floor(hp.defender.now * 0.5)
-                var maxSunkDmg = Math.floor(hp.defender.now * 0.8 - 0.3)
-                if (!(minDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxDmg || minPropDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxPropDmg || !attack.friendAttack && minSunkDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxSunkDmg || isHp1ReplacementShip(ship.defender, attack.defender == 0))) {
-                    result.push(new DetectDto(attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender))
+                // 味方潜水への攻撃は検出対象から除外(敵対潜値が不明のため)
+                if(!(!attack.friendAttack && isSubMarine(getAtkDef(attack, friends, enemies).defender))){
+                    var power = getNightBattlePower(date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, touchPlane, attack, ship.attacker, ship.defender, hp.attacker, shouldUseSkilled === undefined ? true : shouldUseSkilled)
+                    var minDef = (ship.defender.soukou + getArmorBonus(ship.attacker, ship.defender)) * 0.7
+                    var maxDef = (ship.defender.soukou + getArmorBonus(ship.attacker, ship.defender)) * 1.3 - 0.6
+                    var minDmg = Math.floor((power[0] - maxDef) * getAmmoBonus(ship.attacker))
+                    var maxDmg = Math.floor((power[1] - minDef) * getAmmoBonus(ship.attacker))
+                    var minPropDmg = Math.floor(hp.defender.now * 0.06)
+                    var maxPropDmg = Math.floor(hp.defender.now * 0.14 - 0.08)
+                    var minSunkDmg = Math.floor(hp.defender.now * 0.5)
+                    var maxSunkDmg = Math.floor(hp.defender.now * 0.8 - 0.3)
+                    if (!(minDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxDmg || minPropDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxPropDmg || !attack.friendAttack && minSunkDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxSunkDmg || isHp1ReplacementShip(ship.defender, attack.defender == 0))) {
+                        result.push(new DetectDto(attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender))
+                    }
                 }
                 processingShipHpDamage(ship.defender, hp.defender, attack.damage, attack.lastAttack) // ダメージ処理
             })
@@ -1253,7 +1251,6 @@ AntiSubmarinePower.prototype.getSynergyBonus = function () {
  * @return {Number} 対潜火力(キャップ前)
  */
 AntiSubmarinePower.prototype.getBeforeCapPower = function () {
-    // print(this.attacker.name,this.defender.name,this.getBasePower(),getFormationMatchBonus(this.attack),this.getFormationBonus(),this.getConditionBonus(),this.getSynergyBonus())
     return this.getBasePower() * getFormationMatchBonus(this.formation) * this.getFormationBonus() * this.getConditionBonus() * this.getSynergyBonus()
 }
 
