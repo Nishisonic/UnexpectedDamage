@@ -1,8 +1,19 @@
 /**
  * 異常ダメージ検知
- * @version 1.0.3
+ * @version 1.0.4
  * @author Nishisonic
  */
+
+/** バージョン */
+var VERSION = 1.04
+/** バージョン確認URL */
+var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update.txt"
+/** ファイルの場所 */
+var FILE_URL = "https://raw.githubusercontent.com/Nishisonic/AbnormalDamage/master/drop_unexpectedDamage.js"
+/** 保存場所 */
+var EXECUTABLE_FILE = "script/drop_unexpectedDamage.js"
+
+// Library
 ComparableArrayType = Java.type("java.lang.Comparable[]")
 BattlePhaseKind = Java.type("logbook.dto.BattlePhaseKind")
 Optional = Java.type("java.util.Optional")
@@ -14,6 +25,11 @@ TimeZone = Java.type("java.util.TimeZone")
 EnemyShipDto = Java.type("logbook.dto.EnemyShipDto")
 DataType = Java.type("logbook.data.DataType")
 Collectors = Java.type("java.util.stream.Collectors")
+IOUtils = Java.type("org.apache.commons.io.IOUtils")
+URI = Java.type("java.net.URI")
+StandardCharsets = Java.type("java.nio.charset.StandardCharsets")
+StandardOpenOption = Java.type("java.nio.file.StandardOpenOption")
+Files = Java.type("java.nio.file.Files")
 
 //#region メモ部分
 /*
@@ -35,7 +51,9 @@ function header() {
     return ["昼砲撃戦", "昼雷撃戦", "夜戦"]
 }
 
-function begin() { }
+function begin() {
+    updateFile()
+}
 
 /**
  * @param {logbook.dto.BattleExDto} battle
@@ -53,11 +71,25 @@ function body(battle) {
     // 敵艦隊Hp
     var enemyHp = getEnemyHp(battle)
     // 戦闘データ
-    var battleData = parse(date, Java.from(battle.phaseList), friendHp.main.length, friendHp.escort.length, enemyHp.main.length, enemyHp.escort.length, calcCombinedKind(battle), battle.isEnemyCombined())
+    var battleData = parse(date, battle.mapCellDto, Java.from(battle.phaseList), friendHp.main.length, friendHp.escort.length, enemyHp.main.length, enemyHp.escort.length, calcCombinedKind(battle), battle.isEnemyCombined())
     return detectOrDefault(date, battleData, friends, enemies, friendHp, enemyHp)
 }
 
 function end() { }
+
+/**
+ * ファイルをアップデートします
+ */
+function updateFile() {
+    try {
+        if (VERSION < Number(IOUtils.toString(URI.create(UPDATE_CHECK_URL), StandardCharsets.UTF_8))) {
+            IOUtils.write(IOUtils.toString(URI.create(FILE_URL), StandardCharsets.UTF_8),Files.newOutputStream(EXECUTABLE_FILE,StandardOpenOption.CREATE,StandardOpenOption.TRUNCATE_EXISTING),StandardCharsets.UTF_8)
+        }
+    } catch (e) {
+        print("File Update Failed.")
+        e.printStackTrace()
+    }
+}
 
 //#endregion
 
@@ -282,6 +314,7 @@ ShipHpDto.prototype.copy = function () {
 /**
  * API(Json)を解析して既定のフォーマットに収めて返す
  * @param {java.util.Date} date 日付
+ * @param {logbook.dto.MapCellDto} mapCell マップ
  * @param {[logbook.dto.BattleExDto.Phase]} phaseList フェーズリスト(昼戦/夜戦)
  * @param {Number} friendNum 自艦隊本隊数
  * @param {Number} friendNumCombined 自艦隊随伴数
@@ -291,7 +324,7 @@ ShipHpDto.prototype.copy = function () {
  * @param {Boolean} isEnemyCombined 敵軍は連合艦隊か
  * @return {Battle} 既定のフォーマット
  */
-var parse = function (date, phaseList, friendNum, friendNumCombined, enemyNum, enemyNumCombined, friendCombinedKind, isEnemyCombined) {
+var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, enemyNum, enemyNumCombined, friendCombinedKind, isEnemyCombined) {
     var airDamagedFriendHp = new DamagedHpDto(Array.apply(null, { length: friendNum }).map(function (v) { return 0 }), Array.apply(null, { length: friendNumCombined }).map(function (v) { return 0 }))
     var airDamagedEnemyHp = new DamagedHpDto(Array.apply(null, { length: enemyNum }).map(function (v) { return 0 }), Array.apply(null, { length: enemyNumCombined }).map(function (v) { return 0 }))
     var supportDamagedFriendHp = new DamagedHpDto(Array.apply(null, { length: friendNum }).map(function (v) { return 0 }), Array.apply(null, { length: friendNumCombined }).map(function (v) { return 0 }))
@@ -452,7 +485,7 @@ var parse = function (date, phaseList, friendNum, friendNumCombined, enemyNum, e
         // 夜戦
         nightBattle = nightBattle ? nightBattle : parseNight(phase, json.api_hougeki)
     }
-    return new Battle(dayKind, nightKind, friendCombinedKind, isEnemyCombined, dayFormation, nightFormation, nightTouchPlane, airDamagedFriendHp, airDamagedEnemyHp, supportDamagedFriendHp, supportDamagedEnemyHp, nightBattle1, nightBattle2, preAntiSubmarineAttack, preTorpedoAttack, dayBattle1, dayBattle2, dayBattle3, endTorpedoAttack, nightBattle)
+    return new Battle(mapCell, dayKind, nightKind, friendCombinedKind, isEnemyCombined, dayFormation, nightFormation, nightTouchPlane, airDamagedFriendHp, airDamagedEnemyHp, supportDamagedFriendHp, supportDamagedEnemyHp, nightBattle1, nightBattle2, preAntiSubmarineAttack, preTorpedoAttack, dayBattle1, dayBattle2, dayBattle3, endTorpedoAttack, nightBattle)
 }
 
 /**
@@ -485,6 +518,7 @@ var AttackDto = function (kind, friendAttack, mainAttack, attacker, mainDefense,
 
 /**
  * 戦闘
+ * @param {logbook.dto.MapCellDto} mapCell マップ
  * @param {logbook.dto.BattlePhaseKind} dayKind 昼戦:戦闘の種類
  * @param {logbook.dto.BattlePhaseKind} nightKind 夜戦:戦闘の種類
  * @param {0|1|2|3} friendCombinedKind 自軍側連合種別(0=なし,1=機動,2=水上,3=輸送)
@@ -506,7 +540,8 @@ var AttackDto = function (kind, friendAttack, mainAttack, attacker, mainDefense,
  * @param {[AttackDto]} endTorpedoAttack 雷撃戦
  * @param {[AttackDto]} nightBattle 夜戦
  */
-var Battle = function (dayKind, nightKind, friendCombinedKind, isEnemyCombined, dayFormation, nightFormation, nightTouchPlane, airDamagedFriendHp, airDamagedEnemyHp, supportDamagedFriendHp, supportDamagedEnemyHp, nightBattle1, nightBattle2, preAntiSubmarineAttack, preTorpedoAttack, dayBattle1, dayBattle2, dayBattle3, endTorpedoAttack, nightBattle) {
+var Battle = function (mapCell, dayKind, nightKind, friendCombinedKind, isEnemyCombined, dayFormation, nightFormation, nightTouchPlane, airDamagedFriendHp, airDamagedEnemyHp, supportDamagedFriendHp, supportDamagedEnemyHp, nightBattle1, nightBattle2, preAntiSubmarineAttack, preTorpedoAttack, dayBattle1, dayBattle2, dayBattle3, endTorpedoAttack, nightBattle) {
+    this.mapCell = mapCell
     this.dayKind = dayKind
     this.nightKind = nightKind
     this.friendCombinedKind = friendCombinedKind
@@ -587,60 +622,60 @@ var detectOrDefault = function (date, battle, friends, enemies, friendHp, enemyH
     }
     // 戦闘処理
     switch (battle.dayKind) {
-        case BattlePhaseKind.BATTLE:                                                                                                                                                                                                            // ・昼戦(通常vs通常,6対6)
-        case BattlePhaseKind.COMBINED_BATTLE_WATER:                                                                                                                                                                                             // ・昼戦(水上vs通常,12対6)
-        case BattlePhaseKind.COMBINED_EACH_BATTLE_WATER:                                                                                                                                                                                        // ・昼戦(水上vs連合,12対12)
-            airBattle()                                                                                                                                                                                                                         // ├航空戦
-            supportAttack()                                                                                                                                                                                                                     // ├支援砲雷撃
-            Array.prototype.push.apply(dayBattle, detectDayBattle(date, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.preAntiSubmarineAttack, friends, enemies, friendHp, enemyHp, false))                // ├先制対潜
-            Array.prototype.push.apply(torpedoAttack, detectTorpedoAttack(date, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.preTorpedoAttack, friends, enemies, friendHp, enemyHp))                    // ├先制雷撃
-            Array.prototype.push.apply(dayBattle, detectDayBattle(date, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.dayBattle1, friends, enemies, friendHp, enemyHp))                                  // ├砲撃戦1巡目
-            Array.prototype.push.apply(dayBattle, detectDayBattle(date, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.dayBattle2, friends, enemies, friendHp, enemyHp))                                  // ├砲撃戦2巡目
-            Array.prototype.push.apply(dayBattle, detectDayBattle(date, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.dayBattle3, friends, enemies, friendHp, enemyHp))                                  // ├砲撃戦3巡目
-            Array.prototype.push.apply(torpedoAttack, detectTorpedoAttack(date, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.torpedoAttack, friends, enemies, friendHp, enemyHp))                       // ├雷撃戦
-            Array.prototype.push.apply(nightBattle, detectNightBattle(date, battle.nightKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.nightFormation, battle.nightTouchPlane, battle.nightBattle, friends, enemies, friendHp, enemyHp))  // └夜戦
+        case BattlePhaseKind.BATTLE:                                                                                                                                                                                                                                        // ・昼戦(通常vs通常,6対6)
+        case BattlePhaseKind.COMBINED_BATTLE_WATER:                                                                                                                                                                                                                         // ・昼戦(水上vs通常,12対6)
+        case BattlePhaseKind.COMBINED_EACH_BATTLE_WATER:                                                                                                                                                                                                                    // ・昼戦(水上vs連合,12対12)
+            airBattle()                                                                                                                                                                                                                                                     // ├航空戦
+            supportAttack()                                                                                                                                                                                                                                                 // ├支援砲雷撃
+            Array.prototype.push.apply(dayBattle, detectDayBattle(date, battle.mapCell, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.preAntiSubmarineAttack, friends, enemies, friendHp, enemyHp, false))                 // ├先制対潜
+            Array.prototype.push.apply(torpedoAttack, detectTorpedoAttack(date, battle.mapCell, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.preTorpedoAttack, friends, enemies, friendHp, enemyHp))                      // ├先制雷撃
+            Array.prototype.push.apply(dayBattle, detectDayBattle(date, battle.mapCell, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.dayBattle1, friends, enemies, friendHp, enemyHp))                                    // ├砲撃戦1巡目
+            Array.prototype.push.apply(dayBattle, detectDayBattle(date, battle.mapCell, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.dayBattle2, friends, enemies, friendHp, enemyHp))                                    // ├砲撃戦2巡目
+            Array.prototype.push.apply(dayBattle, detectDayBattle(date, battle.mapCell, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.dayBattle3, friends, enemies, friendHp, enemyHp))                                    // ├砲撃戦3巡目
+            Array.prototype.push.apply(torpedoAttack, detectTorpedoAttack(date, battle.mapCell, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.torpedoAttack, friends, enemies, friendHp, enemyHp))                         // ├雷撃戦
+            Array.prototype.push.apply(nightBattle, detectNightBattle(date, battle.mapCell, battle.nightKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.nightFormation, battle.nightTouchPlane, battle.nightBattle, friends, enemies, friendHp, enemyHp))   // └夜戦
             break
-        case BattlePhaseKind.COMBINED_EACH_BATTLE:                                                                                                                                                                                              // ・昼戦(機動or輸送vs連合,12対12)
-            airBattle()                                                                                                                                                                                                                         // ├航空戦
-            supportAttack()                                                                                                                                                                                                                     // ├支援砲雷撃
-            Array.prototype.push.apply(dayBattle, detectDayBattle(date, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.preAntiSubmarineAttack, friends, enemies, friendHp, enemyHp, false))                // ├先制対潜
-            Array.prototype.push.apply(torpedoAttack, detectTorpedoAttack(date, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.preTorpedoAttack, friends, enemies, friendHp, enemyHp))                    // ├先制雷撃
-            Array.prototype.push.apply(dayBattle, detectDayBattle(date, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.dayBattle1, friends, enemies, friendHp, enemyHp))                                  // ├砲撃戦1巡目
-            Array.prototype.push.apply(dayBattle, detectDayBattle(date, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.dayBattle2, friends, enemies, friendHp, enemyHp))                                  // ├砲撃戦2巡目
-            Array.prototype.push.apply(torpedoAttack, detectTorpedoAttack(date, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.torpedoAttack, friends, enemies, friendHp, enemyHp))                       // ├雷撃戦
-            Array.prototype.push.apply(dayBattle, detectDayBattle(date, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.dayBattle3, friends, enemies, friendHp, enemyHp))                                  // ├砲撃戦3巡目
-            Array.prototype.push.apply(nightBattle, detectNightBattle(date, battle.nightKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.nightFormation, battle.nightTouchPlane, battle.nightBattle, friends, enemies, friendHp, enemyHp))  // └夜戦
+        case BattlePhaseKind.COMBINED_EACH_BATTLE:                                                                                                                                                                                                                          // ・昼戦(機動or輸送vs連合,12対12)
+            airBattle()                                                                                                                                                                                                                                                     // ├航空戦
+            supportAttack()                                                                                                                                                                                                                                                 // ├支援砲雷撃
+            Array.prototype.push.apply(dayBattle, detectDayBattle(date, battle.mapCell, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.preAntiSubmarineAttack, friends, enemies, friendHp, enemyHp, false))                 // ├先制対潜
+            Array.prototype.push.apply(torpedoAttack, detectTorpedoAttack(date, battle.mapCell, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.preTorpedoAttack, friends, enemies, friendHp, enemyHp))                      // ├先制雷撃
+            Array.prototype.push.apply(dayBattle, detectDayBattle(date, battle.mapCell, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.dayBattle1, friends, enemies, friendHp, enemyHp))                                    // ├砲撃戦1巡目
+            Array.prototype.push.apply(dayBattle, detectDayBattle(date, battle.mapCell, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.dayBattle2, friends, enemies, friendHp, enemyHp))                                    // ├砲撃戦2巡目
+            Array.prototype.push.apply(torpedoAttack, detectTorpedoAttack(date, battle.mapCell, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.torpedoAttack, friends, enemies, friendHp, enemyHp))                         // ├雷撃戦
+            Array.prototype.push.apply(dayBattle, detectDayBattle(date, battle.mapCell, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.dayBattle3, friends, enemies, friendHp, enemyHp))                                    // ├砲撃戦3巡目
+            Array.prototype.push.apply(nightBattle, detectNightBattle(date, battle.mapCell, battle.nightKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.nightFormation, battle.nightTouchPlane, battle.nightBattle, friends, enemies, friendHp, enemyHp))   // └夜戦
             break
-        case BattlePhaseKind.COMBINED_BATTLE:                                                                                                                                                                                                   // ・昼戦(機動or輸送vs通常,12対6)
-        case BattlePhaseKind.COMBINED_EC_BATTLE:                                                                                                                                                                                                // ・昼戦(通常vs連合,6対12)
-            airBattle()                                                                                                                                                                                                                         // ├航空戦
-            supportAttack()                                                                                                                                                                                                                     // ├支援砲雷撃
-            Array.prototype.push.apply(dayBattle, detectDayBattle(date, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.preAntiSubmarineAttack, friends, enemies, friendHp, enemyHp, false))                // ├先制対潜
-            Array.prototype.push.apply(torpedoAttack, detectTorpedoAttack(date, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.preTorpedoAttack, friends, enemies, friendHp, enemyHp))                    // ├先制雷撃
-            Array.prototype.push.apply(dayBattle, detectDayBattle(date, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.dayBattle1, friends, enemies, friendHp, enemyHp))                                  // ├砲撃戦1巡目
-            Array.prototype.push.apply(torpedoAttack, detectTorpedoAttack(date, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.torpedoAttack, friends, enemies, friendHp, enemyHp))                       // ├雷撃戦
-            Array.prototype.push.apply(dayBattle, detectDayBattle(date, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.dayBattle2, friends, enemies, friendHp, enemyHp))                                  // ├砲撃戦2巡目
-            Array.prototype.push.apply(dayBattle, detectDayBattle(date, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.dayBattle3, friends, enemies, friendHp, enemyHp))                                  // ├砲撃戦3巡目
-            Array.prototype.push.apply(nightBattle, detectNightBattle(date, battle.nightKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.nightFormation, battle.nightTouchPlane, battle.nightBattle, friends, enemies, friendHp, enemyHp))  // └夜戦
+        case BattlePhaseKind.COMBINED_BATTLE:                                                                                                                                                                                                                               // ・昼戦(機動or輸送vs通常,12対6)
+        case BattlePhaseKind.COMBINED_EC_BATTLE:                                                                                                                                                                                                                            // ・昼戦(通常vs連合,6対12)
+            airBattle()                                                                                                                                                                                                                                                     // ├航空戦
+            supportAttack()                                                                                                                                                                                                                                                 // ├支援砲雷撃
+            Array.prototype.push.apply(dayBattle, detectDayBattle(date, battle.mapCell, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.preAntiSubmarineAttack, friends, enemies, friendHp, enemyHp, false))                 // ├先制対潜
+            Array.prototype.push.apply(torpedoAttack, detectTorpedoAttack(date, battle.mapCell, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.preTorpedoAttack, friends, enemies, friendHp, enemyHp))                      // ├先制雷撃
+            Array.prototype.push.apply(dayBattle, detectDayBattle(date, battle.mapCell, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.dayBattle1, friends, enemies, friendHp, enemyHp))                                    // ├砲撃戦1巡目
+            Array.prototype.push.apply(torpedoAttack, detectTorpedoAttack(date, battle.mapCell, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.torpedoAttack, friends, enemies, friendHp, enemyHp))                         // ├雷撃戦
+            Array.prototype.push.apply(dayBattle, detectDayBattle(date, battle.mapCell, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.dayBattle2, friends, enemies, friendHp, enemyHp))                                    // ├砲撃戦2巡目
+            Array.prototype.push.apply(dayBattle, detectDayBattle(date, battle.mapCell, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.dayBattle3, friends, enemies, friendHp, enemyHp))                                    // ├砲撃戦3巡目
+            Array.prototype.push.apply(nightBattle, detectNightBattle(date, battle.mapCell, battle.nightKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.nightFormation, battle.nightTouchPlane, battle.nightBattle, friends, enemies, friendHp, enemyHp))   // └夜戦
             break
-        case BattlePhaseKind.NIGHT_TO_DAY:                                                                                                                                                                                                      // ・払暁戦(通常vs通常,6対6)
-        case BattlePhaseKind.COMBINED_EC_NIGHT_TO_DAY:                                                                                                                                                                                          // ・払暁戦(通常vs連合,6対12)
-            supportAttack()                                                                                                                                                                                                                     // ├支援砲雷撃
-            Array.prototype.push.apply(nightBattle, detectNightBattle(date, battle.nightKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.nightFormation, battle.nightTouchPlane, battle.nightBattle1, friends, enemies, friendHp, enemyHp)) // ├夜戦1巡目
-            Array.prototype.push.apply(nightBattle, detectNightBattle(date, battle.nightKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.nightFormation, battle.nightTouchPlane, battle.nightBattle2, friends, enemies, friendHp, enemyHp)) // ├夜戦2巡目
-            airBattle()                                                                                                                                                                                                                         // ├航空戦
-            Array.prototype.push.apply(dayBattle, detectDayBattle(date, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.preAntiSubmarineAttack, friends, enemies, friendHp, enemyHp, false))                // ├先制対潜
-            Array.prototype.push.apply(torpedoAttack, detectTorpedoAttack(date, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.preTorpedoAttack, friends, enemies, friendHp, enemyHp))                    // ├先制雷撃
-            Array.prototype.push.apply(dayBattle, detectDayBattle(date, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.dayBattle1, friends, enemies, friendHp, enemyHp))                                  // ├砲撃戦1巡目
-            Array.prototype.push.apply(dayBattle, detectDayBattle(date, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.dayBattle2, friends, enemies, friendHp, enemyHp))                                  // ├砲撃戦2巡目
-            Array.prototype.push.apply(torpedoAttack, detectTorpedoAttack(date, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.torpedoAttack, friends, enemies, friendHp, enemyHp))                       // └雷撃戦
+        case BattlePhaseKind.NIGHT_TO_DAY:                                                                                                                                                                                                                                  // ・払暁戦(通常vs通常,6対6)
+        case BattlePhaseKind.COMBINED_EC_NIGHT_TO_DAY:                                                                                                                                                                                                                      // ・払暁戦(通常vs連合,6対12)
+            supportAttack()                                                                                                                                                                                                                                                 // ├支援砲雷撃
+            Array.prototype.push.apply(nightBattle, detectNightBattle(date, battle.mapCell, battle.nightKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.nightFormation, battle.nightTouchPlane, battle.nightBattle1, friends, enemies, friendHp, enemyHp))  // ├夜戦1巡目
+            Array.prototype.push.apply(nightBattle, detectNightBattle(date, battle.mapCell, battle.nightKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.nightFormation, battle.nightTouchPlane, battle.nightBattle2, friends, enemies, friendHp, enemyHp))  // ├夜戦2巡目
+            airBattle()                                                                                                                                                                                                                                                     // ├航空戦
+            Array.prototype.push.apply(dayBattle, detectDayBattle(date, battle.mapCell, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.preAntiSubmarineAttack, friends, enemies, friendHp, enemyHp, false))                 // ├先制対潜
+            Array.prototype.push.apply(torpedoAttack, detectTorpedoAttack(date, battle.mapCell, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.preTorpedoAttack, friends, enemies, friendHp, enemyHp))                      // ├先制雷撃
+            Array.prototype.push.apply(dayBattle, detectDayBattle(date, battle.mapCell, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.dayBattle1, friends, enemies, friendHp, enemyHp))                                    // ├砲撃戦1巡目
+            Array.prototype.push.apply(dayBattle, detectDayBattle(date, battle.mapCell, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.dayBattle2, friends, enemies, friendHp, enemyHp))                                    // ├砲撃戦2巡目
+            Array.prototype.push.apply(torpedoAttack, detectTorpedoAttack(date, battle.mapCell, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.torpedoAttack, friends, enemies, friendHp, enemyHp))                         // └雷撃戦
             break
         default:
             break
     }
-    if (battle.nightKind == BattlePhaseKind.SP_MIDNIGHT) {                                                                                                                                                                                        // ・開幕夜戦(通常vs通常,6対6)
-        supportAttack()                                                                                                                                                                                                                         // ├支援砲雷撃
-        Array.prototype.push.apply(nightBattle, detectNightBattle(date, battle.nightKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.nightFormation, battle.nightTouchPlane, battle.nightBattle, friends, enemies, friendHp, enemyHp))      // └夜戦
+    if (battle.nightKind == BattlePhaseKind.SP_MIDNIGHT) {                                                                                                                                                                                                                  // ・開幕夜戦(通常vs通常,6対6)
+        supportAttack()                                                                                                                                                                                                                                                     // ├支援砲雷撃
+        Array.prototype.push.apply(nightBattle, detectNightBattle(date, battle.mapCell, battle.nightKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.nightFormation, battle.nightTouchPlane, battle.nightBattle, friends, enemies, friendHp, enemyHp))       // └夜戦
     }
 
     /**
@@ -649,13 +684,13 @@ var detectOrDefault = function (date, battle, friends, enemies, friendHp, enemyH
      * @param {DetectDto} data2 データ2
      */
     function errorDescending(data1, data2) {
-        var minDef1 = (data1.defender.soukou + getArmorBonus(data1.attacker, data1.defender)) * 0.7
-        var maxDef1 = (data1.defender.soukou + getArmorBonus(data1.attacker, data1.defender)) * 1.3 - 0.6
+        var minDef1 = (data1.defender.soukou + getArmorBonus(data1.mapCell, data1.attacker, data1.defender)) * 0.7
+        var maxDef1 = (data1.defender.soukou + getArmorBonus(data1.mapCell, data1.attacker, data1.defender)) * 1.3 - 0.6
         var minDmg1 = Math.floor((data1.power[0] - maxDef1) * getAmmoBonus(data1.attacker))
         var maxDmg1 = Math.floor((data1.power[1] - minDef1) * getAmmoBonus(data1.attacker))
         var diff1 = Math.abs(data1.attack.damage - (data1.attack.damage < minDmg1 ? minDmg1 : maxDmg1))
-        var minDef2 = (data2.defender.soukou + getArmorBonus(data2.attacker, data2.defender)) * 0.7
-        var maxDef2 = (data2.defender.soukou + getArmorBonus(data2.attacker, data2.defender)) * 1.3 - 0.6
+        var minDef2 = (data2.defender.soukou + getArmorBonus(data2.mapCell, data2.attacker, data2.defender)) * 0.7
+        var maxDef2 = (data2.defender.soukou + getArmorBonus(data2.mapCell, data2.attacker, data2.defender)) * 1.3 - 0.6
         var minDmg2 = Math.floor((data2.power[0] - maxDef2) * getAmmoBonus(data2.attacker))
         var maxDmg2 = Math.floor((data2.power[1] - minDef2) * getAmmoBonus(data2.attacker))
         var diff2 = Math.abs(data2.attack.damage - (data2.damage < minDmg2 ? minDmg2 : maxDmg2))
@@ -675,8 +710,8 @@ var detectOrDefault = function (date, battle, friends, enemies, friendHp, enemyH
  */
 function toDispString(data) {
     if (data !== undefined) {
-        var minDef = (data.defender.soukou + getArmorBonus(data.attacker, data.defender)) * 0.7
-        var maxDef = (data.defender.soukou + getArmorBonus(data.attacker, data.defender)) * 1.3 - 0.6
+        var minDef = (data.defender.soukou + getArmorBonus(data.mapCell, data.attacker, data.defender)) * 0.7
+        var maxDef = (data.defender.soukou + getArmorBonus(data.mapCell, data.attacker, data.defender)) * 1.3 - 0.6
         var minDmg = Math.floor((data.power[0] - maxDef) * getAmmoBonus(data.attacker))
         var maxDmg = Math.floor((data.power[1] - minDef) * getAmmoBonus(data.attacker))
         var diff = (data.attack.damage < minDmg ? "" : "+") + (data.attack.damage - (data.attack.damage < minDmg ? minDmg : maxDmg))
@@ -711,6 +746,7 @@ var damageControl = function (shipHp, ship) {
 
 /**
  * 検知
+ * @param {logbook.dto.MapCellDto} mapCell マップ
  * @param {AttackDto} attack 攻撃
  * @param {DayBattlePower|AntiSubmarinePower|TorpedoPower|NightBattlePower} power 火力
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
@@ -718,7 +754,8 @@ var damageControl = function (shipHp, ship) {
  * @param {ShipHpDto} attackerHp 攻撃艦Hp
  * @param {ShipHpDto} defenderHp 防御艦Hp
  */
-var DetectDto = function (attack, power, attacker, defender, attackerHp, defenderHp) {
+var DetectDto = function (mapCell, attack, power, attacker, defender, attackerHp, defenderHp) {
+    this.mapCell = mapCell
     this.attack = attack
     this.power = power
     this.attacker = attacker
@@ -730,6 +767,7 @@ var DetectDto = function (attack, power, attacker, defender, attackerHp, defende
 /**
  * 砲撃戦検知
  * @param {java.util.Date} date 戦闘日時
+ * @param {logbook.dto.MapCellDto} mapCell マップ
  * @param {logbook.dto.BattlePhaseKind} kind 戦闘の種類
  * @param {0|1|2|3} friendCombinedKind 自軍側連合種別(0=なし,1=機動,2=水上,3=輸送)
  * @param {Boolean} isEnemyCombined 敵軍は連合艦隊か
@@ -742,7 +780,7 @@ var DetectDto = function (attack, power, attacker, defender, attackerHp, defende
  * @param {Boolean} shouldUseSkilled 熟練度を使用すべきか(default=true)
  * @return {[DetectDto]} 異常データ
  */
-var detectDayBattle = function (date, kind, friendCombinedKind, isEnemyCombined, formation, attackList, friends, enemies, friendHp, enemyHp, shouldUseSkilled) {
+var detectDayBattle = function (date, mapCell, kind, friendCombinedKind, isEnemyCombined, formation, attackList, friends, enemies, friendHp, enemyHp, shouldUseSkilled) {
     var result = []
     if (attackList != null) {
         attackList.forEach(function (attacks) {
@@ -754,10 +792,10 @@ var detectDayBattle = function (date, kind, friendCombinedKind, isEnemyCombined,
                 var attackNum = (attack.friendAttack ? friendHp : enemyHp)[attack.mainAttack ? "main" : "escort"].length
                 var hp = getAtkDefHp(attack, friendHp, enemyHp)
                 // 味方潜水への攻撃は検出対象から除外(敵対潜値が不明のため)
-                if(!(!attack.friendAttack && isSubMarine(getAtkDef(attack, friends, enemies).defender))){
+                if (!(!attack.friendAttack && isSubMarine(getAtkDef(attack, friends, enemies).defender))) {
                     var power = getDayBattlePower(date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, attack, ship.attacker, ship.defender, hp.attacker, shouldUseSkilled === undefined ? true : shouldUseSkilled)
-                    var minDef = (ship.defender.soukou + getArmorBonus(ship.attacker, ship.defender)) * 0.7
-                    var maxDef = (ship.defender.soukou + getArmorBonus(ship.attacker, ship.defender)) * 1.3 - 0.6
+                    var minDef = (ship.defender.soukou + getArmorBonus(mapCell, ship.attacker, ship.defender)) * 0.7
+                    var maxDef = (ship.defender.soukou + getArmorBonus(mapCell, ship.attacker, ship.defender)) * 1.3 - 0.6
                     var minDmg = Math.floor((power[0] - maxDef) * getAmmoBonus(ship.attacker))
                     var maxDmg = Math.floor((power[1] - minDef) * getAmmoBonus(ship.attacker))
                     var minPropDmg = Math.floor(hp.defender.now * 0.06)
@@ -765,7 +803,7 @@ var detectDayBattle = function (date, kind, friendCombinedKind, isEnemyCombined,
                     var minSunkDmg = Math.floor(hp.defender.now * 0.5)
                     var maxSunkDmg = Math.floor(hp.defender.now * 0.8 - 0.3)
                     if (!(minDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxDmg || minPropDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxPropDmg || !attack.friendAttack && minSunkDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxSunkDmg || isHp1ReplacementShip(ship.defender, attack.defender == 0))) {
-                        result.push(new DetectDto(attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender))
+                        result.push(new DetectDto(mapCell, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender))
                     }
                 }
                 processingShipHpDamage(ship.defender, hp.defender, attack.damage, attack.lastAttack) // ダメージ処理
@@ -778,6 +816,7 @@ var detectDayBattle = function (date, kind, friendCombinedKind, isEnemyCombined,
 /**
  * 雷撃戦検知
  * @param {java.util.Date} date 戦闘日時
+ * @param {logbook.dto.MapCellDto} mapCell マップ
  * @param {logbook.dto.BattlePhaseKind} kind 戦闘の種類
  * @param {0|1|2|3} friendCombinedKind 自軍側連合種別(0=なし,1=機動,2=水上,3=輸送)
  * @param {Boolean} isEnemyCombined 敵軍は連合艦隊か
@@ -789,7 +828,7 @@ var detectDayBattle = function (date, kind, friendCombinedKind, isEnemyCombined,
  * @param {FleetHpDto} enemyHp 敵艦隊Hp
  * @return {[DetectDto]} 異常データ
  */
-var detectTorpedoAttack = function (date, kind, friendCombinedKind, isEnemyCombined, formation, attackList, friends, enemies, friendHp, enemyHp) {
+var detectTorpedoAttack = function (date, mapCell, kind, friendCombinedKind, isEnemyCombined, formation, attackList, friends, enemies, friendHp, enemyHp) {
     var result = []
     if (attackList != null) {
         // 仮作成(無理やり作成)
@@ -806,8 +845,8 @@ var detectTorpedoAttack = function (date, kind, friendCombinedKind, isEnemyCombi
             var attackNum = (attack.friendAttack ? friendHp : enemyHp)[attack.mainAttack ? "main" : "escort"].length
             var hp = getAtkDefHp(attack, fFriendHp, fEnemyHp)
             var power = getTorpedoPower(date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, attack, ship.attacker, ship.defender, hp.attacker)
-            var minDef = (ship.defender.soukou + getArmorBonus(ship.attacker, ship.defender)) * 0.7
-            var maxDef = (ship.defender.soukou + getArmorBonus(ship.attacker, ship.defender)) * 1.3 - 0.6
+            var minDef = (ship.defender.soukou + getArmorBonus(mapCell, ship.attacker, ship.defender)) * 0.7
+            var maxDef = (ship.defender.soukou + getArmorBonus(mapCell, ship.attacker, ship.defender)) * 1.3 - 0.6
             var minDmg = Math.floor((power[0] - maxDef) * getAmmoBonus(ship.attacker))
             var maxDmg = Math.floor((power[1] - minDef) * getAmmoBonus(ship.attacker))
             var minPropDmg = Math.floor(hp.defender.now * 0.06)
@@ -815,7 +854,7 @@ var detectTorpedoAttack = function (date, kind, friendCombinedKind, isEnemyCombi
             var minSunkDmg = Math.floor(hp.defender.now * 0.5)
             var maxSunkDmg = Math.floor(hp.defender.now * 0.8 - 0.3)
             if (!(Math.floor(attack.damage) <= maxDmg || minPropDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxPropDmg || !attack.friendAttack && minSunkDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxSunkDmg || isHp1ReplacementShip(ship.defender, attack.defender == 0))) {
-                result.push(new DetectDto(attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender))
+                result.push(new DetectDto(mapCell, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender))
             }
             processingShipHpDamage(ship.defender, hp.defender, attack.damage, false) // ダメージ仮処理
         })
@@ -828,8 +867,8 @@ var detectTorpedoAttack = function (date, kind, friendCombinedKind, isEnemyCombi
             var attackNum = (attack.friendAttack ? friendHp : enemyHp)[attack.mainAttack ? "main" : "escort"].length
             var hp = getAtkDefHp(attack, eFriendHp, eEnemyHp)
             var power = getTorpedoPower(date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, attack, ship.attacker, ship.defender, hp.attacker)
-            var minDef = (ship.defender.soukou + getArmorBonus(ship.attacker, ship.defender)) * 0.7
-            var maxDef = (ship.defender.soukou + getArmorBonus(ship.attacker, ship.defender)) * 1.3 - 0.6
+            var minDef = (ship.defender.soukou + getArmorBonus(mapCell, ship.attacker, ship.defender)) * 0.7
+            var maxDef = (ship.defender.soukou + getArmorBonus(mapCell, ship.attacker, ship.defender)) * 1.3 - 0.6
             var minDmg = Math.floor((power[0] - maxDef) * getAmmoBonus(ship.attacker))
             var maxDmg = Math.floor((power[1] - minDef) * getAmmoBonus(ship.attacker))
             var minPropDmg = Math.floor(hp.defender.now * 0.06)
@@ -837,7 +876,7 @@ var detectTorpedoAttack = function (date, kind, friendCombinedKind, isEnemyCombi
             var minSunkDmg = Math.floor(hp.defender.now * 0.5)
             var maxSunkDmg = Math.floor(hp.defender.now * 0.8 - 0.3)
             if (!(Math.floor(attack.damage) <= maxDmg || minPropDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxPropDmg || !attack.friendAttack && minSunkDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxSunkDmg || isHp1ReplacementShip(ship.defender, attack.defender == 0))) {
-                result.push(new DetectDto(attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender))
+                result.push(new DetectDto(mapCell, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender))
             }
             processingShipHpDamage(ship.defender, hp.defender, attack.damage, false) // ダメージ仮処理
         })
@@ -871,6 +910,7 @@ var detectTorpedoAttack = function (date, kind, friendCombinedKind, isEnemyCombi
 /**
  * 夜戦検知
  * @param {java.util.Date} date 戦闘日時
+ * @param {logbook.dto.MapCellDto} mapCell マップ
  * @param {logbook.dto.BattlePhaseKind} kind 戦闘の種類
  * @param {0|1|2|3} friendCombinedKind 自軍側連合種別(0=なし,1=機動,2=水上,3=輸送)
  * @param {Boolean} isEnemyCombined 敵軍は連合艦隊か
@@ -884,7 +924,7 @@ var detectTorpedoAttack = function (date, kind, friendCombinedKind, isEnemyCombi
  * @param {Boolean} shouldUseSkilled 熟練度を使用すべきか(default=true)
  * @return {[DetectDto]} 異常データ
  */
-var detectNightBattle = function (date, kind, friendCombinedKind, isEnemyCombined, formation, touchPlane, attackList, friends, enemies, friendHp, enemyHp, shouldUseSkilled) {
+var detectNightBattle = function (date, mapCell, kind, friendCombinedKind, isEnemyCombined, formation, touchPlane, attackList, friends, enemies, friendHp, enemyHp, shouldUseSkilled) {
     var result = []
     if (attackList != null) {
         attackList.forEach(function (attacks) {
@@ -896,10 +936,10 @@ var detectNightBattle = function (date, kind, friendCombinedKind, isEnemyCombine
                 var attackNum = (attack.friendAttack ? friendHp : enemyHp)[attack.mainAttack ? "main" : "escort"].length
                 var hp = getAtkDefHp(attack, friendHp, enemyHp)
                 // 味方潜水への攻撃は検出対象から除外(敵対潜値が不明のため)
-                if(!(!attack.friendAttack && isSubMarine(getAtkDef(attack, friends, enemies).defender))){
+                if (!(!attack.friendAttack && isSubMarine(getAtkDef(attack, friends, enemies).defender))) {
                     var power = getNightBattlePower(date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, touchPlane, attack, ship.attacker, ship.defender, hp.attacker, shouldUseSkilled === undefined ? true : shouldUseSkilled)
-                    var minDef = (ship.defender.soukou + getArmorBonus(ship.attacker, ship.defender)) * 0.7
-                    var maxDef = (ship.defender.soukou + getArmorBonus(ship.attacker, ship.defender)) * 1.3 - 0.6
+                    var minDef = (ship.defender.soukou + getArmorBonus(mapCell, ship.attacker, ship.defender)) * 0.7
+                    var maxDef = (ship.defender.soukou + getArmorBonus(mapCell, ship.attacker, ship.defender)) * 1.3 - 0.6
                     var minDmg = Math.floor((power[0] - maxDef) * getAmmoBonus(ship.attacker))
                     var maxDmg = Math.floor((power[1] - minDef) * getAmmoBonus(ship.attacker))
                     var minPropDmg = Math.floor(hp.defender.now * 0.06)
@@ -907,7 +947,7 @@ var detectNightBattle = function (date, kind, friendCombinedKind, isEnemyCombine
                     var minSunkDmg = Math.floor(hp.defender.now * 0.5)
                     var maxSunkDmg = Math.floor(hp.defender.now * 0.8 - 0.3)
                     if (!(minDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxDmg || minPropDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxPropDmg || !attack.friendAttack && minSunkDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxSunkDmg || isHp1ReplacementShip(ship.defender, attack.defender == 0))) {
-                        result.push(new DetectDto(attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender))
+                        result.push(new DetectDto(mapCell, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender))
                     }
                 }
                 processingShipHpDamage(ship.defender, hp.defender, attack.damage, attack.lastAttack) // ダメージ処理
@@ -1223,14 +1263,6 @@ AntiSubmarinePower.prototype.getShipTypeConstant = function () {
  * @return {Number} 対潜シナジー倍率
  */
 AntiSubmarinePower.prototype.getSynergyBonus = function () {
-    /** 爆雷か */
-    var isDepthCharge = function (item) { return item.name.indexOf("投射機") == -1 && item.type3 == 17 }
-    /** 爆雷投射機か */
-    var isDepthChargeProjector = function (item) { return item.name.indexOf("投射機") > -1 && item.type3 == 17 }
-    /** ソナーか */
-    var isSonar = function (item) { return item.type3 == 18 }
-    /** 大型ソナーか */
-    var isLargeSonar = function (item) { return item.type2 == 40 }
     /** ソナー&爆雷投射機シナジー */
     var s1 = (this.items.some(function (item) { return isSonar(item) }) && this.items.some(function (item) { return isDepthChargeProjector(item) })) ? 0.15 : 0
     /** ソナー&爆雷シナジー */
@@ -1364,25 +1396,26 @@ DayBattlePower.prototype.getImprovementBonus = function () {
     return this.items.map(function (item) {
         var _getimprovementBonus = function () {
             switch (item.type2) {
-                case 1: return 1    // 小口径主砲
-                case 2: return 1    // 中口径主砲
-                case 3: return 1.5  // 大口径主砲
-                case 38: return 1.5  // 大口径主砲(II)
-                case 4: return 1    // 副砲
-                case 19: return 1    // 対艦強化弾
-                case 36: return 1    // 高射装置
-                case 29: return 1    // 探照灯
-                case 42: return 1    // 大型探照灯
-                case 21: return 1    // 機銃
-                case 15: return 0.75 // 爆雷
-                case 14: return 0.75 // ソナー
-                case 40: return 0.75 // 大型ソナー
-                case 24: return 1    // 上陸用舟艇
-                case 46: return 1    // 特二式内火艇
+                case 1: return 1        // 小口径主砲
+                case 2: return 1        // 中口径主砲
+                case 3: return 1.5      // 大口径主砲
+                case 38: return 1.5     // 大口径主砲(II)
+                case 4: return 1        // 副砲
+                case 19: return 1       // 対艦強化弾
+                case 36: return 1       // 高射装置
+                case 29: return 1       // 探照灯
+                case 42: return 1       // 大型探照灯
+                case 21: return 1       // 機銃
+                case 15:                // 爆雷(投射機)
+                    return isDepthChargeProjector(item) ? 0.75 : 0
+                case 14: return 0.75    // ソナー
+                case 40: return 0.75    // 大型ソナー
+                case 24: return 1       // 上陸用舟艇
+                case 46: return 1       // 特二式内火艇
                 default: return 0
             }
         }
-        // 副砲か
+        // 副砲
         if (item.type2 == 4) {
             // 2017/3/17～2017/5/2
             if (CHANGE_SUB_GUN_BONUS_DATE.before(this.date) && RECHANGE_SUB_GUN_BONUS_DATE.after(this.date)) {
@@ -2012,6 +2045,42 @@ NightBattlePower.prototype.getNightTouchPlaneBonus = function () {
 //#region 全般使用系
 
 /**
+ * 爆雷か
+ * @param {logbook.dto.ItemDto} item 装備
+ * @return {Boolean} 爆雷か
+ */
+var isDepthCharge = function (item) {
+    return item.name.indexOf("投射機") == -1 && item.type3 == 17
+}
+
+/**
+ * 爆雷投射機か
+ * @param {logbook.dto.ItemDto} item 装備
+ * @return {Boolean} 爆雷投射機か
+ */
+var isDepthChargeProjector = function (item) {
+    return item.name.indexOf("投射機") > -1 && item.type3 == 17
+}
+
+/**
+ * ソナーか
+ * @param {logbook.dto.ItemDto} item 装備
+ * @return {Boolean} ソナーか
+ */
+var isSonar = function (item) {
+    return item.type3 == 18
+}
+
+/**
+ * 大型ソナーか
+ * @param {logbook.dto.ItemDto} item 装備
+ * @return {Boolean} 大型ソナーか
+ */
+var isLargeSonar = function (item) {
+    return item.type2 == 40
+}
+
+/**
  * 弾薬量補正を返す
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} ship 攻撃艦
  * @return {Number} 倍率
@@ -2386,11 +2455,12 @@ var getOriginalGunPowerBonus = function (ship) {
 
 /**
  * 装甲補正を返します
+ * @param {logbook.dto.MapCellDto} mapCell マップ
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} defender 防御艦
  * @return {Number} 装甲補正
  */
-var getArmorBonus = function (attacker, defender) {
+var getArmorBonus = function (mapCell, attacker, defender) {
     var mediumBulge = getItems(defender).filter(function (item) { return item.type2 == 27 }).map(function (item) { return 0.2 * item.level }).reduce(function (p, c) { return p + c }, 0)
     var largeBulge = getItems(defender).filter(function (item) { return item.type2 == 28 }).map(function (item) { return 0.2 * item.level }).reduce(function (p, c) { return p + c }, 0)
     var depthCharge = isSubMarine(defender) ? getItems(attacker).map(function (item) {
@@ -2400,7 +2470,8 @@ var getArmorBonus = function (attacker, defender) {
             default: return 0
         }
     }).reduce(function (p, c) { return p + c }, 0) : 0
-    return mediumBulge + largeBulge - depthCharge
+    var northernSeaBulge = mapCell.map[0] == 3 ? getItems(defender).filter(function (item) { return item.slotitemId == 268 }).length * 3 : 0
+    return mediumBulge + largeBulge - depthCharge + northernSeaBulge
 }
 
 /**
