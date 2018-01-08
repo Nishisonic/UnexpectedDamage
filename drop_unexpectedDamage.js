@@ -14,22 +14,20 @@ var FILE_URL = "https://raw.githubusercontent.com/Nishisonic/AbnormalDamage/mast
 var EXECUTABLE_FILE = "script/drop_unexpectedDamage.js"
 
 // Library
-ComparableArrayType = Java.type("java.lang.Comparable[]")
-BattlePhaseKind = Java.type("logbook.dto.BattlePhaseKind")
-Optional = Java.type("java.util.Optional")
-Item = Java.type("logbook.internal.Item")
-LinkedList = Java.type("java.util.LinkedList")
-ShipDto = Java.type("logbook.dto.ShipDto")
-Calendar = Java.type("java.util.Calendar")
-TimeZone = Java.type("java.util.TimeZone")
-EnemyShipDto = Java.type("logbook.dto.EnemyShipDto")
 DataType = Java.type("logbook.data.DataType")
-Collectors = Java.type("java.util.stream.Collectors")
-IOUtils = Java.type("org.apache.commons.io.IOUtils")
+BattlePhaseKind = Java.type("logbook.dto.BattlePhaseKind")
+EnemyShipDto = Java.type("logbook.dto.EnemyShipDto")
+ShipDto = Java.type("logbook.dto.ShipDto")
+Item = Java.type("logbook.internal.Item")
+ComparableArrayType = Java.type("java.lang.Comparable[]")
 URI = Java.type("java.net.URI")
 StandardCharsets = Java.type("java.nio.charset.StandardCharsets")
-StandardOpenOption = Java.type("java.nio.file.StandardOpenOption")
 Files = Java.type("java.nio.file.Files")
+StandardOpenOption = Java.type("java.nio.file.StandardOpenOption")
+Calendar = Java.type("java.util.Calendar")
+TimeZone = Java.type("java.util.TimeZone")
+Collectors = Java.type("java.util.stream.Collectors")
+IOUtils = Java.type("org.apache.commons.io.IOUtils")
 
 //#region メモ部分
 /*
