@@ -83,7 +83,7 @@ function end() { }
 function updateFile() {
     try {
         if (VERSION < Number(IOUtils.toString(URI.create(UPDATE_CHECK_URL), StandardCharsets.UTF_8))) {
-            IOUtils.write(IOUtils.toString(URI.create(FILE_URL), StandardCharsets.UTF_8),Files.newOutputStream(EXECUTABLE_FILE,StandardOpenOption.CREATE,StandardOpenOption.TRUNCATE_EXISTING),StandardCharsets.UTF_8)
+            IOUtils.write(IOUtils.toString(URI.create(FILE_URL), StandardCharsets.UTF_8), Files.newOutputStream(Paths.get(EXECUTABLE_FILE), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING), StandardCharsets.UTF_8)
         }
     } catch (e) {
         print("File Update Failed.")
