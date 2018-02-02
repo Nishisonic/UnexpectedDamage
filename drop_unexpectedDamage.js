@@ -1,6 +1,6 @@
 /**
  * 異常ダメージ検知
- * @version 1.0.4
+ * @version 1.0.5
  * @author Nishisonic
  */
 
@@ -1989,6 +1989,10 @@ NightBattlePower.prototype.getCutinBonus = function () {
         case 1: return 1.2  // 連撃
         case 2: return 1.3  // カットイン(主砲/魚雷)
         case 3:
+            if (Java.from(this.attack.showItem).filter(function (id) { return Number(id) == 213 || Number(id) == 214 }).length >= 1
+                && Java.from(this.attack.showItem).filter(function (id) { return Number(id) == 210 || Number(id) == 211 }).length >= 1) {
+                return 1.75  // カットイン(後魚/潜電)
+            }
             if (Java.from(this.attack.showItem).filter(function (id) { return Number(id) == 213 || Number(id) == 214 }).length >= 2) {
                 return 1.6  // カットイン(後魚/後魚)
             }
@@ -2469,7 +2473,7 @@ var getArmorBonus = function (mapCell, attacker, defender) {
             default: return 0
         }
     }).reduce(function (p, c) { return p + c }, 0) : 0
-    var northernSeaBulge = mapCell.map[0] == 3 ? getItems(defender).filter(function (item) { return item.slotitemId == 268 }).length * 3 : 0
+    var northernSeaBulge = mapCell.map[0] == 3 && getItems(defender).some(function (item) { return item.slotitemId == 268 }) ? 3 : 0
     return mediumBulge + largeBulge - depthCharge + northernSeaBulge
 }
 
