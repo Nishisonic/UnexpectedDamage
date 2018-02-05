@@ -5,7 +5,7 @@
  */
 
 /** バージョン */
-var VERSION = 1.04
+var VERSION = 1.05
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update.txt"
 /** ファイルの場所 */
