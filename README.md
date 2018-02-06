@@ -19,7 +19,7 @@
 
 * 動作イメージ
 
-<img src="https://i.imgur.com/2j3RMxO.png" width="600px">
+![](https://i.imgur.com/2j3RMxO.png)
 
 ## ライセンス
 
