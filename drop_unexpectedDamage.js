@@ -1,11 +1,11 @@
 /**
  * 異常ダメージ検知
- * @version 1.0.5
+ * @version 1.0.6
  * @author Nishisonic
  */
 
 /** バージョン */
-var VERSION = 1.05
+var VERSION = 1.06
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update.txt"
 /** ファイルの場所 */
@@ -747,7 +747,7 @@ var damageControl = function (shipHp, ship) {
  * 検知
  * @param {logbook.dto.MapCellDto} mapCell マップ
  * @param {AttackDto} attack 攻撃
- * @param {DayBattlePower|AntiSubmarinePower|TorpedoPower|NightBattlePower} power 火力
+ * @param {[Number,Number]} power 火力
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} defender 防御艦
  * @param {ShipHpDto} attackerHp 攻撃艦Hp
@@ -1086,7 +1086,7 @@ var getAttackTypeAtDay = function (attack, attacker, defender) {
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} defender 防御艦
  * @return {0|1|2|3} 攻撃手段(0=砲撃,1=空撃,2=爆雷,3=雷撃)
  */
-var getAttackTypeAtNight = function (attack, defender, attacker) {
+var getAttackTypeAtNight = function (attack, attacker, defender) {
     // ロケットフラグ判定
     // 大発エフェクトid取得
     // 夜戦空母攻撃判定
@@ -1863,8 +1863,8 @@ NightBattlePower.prototype.getBasePower = function () {
                         case 242: // Swordfish
                         case 243: // Swordfish Mk.II(熟練)
                         case 244: // Swordfish Mk.III(熟練)
-                            // 0.3*(火力+雷装+爆装+対潜)*sqrt(機数)*sqrt(★)
-                            return 0.3 * (item.param.karyoku + item.param.raisou + item.param.baku + item.param.taisen) * Math.sqrt(this.attacker.onSlot[i]) + Math.sqrt(item.level)
+                            // 火力+雷装+0.3*(火力+雷装+爆装+対潜)*sqrt(機数)*sqrt(★)
+                            return item.param.karyoku + item.param.raisou + 0.3 * (item.param.karyoku + item.param.raisou + item.param.baku + item.param.taisen) * Math.sqrt(this.attacker.onSlot[i]) + Math.sqrt(item.level)
                     }
                 }
             }
