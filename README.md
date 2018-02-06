@@ -19,12 +19,7 @@
 
 * 動作イメージ
 
-<img src="http://i.imgur.com/JT40lxy.png" width="600px">
-
-## 使い方
-
-~~Wikiページの[Manual](https://github.com/Nishisonic/UnexpectedDamage/wiki/Manual)を参照して下さい。~~
-新バージョンに伴い、書き直し中。
+<img src="https://i.imgur.com/2j3RMxO.png" width="600px">
 
 ## ライセンス
 
