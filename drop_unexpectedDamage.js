@@ -1,15 +1,15 @@
 /**
  * 異常ダメージ検知
- * @version 1.0.7
+ * @version 1.0.8
  * @author Nishisonic
  */
 
 /** バージョン */
-var VERSION = 1.07
+var VERSION = 1.08
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update.txt"
 /** ファイルの場所 */
-var FILE_URL = "https://raw.githubusercontent.com/Nishisonic/AbnormalDamage/master/drop_unexpectedDamage.js"
+var FILE_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/drop_unexpectedDamage.js"
 /** 保存場所 */
 var EXECUTABLE_FILE = "script/drop_unexpectedDamage.js"
 
@@ -458,14 +458,19 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
         var formation = json.api_formation
         var activeDeck = json.api_active_deck
         var touchPlane = json.api_touch_plane
-        // 払暁戦処理
-        if (!phase.isNight() && !(phase.kind == BattlePhaseKind.NIGHT_TO_DAY || phase.kind == BattlePhaseKind.COMBINED_EC_NIGHT_TO_DAY)) {
+        if (!phase.isNight()) {
             dayFormation = json.api_formation
             dayKind = phase.kind
         } else {
             nightFormation = json.api_formation
-            nightTouchPlane = json.api_touch_plane
             nightKind = phase.kind
+            nightTouchPlane = json.api_touch_plane
+        }
+        // 払暁戦処理
+        if(phase.kind == BattlePhaseKind.NIGHT_TO_DAY || phase.kind == BattlePhaseKind.COMBINED_EC_NIGHT_TO_DAY){
+            dayFormation = nightFormation = json.api_formation
+            dayKind = nightKind = phase.kind
+            nightTouchPlane = json.api_touch_plane
         }
         // 夜戦(払暁戦)1巡目
         nightBattle1 = nightBattle1 ? nightBattle1 : parseNight(phase, json.api_n_hougeki1)
