@@ -1,47 +1,53 @@
 /**
  * 異常ダメージ検知
- * @version 1.0.8
+ * @version 1.0.9
  * @author Nishisonic
  */
 
 /** バージョン */
-var VERSION = 1.08
+var VERSION = 1.09
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update.txt"
 /** ファイルの場所 */
 var FILE_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/drop_unexpectedDamage.js"
 /** 保存場所 */
 var EXECUTABLE_FILE = "script/drop_unexpectedDamage.js"
+/** ログファイル保存の場所 */
+var LOG_FILE = "damage.log"
+
+/** ScriptData用 */
+data_prefix = "damage_"
+
+/** フェーズ */
+var PHASE_STRING = {
+    0: "昼砲撃戦",
+    1: "昼雷撃戦",
+    2: "夜戦",
+}
 
 // Library
+load("script/ScriptData.js")
+AppConstants = Java.type("logbook.constants.AppConstants")
 DataType = Java.type("logbook.data.DataType")
 BattlePhaseKind = Java.type("logbook.dto.BattlePhaseKind")
 EnemyShipDto = Java.type("logbook.dto.EnemyShipDto")
 ShipDto = Java.type("logbook.dto.ShipDto")
 Item = Java.type("logbook.internal.Item")
+PrintWriter = Java.type("java.io.PrintWriter")
 ComparableArrayType = Java.type("java.lang.Comparable[]")
 URI = Java.type("java.net.URI")
 StandardCharsets = Java.type("java.nio.charset.StandardCharsets")
 Files = Java.type("java.nio.file.Files")
 Paths = Java.type("java.nio.file.Paths")
 StandardOpenOption = Java.type("java.nio.file.StandardOpenOption")
+SimpleDateFormat = Java.type("java.text.SimpleDateFormat")
 Calendar = Java.type("java.util.Calendar")
 TimeZone = Java.type("java.util.TimeZone")
 Collectors = Java.type("java.util.stream.Collectors")
 IOUtils = Java.type("org.apache.commons.io.IOUtils")
 
 //#region メモ部分
-/*
- * HPメモ
- *
- * FleetHpDto[艦隊全体]
- * ├main[主力艦隊全体]:ShipHpDto[]
- * ├max[HP最大値]   // 参照用
- * ├start[HP戦闘前] // 参照用
- * ├now[HP戦闘中]   // ここで判断
- * ├end[HP戦闘後]   // 使用予定なし
- * └escort[随伴艦隊全体]
- */
+// ・洋上補給には拡張版は対応していない
 //#endregion
 
 //#region 主部分
@@ -52,6 +58,8 @@ function header() {
 
 function begin() {
     updateFile()
+    setTmpData("logs", [])
+    setTmpData("ini", false)
 }
 
 /**
@@ -74,7 +82,16 @@ function body(battle) {
     return detectOrDefault(date, battleData, friends, enemies, friendHp, enemyHp)
 }
 
-function end() { }
+function end() {
+    var sf = new SimpleDateFormat(AppConstants.DATE_FORMAT)
+    var str = getData("logs").sort(function (a, b) {
+        return a.date.equals(b.date) ? (a.phase - b.phase) : a.date.compareTo(b.date)
+    }).map(function (log) {
+        return sf.format(log.date) + " " + log.mapCell + " " + PHASE_STRING[log.phase] + " " + toDispString(log)
+    }).join("\r\n")
+    writeLog(str)
+    setTmpData("ini", true)
+}
 
 /**
  * ファイルをアップデートします
@@ -88,6 +105,52 @@ function updateFile() {
         print("File Update Failed.")
         e.printStackTrace()
     }
+}
+
+/**
+ * ログ保存
+ * @param {[DetectDto]} dayBattle 昼戦
+ * @param {[DetectDto]} torpedoAttack 雷撃戦
+ * @param {[DetectDto]} nightBattle 夜戦
+ */
+function saveLog(dayBattle, torpedoAttack, nightBattle) {
+    setTmpData("logs", getData("logs").concat(dayBattle, torpedoAttack, nightBattle))
+}
+
+/**
+ * ログに書き込む
+ * @param {String} str ログ
+ * @param {Boolean} append 続けて書くか
+ */
+function writeLog(str, append) {
+    try {
+        var pw
+        var path = Paths.get(LOG_FILE)
+        if (append === undefined || !append) {
+            pw = new PrintWriter(Files.newBufferedWriter(path, StandardCharsets.UTF_8))
+        } else {
+            pw = new PrintWriter(Files.newBufferedWriter(path, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.APPEND));
+        }
+        pw.println(str)
+        pw.close()
+    } catch (e) {
+        e.printStackTrace()
+    }
+}
+
+/**
+ * ログに追加など
+ * @param {[DetectDto]} dayBattle 昼戦
+ * @param {[DetectDto]} torpedoAttack 雷撃戦
+ * @param {[DetectDto]} nightBattle 夜戦
+ */
+function appendLog(dayBattle, torpedoAttack, nightBattle) {
+    saveLog(dayBattle, torpedoAttack, nightBattle)
+    var sf = new SimpleDateFormat(AppConstants.DATE_FORMAT)
+    var str = [].concat(dayBattle, torpedoAttack, nightBattle).map(function (log) {
+        return sf.format(log.date) + " " + log.mapCell + " " + PHASE_STRING[log.phase] + " " + toDispString(log)
+    }).join("\r\n")
+    writeLog(str, true)
 }
 
 //#endregion
@@ -306,6 +369,14 @@ ShipHpDto.prototype.copy = function () {
     return new ShipHpDto(this.max, this.start, this.now, this.end)
 }
 
+/**
+ * HP[文字列]を返す
+ * @return {String}
+ */
+ShipHpDto.prototype.toString = function () {
+    return "[" + this.now + "/" + this.max + "]"
+}
+
 //#endregion
 
 //#region API(Json)を解析する処理
@@ -467,7 +538,7 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
             nightTouchPlane = json.api_touch_plane
         }
         // 払暁戦処理
-        if(phase.kind == BattlePhaseKind.NIGHT_TO_DAY || phase.kind == BattlePhaseKind.COMBINED_EC_NIGHT_TO_DAY){
+        if (phase.kind == BattlePhaseKind.NIGHT_TO_DAY || phase.kind == BattlePhaseKind.COMBINED_EC_NIGHT_TO_DAY) {
             dayFormation = nightFormation = json.api_formation
             dayKind = nightKind = phase.kind
             nightTouchPlane = json.api_touch_plane
@@ -633,13 +704,13 @@ var detectOrDefault = function (date, battle, friends, enemies, friendHp, enemyH
         }
     }
     // 友軍艦隊
-    var friendlyBattle = function() {
+    var friendlyBattle = function () {
         if (battle.friendlyBattle != null) {
             battle.friendlyBattle.forEach(function (attacks) {
                 attacks.filter(function (attack) {
                     // ダメージ=0を判定しても無駄なので除外
                     return Math.floor(attack.damage) > 0
-                }).filter(function(attack){
+                }).filter(function (attack) {
                     // 味方艦隊への誤爆排除
                     return !attack.friendAtack
                 }).forEach(function (attack) {
@@ -732,6 +803,12 @@ var detectOrDefault = function (date, battle, friends, enemies, friendHp, enemyH
         return diff2 - diff1
     }
 
+    if (getData("ini")) {
+        appendLog(dayBattle, torpedoAttack, nightBattle)
+    } else {
+        saveLog(dayBattle, torpedoAttack, nightBattle)
+    }
+
     ret[0] = toDispString(dayBattle.sort(errorDescending)[0])
     ret[1] = toDispString(torpedoAttack.sort(errorDescending)[0])
     ret[2] = toDispString(nightBattle.sort(errorDescending)[0])
@@ -781,7 +858,9 @@ var damageControl = function (shipHp, ship) {
 
 /**
  * 検知
+ * @param {java.util.Date} date 戦闘日時
  * @param {logbook.dto.MapCellDto} mapCell マップ
+ * @param {Number} phase 0:昼砲撃戦、1:昼雷撃戦、2:夜戦
  * @param {AttackDto} attack 攻撃
  * @param {[Number,Number]} power 火力
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
@@ -789,8 +868,10 @@ var damageControl = function (shipHp, ship) {
  * @param {ShipHpDto} attackerHp 攻撃艦Hp
  * @param {ShipHpDto} defenderHp 防御艦Hp
  */
-var DetectDto = function (mapCell, attack, power, attacker, defender, attackerHp, defenderHp) {
+var DetectDto = function (date, mapCell, phase, attack, power, attacker, defender, attackerHp, defenderHp) {
+    this.date = date
     this.mapCell = mapCell
+    this.phase = phase
     this.attack = attack
     this.power = power
     this.attacker = attacker
@@ -838,7 +919,7 @@ var detectDayBattle = function (date, mapCell, kind, friendCombinedKind, isEnemy
                     var minSunkDmg = Math.floor(hp.defender.now * 0.5)
                     var maxSunkDmg = Math.floor(hp.defender.now * 0.8 - 0.3)
                     if (!(minDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxDmg || minPropDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxPropDmg || !attack.friendAttack && minSunkDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxSunkDmg || isHp1ReplacementShip(ship.defender, attack.defender == 0))) {
-                        result.push(new DetectDto(mapCell, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender))
+                        result.push(new DetectDto(date, mapCell, 0, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender))
                     }
                 }
                 processingShipHpDamage(ship.defender, hp.defender, attack.damage, attack.lastAttack) // ダメージ処理
@@ -889,7 +970,7 @@ var detectTorpedoAttack = function (date, mapCell, kind, friendCombinedKind, isE
             var minSunkDmg = Math.floor(hp.defender.now * 0.5)
             var maxSunkDmg = Math.floor(hp.defender.now * 0.8 - 0.3)
             if (!(Math.floor(attack.damage) <= maxDmg || minPropDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxPropDmg || !attack.friendAttack && minSunkDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxSunkDmg || isHp1ReplacementShip(ship.defender, attack.defender == 0))) {
-                result.push(new DetectDto(mapCell, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender))
+                result.push(new DetectDto(date, mapCell, 1, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender))
             }
             processingShipHpDamage(ship.defender, hp.defender, attack.damage, false) // ダメージ仮処理
         })
@@ -911,7 +992,7 @@ var detectTorpedoAttack = function (date, mapCell, kind, friendCombinedKind, isE
             var minSunkDmg = Math.floor(hp.defender.now * 0.5)
             var maxSunkDmg = Math.floor(hp.defender.now * 0.8 - 0.3)
             if (!(Math.floor(attack.damage) <= maxDmg || minPropDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxPropDmg || !attack.friendAttack && minSunkDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxSunkDmg || isHp1ReplacementShip(ship.defender, attack.defender == 0))) {
-                result.push(new DetectDto(mapCell, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender))
+                result.push(new DetectDto(date, mapCell, 1, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender))
             }
             processingShipHpDamage(ship.defender, hp.defender, attack.damage, false) // ダメージ仮処理
         })
@@ -982,7 +1063,7 @@ var detectNightBattle = function (date, mapCell, kind, friendCombinedKind, isEne
                     var minSunkDmg = Math.floor(hp.defender.now * 0.5)
                     var maxSunkDmg = Math.floor(hp.defender.now * 0.8 - 0.3)
                     if (!(minDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxDmg || minPropDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxPropDmg || !attack.friendAttack && minSunkDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxSunkDmg || isHp1ReplacementShip(ship.defender, attack.defender == 0))) {
-                        result.push(new DetectDto(mapCell, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender))
+                        result.push(new DetectDto(date, mapCell, 2, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender))
                     }
                 }
                 processingShipHpDamage(ship.defender, hp.defender, attack.damage, attack.lastAttack) // ダメージ処理
