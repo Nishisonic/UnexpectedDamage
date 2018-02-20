@@ -1,11 +1,11 @@
 /**
  * 異常ダメージ検知
- * @version 1.0.9
+ * @version 1.1.0
  * @author Nishisonic
  */
 
 /** バージョン */
-var VERSION = 1.09
+var VERSION = 1.10
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update.txt"
 /** ファイルの場所 */
@@ -83,13 +83,16 @@ function body(battle) {
 }
 
 function end() {
-    var sf = new SimpleDateFormat(AppConstants.DATE_FORMAT)
-    var str = getData("logs").sort(function (a, b) {
-        return a.date.equals(b.date) ? (a.phase - b.phase) : a.date.compareTo(b.date)
-    }).map(function (log) {
-        return sf.format(log.date) + " " + log.mapCell + " " + PHASE_STRING[log.phase] + " " + toDispString(log)
-    }).join("\r\n")
-    writeLog(str)
+    var logs = getData("logs")
+    if (logs.length > 0) {
+        var sf = new SimpleDateFormat(AppConstants.DATE_FORMAT)
+        var str = logs.sort(function (a, b) {
+            return a.date.equals(b.date) ? (a.phase - b.phase) : a.date.compareTo(b.date)
+        }).map(function (log) {
+            return sf.format(log.date) + " " + log.mapCell + " " + PHASE_STRING[log.phase] + " " + toDispString(log)
+        }).join("\r\n")
+        writeLog(str)
+    }
     setTmpData("ini", true)
 }
 
@@ -804,7 +807,9 @@ var detectOrDefault = function (date, battle, friends, enemies, friendHp, enemyH
     }
 
     if (getData("ini")) {
-        appendLog(dayBattle, torpedoAttack, nightBattle)
+        if (dayBattle.length > 0 || torpedoAttack.length > 0 || nightBattle.length > 0) {
+            appendLog(dayBattle, torpedoAttack, nightBattle)
+        }
     } else {
         saveLog(dayBattle, torpedoAttack, nightBattle)
     }
