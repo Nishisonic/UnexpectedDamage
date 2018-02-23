@@ -1,11 +1,11 @@
 /**
  * 異常ダメージ検知
- * @version 1.1.0
+ * @version 1.1.1
  * @author Nishisonic
  */
 
 /** バージョン */
-var VERSION = 1.10
+var VERSION = 1.11
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update.txt"
 /** ファイルの場所 */
@@ -411,7 +411,7 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
     var dayBattle1 = null
     var dayBattle2 = null
     var dayBattle3 = null
-    var endTorpedoAttack = null
+    var torpedoAttack = null
     var nightBattle = null
     var dayFormation = null
     var nightFormation = null
@@ -561,7 +561,7 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
         // 砲撃戦3巡目
         dayBattle3 = dayBattle3 ? dayBattle3 : parseDay(phase, json.api_hougeki3)
         // 雷撃戦
-        endTorpedoAttack = endTorpedoAttack ? endTorpedoAttack : parseTorpedo(phase, phase.raigeki)
+        torpedoAttack = torpedoAttack ? torpedoAttack : parseTorpedo(phase, phase.raigeki)
         // 友軍艦隊
         if (json.api_friendly_battle) {
             friendlyBattle = friendlyBattle ? friendlyBattle : parseNight(phase, json.api_friendly_battle.api_hougeki)
@@ -569,7 +569,7 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
         // 夜戦
         nightBattle = nightBattle ? nightBattle : parseNight(phase, json.api_hougeki)
     }
-    return new Battle(mapCell, dayKind, nightKind, friendCombinedKind, isEnemyCombined, dayFormation, nightFormation, nightTouchPlane, airDamagedFriendHp, airDamagedEnemyHp, supportDamagedFriendHp, supportDamagedEnemyHp, nightBattle1, nightBattle2, preAntiSubmarineAttack, preTorpedoAttack, dayBattle1, dayBattle2, dayBattle3, endTorpedoAttack, nightBattle, friendlyBattle)
+    return new Battle(mapCell, dayKind, nightKind, friendCombinedKind, isEnemyCombined, dayFormation, nightFormation, nightTouchPlane, airDamagedFriendHp, airDamagedEnemyHp, supportDamagedFriendHp, supportDamagedEnemyHp, nightBattle1, nightBattle2, preAntiSubmarineAttack, preTorpedoAttack, dayBattle1, dayBattle2, dayBattle3, torpedoAttack, nightBattle, friendlyBattle)
 }
 
 /**
@@ -621,11 +621,11 @@ var AttackDto = function (kind, friendAttack, mainAttack, attacker, mainDefense,
  * @param {[AttackDto]} dayBattle1 砲撃戦1
  * @param {[AttackDto]} dayBattle2 砲撃戦2
  * @param {[AttackDto]} dayBattle3 砲撃戦3
- * @param {[AttackDto]} endTorpedoAttack 雷撃戦
+ * @param {[AttackDto]} torpedoAttack 雷撃戦
  * @param {[AttackDto]} nightBattle 夜戦
  * @param {[AttackDto]} friendlyBattle 友軍艦隊
  */
-var Battle = function (mapCell, dayKind, nightKind, friendCombinedKind, isEnemyCombined, dayFormation, nightFormation, nightTouchPlane, airDamagedFriendHp, airDamagedEnemyHp, supportDamagedFriendHp, supportDamagedEnemyHp, nightBattle1, nightBattle2, preAntiSubmarineAttack, preTorpedoAttack, dayBattle1, dayBattle2, dayBattle3, endTorpedoAttack, nightBattle, friendlyBattle) {
+var Battle = function (mapCell, dayKind, nightKind, friendCombinedKind, isEnemyCombined, dayFormation, nightFormation, nightTouchPlane, airDamagedFriendHp, airDamagedEnemyHp, supportDamagedFriendHp, supportDamagedEnemyHp, nightBattle1, nightBattle2, preAntiSubmarineAttack, preTorpedoAttack, dayBattle1, dayBattle2, dayBattle3, torpedoAttack, nightBattle, friendlyBattle) {
     this.mapCell = mapCell
     this.dayKind = dayKind
     this.nightKind = nightKind
@@ -645,7 +645,7 @@ var Battle = function (mapCell, dayKind, nightKind, friendCombinedKind, isEnemyC
     this.dayBattle1 = dayBattle1
     this.dayBattle2 = dayBattle2
     this.dayBattle3 = dayBattle3
-    this.endTorpedoAttack = endTorpedoAttack
+    this.torpedoAttack = torpedoAttack
     this.nightBattle = nightBattle
     this.friendlyBattle = friendlyBattle
 }
