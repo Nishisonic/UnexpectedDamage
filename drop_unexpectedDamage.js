@@ -1,11 +1,11 @@
 /**
  * 異常ダメージ検知
- * @version 1.1.1
+ * @version 1.1.2
  * @author Nishisonic
  */
 
 /** バージョン */
-var VERSION = 1.11
+var VERSION = 1.12
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update.txt"
 /** ファイルの場所 */
@@ -456,8 +456,8 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
     })
     // 砲撃戦フェーズ
     var parseDay = function (phase, json) {
-        var result = []
         if (json != null) {
+            var result = []
             for (var idx in json.api_at_eflag) {
                 var friendAttack = Number(json.api_at_eflag[idx]) === 0
                 var attackType = json.api_at_type[idx]
@@ -476,13 +476,14 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
                     }
                 }
             }
+            return result
         }
-        return result
+        return null
     }
     // 雷撃戦フェーズ
     var parseTorpedo = function (phase, atacks) {
-        var result = { friend: [], enemy: [] }
         if (atacks != null) {
+            var result = { friend: [], enemy: [] }
             var atackList = atacks.stream().collect(Collectors.partitioningBy(function (atack) { return atack.friendAtack }))
             Java.from(atackList.get(true)).forEach(function (atack, i) {
                 result.friend[i] = []
@@ -496,13 +497,14 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
                     result.enemy[i][j] = new AttackDto(phase.kind, false, atack.origin[j] < enemyNum, atack.origin[j] % Math.max(6, enemyNum), atack.target[x] < friendNum, atack.target[x] % Math.max(6, friendNum), false, atack.ydam[j], atack.critical != null ? atack.critical[j] : 0, null, null)
                 })
             })
+            return result
         }
-        return result
+        return null
     }
     // 夜戦フェーズ
     var parseNight = function (phase, json) {
-        var result = []
         if (json != null) {
+            var result = []
             for (var idx in json.api_at_eflag) {
                 var friendAttack = Number(json.api_at_eflag[idx]) === 0
                 var attackType = json.api_sp_list[idx]
@@ -523,8 +525,9 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
                     }
                 }
             }
+            return result
         }
-        return result
+        return null
     }
     for (var idx in phaseList) {
         var phase = phaseList[idx]
