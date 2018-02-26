@@ -1,11 +1,11 @@
 /**
  * 異常ダメージ検知
- * @version 1.1.2
+ * @version 1.1.3
  * @author Nishisonic
  */
 
 /** バージョン */
-var VERSION = 1.12
+var VERSION = 1.13
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update.txt"
 /** ファイルの場所 */
@@ -718,7 +718,7 @@ var detectOrDefault = function (date, battle, friends, enemies, friendHp, enemyH
                     return Math.floor(attack.damage) > 0
                 }).filter(function (attack) {
                     // 味方艦隊への誤爆排除
-                    return !attack.friendAtack
+                    return attack.friendAtack
                 }).forEach(function (attack) {
                     var ship = getAtkDef(attack, friends, enemies)
                     var hp = getAtkDefHp(attack, friendHp, enemyHp)
