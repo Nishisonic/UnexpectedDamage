@@ -1,11 +1,11 @@
 /**
  * 異常ダメージ検知
- * @version 1.1.3
+ * @version 1.1.4
  * @author Nishisonic
  */
 
 /** バージョン */
-var VERSION = 1.13
+var VERSION = 1.14
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update.txt"
 /** ファイルの場所 */
@@ -117,7 +117,7 @@ function updateFile() {
  * @param {[DetectDto]} nightBattle 夜戦
  */
 function saveLog(dayBattle, torpedoAttack, nightBattle) {
-    setTmpData("logs", getData("logs").concat(dayBattle, torpedoAttack, nightBattle))
+    setTmpData("logs", (getData("logs") ? getData("logs") : []).concat(dayBattle, torpedoAttack, nightBattle))
 }
 
 /**
