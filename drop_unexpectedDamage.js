@@ -1,11 +1,11 @@
 /**
  * 異常ダメージ検知
- * @version 1.1.4
+ * @version 1.1.5
  * @author Nishisonic
  */
 
 /** バージョン */
-var VERSION = 1.14
+var VERSION = 1.15
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update.txt"
 /** ファイルの場所 */
@@ -1552,6 +1552,7 @@ DayBattlePower.prototype.getImprovementBonus = function () {
                     case 10:  // 12.7cm連装高角砲
                     case 66:  // 8cm高角砲
                     case 220: // 8cm高角砲改＋増設機銃
+                    case 275: // 10cm連装高角砲改＋増設機銃
                         return 0.2 * item.level
                     case 12:  // 15.5cm三連装副砲
                     case 234: // 15.5cm三連装副砲改
@@ -2059,6 +2060,7 @@ NightBattlePower.prototype.getImprovementBonus = function () {
                 case 10:  // 12.7cm連装高角砲
                 case 66:  // 8cm高角砲
                 case 220: // 8cm高角砲改＋増設機銃
+                case 275: // 10cm連装高角砲改＋増設機銃
                     return 0.2 * item.level
                 case 12:  // 15.5cm三連装副砲
                 case 234: // 15.5cm三連装副砲改
