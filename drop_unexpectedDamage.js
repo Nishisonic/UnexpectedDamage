@@ -1,11 +1,11 @@
 /**
  * 異常ダメージ検知
- * @version 1.1.5
+ * @version 1.1.6
  * @author Nishisonic
  */
 
 /** バージョン */
-var VERSION = 1.15
+var VERSION = 1.16
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update.txt"
 /** ファイルの場所 */
@@ -1387,19 +1387,22 @@ AntiSubmarinePower.prototype.getShipTypeConstant = function () {
  * @return {Number} 対潜シナジー倍率
  */
 AntiSubmarinePower.prototype.getSynergyBonus = function () {
-    /** ソナー&爆雷投射機シナジー */
-    var s1 = (this.items.some(function (item) { return isSonar(item) }) && this.items.some(function (item) { return isDepthChargeProjector(item) })) ? 0.15 : 0
-    /** ソナー&爆雷シナジー */
-    var s2 = (this.items.some(function (item) { return isSonar(item) }) && this.items.some(function (item) { return isDepthCharge(item) })) ? 0.15 : 0
-    /** 爆雷投射機&爆雷シナジー */
-    var s3 = (this.items.some(function (item) { return isDepthChargeProjector(item) }) && this.items.some(function (item) { return isDepthCharge(item) })) ? 0.1 : 0
-
-    // ソナー&爆雷投射機シナジーと爆雷投射機&爆雷シナジーが発動かつ大型ソナー所持時はソナー&爆雷シナジーは発動しない
-    if (s1 > 0 && s3 > 0 && this.items.some(function (item) { return isLargeSonar(item) })) {
-        return (1 + s1) * (1 + s3)
-    } else {
-        return (1 + s1) * (1 + s2 + s3)
+    // 旧型シナジー
+    var synergy1 = (this.items.some(function (item) { return item.type3 == 18 })
+        && this.items.some(function (item) { return item.type3 == 17 })) ? 1.15 : 1
+    // 新型シナジー
+    var synergy2 = 1
+    if (this.items.some(function (item) { return item.slotitemId == 44 || item.slotitemId == 45 })
+        && this.items.some(function (item) { return item.slotitemId == 226 || item.slotitemId == 227 })) {
+        if (this.items.some(function (item) { return item.type2 == 14 })) {
+            // 小型ソナー/爆雷投射機/爆雷シナジー
+            synergy2 = 1.25
+        } else {
+            // 爆雷投射機/爆雷シナジー
+            synergy2 = 1.1
+        }
     }
+    return synergy1 * synergy2
 }
 
 /**
@@ -1531,7 +1534,7 @@ DayBattlePower.prototype.getImprovementBonus = function () {
                 case 42: return 1       // 大型探照灯
                 case 21: return 1       // 機銃
                 case 15:                // 爆雷(投射機)
-                    return isDepthChargeProjector(item) ? 0.75 : 0
+                    return item.slotitemId == 44 || item.slotitemId == 45 ? 0.75 : 0
                 case 14: return 0.75    // ソナー
                 case 40: return 0.75    // 大型ソナー
                 case 24: return 1       // 上陸用舟艇
@@ -2170,45 +2173,7 @@ NightBattlePower.prototype.getNightTouchPlaneBonus = function () {
 
 //#endregion
 
-
-
 //#region 全般使用系
-
-/**
- * 爆雷か
- * @param {logbook.dto.ItemDto} item 装備
- * @return {Boolean} 爆雷か
- */
-var isDepthCharge = function (item) {
-    return item.name.indexOf("投射機") == -1 && item.type3 == 17
-}
-
-/**
- * 爆雷投射機か
- * @param {logbook.dto.ItemDto} item 装備
- * @return {Boolean} 爆雷投射機か
- */
-var isDepthChargeProjector = function (item) {
-    return item.name.indexOf("投射機") > -1 && item.type3 == 17
-}
-
-/**
- * ソナーか
- * @param {logbook.dto.ItemDto} item 装備
- * @return {Boolean} ソナーか
- */
-var isSonar = function (item) {
-    return item.type3 == 18
-}
-
-/**
- * 大型ソナーか
- * @param {logbook.dto.ItemDto} item 装備
- * @return {Boolean} 大型ソナーか
- */
-var isLargeSonar = function (item) {
-    return item.type2 == 40
-}
 
 /**
  * 弾薬量補正を返す
@@ -2268,7 +2233,7 @@ var getPtImpPackTargetBonus = function (attacker, defender) {
 }
 
 /**
- * 北端上棲姫特効倍率を返す
+ * 北端上陸姫特効倍率を返す
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} defender 防御艦
  * @return {Number} 倍率
@@ -2284,7 +2249,7 @@ var getNorthernmostLandingPrincessTargetBonus = function (attacker, defender) {
 }
 
 /**
- * 北端上棲姫特効を返す
+ * 北端上陸姫特効を返す
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} defender 防御艦
  * @return {Number} 特効
