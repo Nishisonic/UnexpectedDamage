@@ -1440,7 +1440,7 @@ AntiSubmarinePower.prototype.getFormationBonus = function () {
         case FORMATION.DIAMOND: return 1.2
         case FORMATION.ECHELON: return 1.0
         case FORMATION.LINE_ABREAST: return 1.3
-        case FORMATION.VANGUARD_FORMATION: return this.attack.attacker < Math.floor(this.attackNum / 2) ? 1.0 : 0.6
+        case FORMATION.VANGUARD: return this.attack.attacker < Math.floor(this.attackNum / 2) ? 1.0 : 0.6
         case FORMATION.CRUISING_FORMATION_1: return 1.3
         case FORMATION.CRUISING_FORMATION_2: return 1.1
         case FORMATION.CRUISING_FORMATION_3: return 1.0
@@ -1588,30 +1588,25 @@ DayBattlePower.prototype.getAfterCapPower = function () {
      * 2017/3/17～:180
      */
     var CAP_VALUE = getJstDate(2017, 3, 17, 12, 0, 0).before(this.date) ? 180 : 150
-    var result = [0, 0]
-    var value = getAfterCapValue(this.getBeforeCapPower(), CAP_VALUE)
-    var spotting = this.getSpottingBonus()
-    var apShell = this.getAPshellBonus()
-    var unified = this.getUnifiedBombingBonus()
-    var critical = getCriticalBonus(this.attack)
-    var skilled = this.shouldUseSkilled ? getSkilledBonus(this.date, this.attack, this.attacker, this.defender) : [1.0, 1.0]
-    var pt = getPtImpPackTargetBonus(this.attacker, this.defender)
-    if (this.isAPshellBonusTarget()) {
-        var supply = getSupplyDepotPrincessTargetBonus(this.attacker, this.defender)
-        var multiplyNorthern = getNorthernmostLandingPrincessTargetBonus(this.attacker, this.defender)
-        var plusNorthern = getNorthernmostLandingPrincessTargetPowerBonus(this.attacker, this.defender)
-        result[0] = Math.floor(Math.floor(Math.floor(Math.floor(value * supply) * multiplyNorthern + plusNorthern) * spotting * apShell) * unified * critical * skilled[0])
-        result[1] = Math.floor(Math.floor(Math.floor(Math.floor(value * supply) * multiplyNorthern + plusNorthern) * spotting * apShell) * unified * critical * skilled[1])
-    } else if (isCritical(this.attack) && spotting > 1.0) {
-        result[0] = result[1] = Math.floor(Math.floor(value * pt) * critical * spotting)
-    } else if (!isCritical(this.attack) && unified > 1.0) {
-        result[0] = Math.floor(value * pt) * unified
-        result[1] = Math.floor(value * pt) * unified
-    } else {
-        result[0] = Math.floor(Math.floor(value * pt) * unified * critical * skilled[0]) * spotting
-        result[1] = Math.floor(Math.floor(value * pt) * unified * critical * skilled[1]) * spotting
+    // A = [キャップ後攻撃力 * 集積地棲姫特効 * PT小鬼群特効]
+    var value = Math.floor(getAfterCapValue(this.getBeforeCapPower(), CAP_VALUE) * getSupplyDepotPrincessTargetBonus(this.attacker, this.defender) * getPtImpPackTargetBonus(this.attacker, this.defender))
+    // A = [A * 北端上陸姫乗算特効 + 北端上陸姫加算特効]
+    value = Math.floor(value * getNorthernmostLandingPrincessTargetBonus(this.attacker, this.defender) + getNorthernmostLandingPrincessTargetPowerBonus(this.attacker, this.defender))
+    // A = A * 弾着観測射撃 * 戦爆連合カットイン攻撃
+    value *= this.getSpottingBonus() * this.getUnifiedBombingBonus()
+    // 徹甲弾補正判定
+    if(this.isAPshellBonusTarget()){
+        // A = [A * 徹甲弾補正]
+        value = Math.floor(value * this.getAPshellBonus())
     }
-    return result
+    // クリティカル判定
+    if(isCritical(this.attack)){
+        // A = [A * クリティカル補正 * 熟練度補正]
+        value *= getCriticalBonus(this.attack)
+        var skilled = this.shouldUseSkilled ? getSkilledBonus(this.date, this.attack, this.attacker, this.defender) : [1.0, 1.0]
+        return [Math.floor(value * skilled[0]), Math.floor(value * skilled[1])]
+    }
+    return [value, value]
 }
 
 /**
@@ -1625,7 +1620,7 @@ DayBattlePower.prototype.getFormationBonus = function () {
         case FORMATION.DIAMOND: return 0.7
         case FORMATION.ECHELON: return 0.6
         case FORMATION.LINE_ABREAST: return 0.6
-        case FORMATION.VANGUARD_FORMATION: return this.attack.attacker < Math.floor(this.attackNum / 2) ? 0.5 : 1.0
+        case FORMATION.VANGUARD: return this.attack.attacker < Math.floor(this.attackNum / 2) ? 0.5 : 1.0
         case FORMATION.CRUISING_FORMATION_1: return 0.8
         case FORMATION.CRUISING_FORMATION_2: return 1.0
         case FORMATION.CRUISING_FORMATION_3: return 0.7
@@ -1864,7 +1859,7 @@ TorpedoPower.prototype.getFormationBonus = function () {
         case FORMATION.DIAMOND: return 0.7
         case FORMATION.ECHELON: return 0.6
         case FORMATION.LINE_ABREAST: return 0.6
-        case FORMATION.VANGUARD_FORMATION: return 1.0
+        case FORMATION.VANGUARD: return 1.0
         case FORMATION.CRUISING_FORMATION_1: return 0.7
         case FORMATION.CRUISING_FORMATION_2: return 0.9
         case FORMATION.CRUISING_FORMATION_3: return 0.6
@@ -2078,7 +2073,7 @@ NightBattlePower.prototype.getImprovementBonus = function () {
 
 NightBattlePower.prototype.getFormationBonus = function () {
     switch (Number(this.formation[this.attack.friendAttack ? 0 : 1])) {
-        case FORMATION.VANGUARD_FORMATION: return this.attack.attacker < Math.floor(this.attackNum / 2) ? 0.5 : 1.0
+        case FORMATION.VANGUARD: return this.attack.attacker < Math.floor(this.attackNum / 2) ? 0.5 : 1.0
         default: return 1.0
     }
 }
@@ -2584,7 +2579,7 @@ var FORMATION = {
     /** 単横陣 */
     LINE_ABREAST: 5,
     /** 警戒陣 */
-    VANGUARD_FORMATION: 6,
+    VANGUARD: 6,
     /** 第一警戒航行序列 */
     CRUISING_FORMATION_1: 11,
     /** 第二警戒航行序列 */
