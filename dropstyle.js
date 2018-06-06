@@ -67,8 +67,13 @@ function create(table, data, index) {
                         break
                     }
                     case SWT.DefaultSelection:{
+                        var count = getData(table.getItem(point).data.battleDate).map(function(dataList){
+                            return dataList.length
+                        }).reduce(function(p,v) {
+                            return p + v
+                        },0)
                         if (selected != -1
-                        && phaseIndex.some(function(index,i){ return index === column && getData(table.getItem(point).data.battleDate)[i].length > 0 })) {
+                        && phaseIndex.some(function(index,i){ return index === column && count > 0 })) {
                             // 初期設定
                             if(shell === null){
                                 shell = new Shell(table.getShell(),SWT.CLOSE | SWT.TITLE | SWT.MAX | SWT.MIN | SWT.RESIZE)
