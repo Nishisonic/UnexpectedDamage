@@ -1,11 +1,11 @@
 /**
  * 異常ダメージ検知
- * @version 1.2.1
+ * @version 1.2.2
  * @author Nishisonic
  */
 
 /** バージョン */
-var VERSION = 1.21
+var VERSION = 1.22
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update2.txt"
 /** ファイルの場所 */

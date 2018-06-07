@@ -1393,8 +1393,10 @@ var getSkilledBonus = function (date, attack, attacker, defender) {
     var ADD_SKILLED_DATE = getJstDate(2017, 10, 18, 12, 0, 0)
     var result = [1.0, 1.0]
     // rounds == 0 先制対潜
-    // 自軍攻撃 && クリティカル && 先制対潜ではない && (昼戦攻撃が空撃 || 夜戦攻撃が空撃)
-    if (attack.friendAttack && isCritical(attack)/* && attack.rounds != 0*/ && (!attack.kind.isNight() && getAttackTypeAtDay(attack, attacker, defender) == 1 || attack.kind.isNight() && getAttackTypeAtNight(attack, attacker, defender) == 1)) {
+    // 自軍攻撃 && クリティカル && 先制対潜ではない && (昼戦攻撃が空撃 || 夜戦攻撃が空撃) && (攻撃艦が補給艦かつ防御艦が潜水艦)ではない
+    if (attack.friendAttack && isCritical(attack)/* && attack.rounds !== 0*/
+    && (!attack.kind.isNight() && getAttackTypeAtDay(attack, attacker, defender) === 1 || attack.kind.isNight() && getAttackTypeAtNight(attack, attacker, defender) === 1)
+    && !(attacker.stype === 22 && isSubMarine(defender))) {
         var items = Java.from(attacker.item2.toArray())
         // 戦爆連合CI(熟練度は2017/10/18以降から)
         if (!attack.kind.isNight() && Number(attack.attackType) == 7 && date.after(ADD_SKILLED_DATE)) {

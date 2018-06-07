@@ -161,7 +161,6 @@ function genBattleHtml(dataLists){
     var masterData = Array.prototype.concat.apply([],dataLists[0],dataLists[1],dataLists[2])[0]
     var touchPlane = dataLists[2].length > 0 ? dataLists[2][0].touchPlane : [-1, -1]
     var sdf = new SimpleDateFormat(AppConstants.DATE_FORMAT)
-    print(dataLists,masterData)
     var html =
     '<html><head><style type="text/css">' +
         "body {font-family:'Lucida Grande','Hiragino Kaku Gothic ProN','ヒラギノ角ゴ ProN W3',Meiryo,メイリオ,sans-serif;}" +
@@ -259,7 +258,6 @@ function genHeaderHtml(data,power){
     var result = '<table style="margin-bottom:5px;">'
     result += '<tr><th>艦</th><th></th><th>艦</th><th>ダメージ</th><th>理論値</th></tr>'
     var armor = data.defender.soukou + getArmorBonus(data.mapCell, data.attacker, data.defender)
-    print(data.defender)
     var aftPower = power.getAfterCapPower()
     var dmgWidth = Math.floor(aftPower[0] - armor * 1.3 + 0.6) + " ~ " + Math.floor(aftPower[1] - armor * 0.7)
     result += '<tr><td class="' + (data.attacker.isFriend() ? 'friend' : 'enemy') + '">' + (data.attack.attacker + 1) + '.' + data.attacker.friendlyName + '</td><td>→</td><td class="' + (data.defender.isFriend() ? 'friend' : 'enemy') + '">'
