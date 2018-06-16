@@ -1,11 +1,11 @@
 // Library
-DataType = Java.type("logbook.data.DataType")
+Calendar        = Java.type("java.util.Calendar")
+TimeZone        = Java.type("java.util.TimeZone")
+DataType        = Java.type("logbook.data.DataType")
 BattlePhaseKind = Java.type("logbook.dto.BattlePhaseKind")
-EnemyShipDto = Java.type("logbook.dto.EnemyShipDto")
-ShipDto = Java.type("logbook.dto.ShipDto")
-Item = Java.type("logbook.internal.Item")
-Calendar = Java.type("java.util.Calendar")
-TimeZone = Java.type("java.util.TimeZone")
+EnemyShipDto    = Java.type("logbook.dto.EnemyShipDto")
+ShipDto         = Java.type("logbook.dto.ShipDto")
+Item            = Java.type("logbook.internal.Item")
 
 //#region 艦これ計算部分
 
@@ -503,19 +503,17 @@ DayBattlePower.prototype.getBeforeCapPower = function () {
  * @return {[Number,Number]} 昼砲撃火力(キャップ後)
  */
 DayBattlePower.prototype.getAfterCapPower = function () {
-    // A = [キャップ後攻撃力 * 集積地棲姫特効 * PT小鬼群特効]
-    var value = Math.floor(getAfterCapValue(this.getBeforeCapPower(), this.CAP_VALUE) * getSupplyDepotPrincessTargetBonus(this.attacker, this.defender) * getPtImpPackTargetBonus(this.attacker, this.defender))
-    // A = [A * 北端上陸姫乗算特効 + 北端上陸姫加算特効]
-    value = Math.floor(value * getNorthernmostLandingPrincessTargetBonus(this.attacker, this.defender) + getNorthernmostLandingPrincessTargetPowerBonus(this.attacker, this.defender))
-    // A = A * 弾着観測射撃 * 戦爆連合カットイン攻撃
-    value *= this.getSpottingBonus() * this.getUnifiedBombingBonus()
+    // サイレント修正(Twitterで確認した限りでは17/9/9が最古=>17夏イベ?)以降、集積地棲姫特効のキャップ位置が変化(a5→a6)
+    // 17夏以降に登場したPT小鬼群の特効位置もa6に変化?(乗算と加算組み合わせているっぽいので詳細不明)
+    // A = [[キャップ後攻撃力] * 乗算特効補正 + 加算特効補正] * 弾着観測射撃 * 戦爆連合カットイン攻撃
+    var value = Math.floor(Math.floor(getAfterCapValue(this.getBeforeCapPower(), this.CAP_VALUE)) * getMultiplySlayerBonus(this.attacker, this.defender) + getAddSlayerBonus(this.attacker, this.defender)) * this.getSpottingBonus() * this.getUnifiedBombingBonus()
     // 徹甲弾補正判定
-    if(this.isAPshellBonusTarget()){
+    if (this.isAPshellBonusTarget()) {
         // A = [A * 徹甲弾補正]
         value = Math.floor(value * this.getAPshellBonus())
     }
     // クリティカル判定
-    if(isCritical(this.attack)){
+    if (isCritical(this.attack)) {
         // A = [A * クリティカル補正 * 熟練度補正]
         value *= getCriticalBonus(this.attack)
         var skilled = this.shouldUseSkilled ? getSkilledBonus(this.date, this.attack, this.attacker, this.defender) : [1.0, 1.0]
@@ -1011,17 +1009,18 @@ NightBattlePower.prototype.getBeforeCapPower = function () {
  * @return {[Number,Number]} 夜戦火力(キャップ後)
  */
 NightBattlePower.prototype.getAfterCapPower = function () {
-    var result = [0, 0]
-    var value = getAfterCapValue(this.getBeforeCapPower(), this.CAP_VALUE)
-    var critical = getCriticalBonus(this.attack)
-    var skilled = this.shouldUseSkilled ? getSkilledBonus(this.date, this.attack, this.attacker, this.defender) : [1.0, 1.0]
-    var pt = getPtImpPackTargetBonus(this.attacker, this.defender)
-    var supply = getSupplyDepotPrincessTargetBonus(this.attacker, this.defender)
-    var multiplyNorthern = getNorthernmostLandingPrincessTargetBonus(this.attacker, this.defender)
-    var plusNorthern = getNorthernmostLandingPrincessTargetPowerBonus(this.attacker, this.defender)
-    result[0] = Math.floor(Math.floor(Math.floor(value * supply) * multiplyNorthern + plusNorthern) * critical * skilled[0]) * pt
-    result[1] = Math.floor(Math.floor(Math.floor(value * supply) * multiplyNorthern + plusNorthern) * critical * skilled[1]) * pt
-    return result
+    // サイレント修正(Twitterで確認した限りでは17/9/9が最古=>17夏イベ?)以降、集積地棲姫特効のキャップ位置が変化(a5→a6)
+    // 17夏以降に登場したPT小鬼群の特効位置もa6に変化?(乗算と加算組み合わせているっぽいので詳細不明)
+    // A = [[キャップ後攻撃力] * 乗算特効補正 + 加算特効補正]
+    var value = Math.floor(Math.floor(getAfterCapValue(this.getBeforeCapPower(), this.CAP_VALUE)) * getMultiplySlayerBonus(this.attacker, this.defender) + getAddSlayerBonus(this.attacker, this.defender))
+    // クリティカル判定
+    if (isCritical(this.attack)) {
+        // A = [A * クリティカル補正 * 熟練度補正]
+        value *= getCriticalBonus(this.attack)
+        var skilled = this.shouldUseSkilled ? getSkilledBonus(this.date, this.attack, this.attacker, this.defender) : [1.0, 1.0]
+        return [Math.floor(value * skilled[0]), Math.floor(value * skilled[1])]
+    }
+    return [value, value]
 }
 
 /**
@@ -1058,7 +1057,9 @@ NightBattlePower.prototype.getCutinBonus = function () {
         case 7:             // 駆逐カットイン(主砲/魚雷/電探)
             var dTypeGunBonus = Java.from(this.attack.showItem).some(function (id) { return Number(id) == 267 }) ? 1.25 : 1.0
             return 1.3 * dTypeGunBonus
-        case 8: return 1.2 // 駆逐カットイン(魚雷/見張員/電探)
+        case 8:             // 駆逐カットイン(魚雷/見張員/電探)
+            var dTypeGunBonus = Java.from(this.attack.showItem).some(function (id) { return Number(id) == 267 }) ? 1.25 : 1.0
+            return 1.2 * dTypeGunBonus
         default: return 1.0
     }
 }
@@ -1099,18 +1100,18 @@ var getAmmoBonus = function (ship) {
 }
 
 /**
- * PT小鬼群特効を返す
+ * 特効乗算補正を返す
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} defender 防御艦
  * @return {Number} 倍率
  */
-var getPtImpPackTargetBonus = function (attacker, defender) {
+var getMultiplySlayerBonus = function (attacker, defender) {
+    var items = getItems(attacker)
     switch (defender.shipId) {
         case 1637:
         case 1638:
         case 1639:
-        case 1640:
-            var items = getItems(attacker)
+        case 1640: // PT小鬼群
             // 小口径主砲
             var sMainGun = items.filter(function (item) { item.type2 == 1 }).length
             // 機銃
@@ -1142,38 +1143,70 @@ var getPtImpPackTargetBonus = function (attacker, defender) {
             }()
             var type3ShellBonus = (type3Shell >= 1) ? 1.3 : 1.0
             return aaGunBonus * sMainGunBonus * subGunBonus * type3ShellBonus
+        case 1653:
+        case 1654:
+        case 1655: // 集積地棲姫
+        case 1656:
+        case 1657:
+        case 1658: // 集積地棲姫-壊
+            var wg42 = items.filter(function (item) { return item.slotitemId == 126 }).length
+            var rikuDaihatsu = items.filter(function (item) { return item.slotitemId == 166 }).map(function (item) { return item.level })
+            var rikuDaihatsuLv = rikuDaihatsu > 0 ? rikuDaihatsu.reduce(function (prev, current) { return prev + current }, 0) / rikuDaihatsu.length : 0
+            var rikuDaihatsuLvBonus = 1 + rikuDaihatsuLv / 50
+            var kamisha = items.filter(function (item) { return item.slotitemId == 167 }).map(function (item) { return item.level })
+            var kamishaLv = kamisha > 0 ? kamisha.reduce(function (prev, current) { return prev + current }, 0) / kamisha.length : 0
+            var kamishaLvBonus = 1 + kamishaLv / 30
+            var shikonDaihatsuBonus = items.filter(function (item) { return item.slotitemId == 230 }).length > 0 ? 3.5 : 1
+            var wg42Bonus = function (num) {
+                if (num == 1) return 1.25
+                if (num >= 2) return 1.625
+                return 1.0
+            }(wg42)
+            var rikuDaihatsuBonus = function (num) {
+                if (num == 1) return 1.30
+                if (num >= 2) return 2.08
+                return 1.0
+            }(rikuDaihatsu.length)
+            var kamishaBonus = function (num) {
+                if (num == 1) return 1.70
+                if (num >= 2) return 2.50
+                return 1.0
+            }(kamisha.length)
+            return wg42Bonus * rikuDaihatsuBonus * rikuDaihatsuLvBonus * kamishaBonus * kamishaLvBonus * shikonDaihatsuBonus
+        case 1725:
+        case 1726:
+        case 1727: // 北端上陸姫
+            var type3shellBonus = items.filter(function (item) { return item.slotitemId == 35 }).length > 0 ? 1.3 : 1.0
+            var wg42Bonus = items.filter(function (item) { return item.slotitemId == 126 }).length > 0 ? 1.4 : 1.0
+            return type3shellBonus * wg42Bonus
     }
-    return 1.0;
+    return 1.0
 }
 
 /**
- * 北端上陸姫特効倍率を返す
+ * 特効加算補正を返す
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} defender 防御艦
  * @return {Number} 倍率
  */
-var getNorthernmostLandingPrincessTargetBonus = function (attacker, defender) {
-    if (isNorthernmostLandingPrincess(defender)) {
-        var items = getItems(attacker)
-        var type3shellBonus = items.filter(function (item) { return item.slotitemId == 35 }).length > 0 ? 1.3 : 1.0
-        var wg42Bonus = items.filter(function (item) { return item.slotitemId == 126 }).length > 0 ? 1.4 : 1.0
-        return type3shellBonus * wg42Bonus
-    }
-    return 1
-}
-
-/**
- * 北端上陸姫特効を返す
- * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
- * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} defender 防御艦
- * @return {Number} 特効
- */
-var getNorthernmostLandingPrincessTargetPowerBonus = function (attacker, defender) {
-    if (isNorthernmostLandingPrincess(defender)) {
-        var items = getItems(attacker)
-        var type3shellBonus = items.filter(function (item) { return item.slotitemId == 35 }).length > 0 ? 1 : 0
-        var wg42Bonus = items.filter(function (item) { return item.slotitemId == 126 }).length > 0 ? 15 : 0
-        return type3shellBonus + wg42Bonus
+var getAddSlayerBonus = function (attacker, defender) {
+    var items = getItems(attacker)
+    switch (defender.shipId) {
+        case 1653:
+        case 1654:
+        case 1655: // 集積地棲姫
+        case 1656:
+        case 1657:
+        case 1658: // 集積地棲姫-壊
+            var shikonDaihatsuBonus = items.filter(function (item) { return item.slotitemId == 230 }).length > 0 ? 5 : 0
+            return shikonDaihatsuBonus
+        case 1725:
+        case 1726:
+        case 1727: // 北端上陸姫
+            var items = getItems(attacker)
+            var type3shellBonus = items.filter(function (item) { return item.slotitemId == 35 }).length > 0 ? 1 : 0
+            var wg42Bonus = items.filter(function (item) { return item.slotitemId == 126 }).length > 0 ? 15 : 0
+            return type3shellBonus + wg42Bonus
     }
     return 0
 }
@@ -1184,49 +1217,6 @@ var getNorthernmostLandingPrincessTargetPowerBonus = function (attacker, defende
  */
 var isNorthernmostLandingPrincess = function (ship) {
     return [1725, 1726, 1727].some(function (id) { return id == ship.shipId })
-}
-
-/**
- * 集積地棲姫特効を返す
- * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
- * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} defender 防御艦
- * @return {Number} 倍率
- */
-var getSupplyDepotPrincessTargetBonus = function (attacker, defender) {
-    switch (defender.shipId) {
-        case 1653:
-        case 1654:
-        case 1655:
-        case 1656:
-        case 1657:
-        case 1658:
-            var items = getItems(attacker)
-            var wg42 = items.filter(function (item) { return item.slotitemId == 126 }).length
-            var rikuDaihatsu = items.filter(function (item) { return item.slotitemId == 166 }).map(function (item) { return item.level })
-            var rikuDaihatsuLv = rikuDaihatsu > 0 ? rikuDaihatsu.reduce(function (prev, current) { return prev + current }, 0) / rikuDaihatsu.length : 0
-            var rikuDaihatsuLvBonus = 1 + rikuDaihatsuLv / 50
-            var kamisha = items.filter(function (item) { return item.slotitemId == 167 }).map(function (item) { return item.level })
-            var kamishaLv = kamisha > 0 ? kamisha.reduce(function (prev, current) { return prev + current }, 0) / kamisha.length : 0
-            var kamishaLvBonus = 1 + kamishaLv / 30
-            var wg42Bonus = function (num) {
-                if (num == 1) return 1.25
-                if (num >= 2) return 1.625
-                return 1.0
-            }(wg42)
-            var rikuDaihatsuBonus = function (num) {
-                if (num == 1) return 1.30
-                if (num >= 2) return 2.08
-                return 1.0
-            }(rikuDaihatsu)
-            var kamishaBonus = function (num) {
-                if (num == 1) return 1.70
-                if (num >= 2) return 2.50
-                return 1.0
-            }(kamisha)
-            return wg42Bonus * rikuDaihatsuBonus * rikuDaihatsuLvBonus * kamishaBonus * kamishaLvBonus
-        default:
-            return 1.0
-    }
 }
 
 /**
@@ -1257,9 +1247,12 @@ var getLandBonus = function (attacker, defender) {
         case 1670:
         case 1671:
         case 1672: // 離島棲姫
+            var daihatsuBonus = (daihatsu >= 1 ? 1.575 : 1.0)
+            var rikuDaihatsuBonus = (rikuDaihatsu >= 1 ? 1.72 : 1.0)
+            var kamishaBonus = (kamisha >= 1 ? 2.32 : 1.0)
             var type3shellBonus = (type3shell >= 1) ? 1.75 : 1.0
             var wg42Bonus = (wg42 >= 2) ? 2.1 : (wg42 == 1 ? 1.4 : 1.0)
-            return type3shellBonus * wg42Bonus
+            return daihatsuBonus * rikuDaihatsuBonus * kamishaBonus * type3shellBonus * wg42Bonus
         case 1665:
         case 1666:
         case 1667: // 砲台小鬼
@@ -1268,7 +1261,7 @@ var getLandBonus = function (attacker, defender) {
             var daihatsuBonus = (daihatsu >= 1 ? 1.8 : 1.0) * (1 + daihatsuLv / 50)
             var rikuDaihatsuBonus = function (num) {
                 if (num >= 2) return 3.0
-                if (num == 1) return 2.15
+                if (num == 1) return 2.2
                 return 1.0
             }(rikuDaihatsu) * (1 + rikuDaihatsuLv / 50)
             var kamishaBonus = function (num) {
@@ -1292,12 +1285,23 @@ var getLandBonus = function (attacker, defender) {
             var kamishaBonus = (kamisha >= 1) ? 2.8 : 1.0
             var type3shellBonus = (type3shell >= 1) ? 1.8 : 1.0
             return wg42Bonus * daihatsuBonus * rikuDaihatsuBonus * kamishaBonus * type3shellBonus
+        case 1653:
+        case 1654:
+        case 1655: // 集積地棲姫
+        case 1656:
+        case 1657:
+        case 1658: // 集積地棲姫-壊
+            var type3shellBonus = (type3shell >= 1) ? 2.5 : 1.0
+            return type3shellBonus
+        case 1725:
+        case 1726:
+        case 1727: // 北端上陸姫
         case 1725:
         case 1726:
         case 1727: // 北端上陸姫
             return 1.0
         default:
-            // ソフトキャップ
+            // ソフトスキン
             var type3shellBonus = (type3shell >= 1) ? 2.5 : 1.0
             var tokuRikuDaihatsuBonus = (tokuRikuDaihatsu >= 1) ? 2.2 : 1.0
             return type3shellBonus * tokuRikuDaihatsuBonus
@@ -1395,8 +1399,8 @@ var getSkilledBonus = function (date, attack, attacker, defender) {
     // rounds == 0 先制対潜
     // 自軍攻撃 && クリティカル && 先制対潜ではない && (昼戦攻撃が空撃 || 夜戦攻撃が空撃) && (攻撃艦が補給艦かつ防御艦が潜水艦)ではない
     if (attack.friendAttack && isCritical(attack)/* && attack.rounds !== 0*/
-    && (!attack.kind.isNight() && getAttackTypeAtDay(attack, attacker, defender) === 1 || attack.kind.isNight() && getAttackTypeAtNight(attack, attacker, defender) === 1)
-    && !(attacker.stype === 22 && isSubMarine(defender))) {
+        && (!attack.kind.isNight() && getAttackTypeAtDay(attack, attacker, defender) === 1 || attack.kind.isNight() && getAttackTypeAtNight(attack, attacker, defender) === 1)
+        && !(attacker.stype === 22 && isSubMarine(defender))) {
         var items = Java.from(attacker.item2.toArray())
         // 戦爆連合CI(熟練度は2017/10/18以降から)
         if (!attack.kind.isNight() && Number(attack.attackType) == 7 && date.after(ADD_SKILLED_DATE)) {

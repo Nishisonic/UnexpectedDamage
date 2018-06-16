@@ -1,11 +1,11 @@
 /**
  * 異常ダメージ検知
- * @version 1.2.2
+ * @version 1.2.3
  * @author Nishisonic
  */
 
 /** バージョン */
-var VERSION = 1.22
+var VERSION = 1.23
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update2.txt"
 /** ファイルの場所 */
@@ -36,21 +36,22 @@ var PHASE_STRING = {
 // Library
 load("script/ScriptData.js")
 load("script/UnexpectedDamage.js")
-AppConstants = Java.type("logbook.constants.AppConstants")
-BattlePhaseKind = Java.type("logbook.dto.BattlePhaseKind")
-EnemyShipDto = Java.type("logbook.dto.EnemyShipDto")
-ShipDto = Java.type("logbook.dto.ShipDto")
-Item = Java.type("logbook.internal.Item")
-PrintWriter = Java.type("java.io.PrintWriter")
+PrintWriter         = Java.type("java.io.PrintWriter")
 ComparableArrayType = Java.type("java.lang.Comparable[]")
-URI = Java.type("java.net.URI")
-StandardCharsets = Java.type("java.nio.charset.StandardCharsets")
-Files = Java.type("java.nio.file.Files")
-Paths = Java.type("java.nio.file.Paths")
-StandardOpenOption = Java.type("java.nio.file.StandardOpenOption")
-SimpleDateFormat = Java.type("java.text.SimpleDateFormat")
-Collectors = Java.type("java.util.stream.Collectors")
-IOUtils = Java.type("org.apache.commons.io.IOUtils")
+URI                 = Java.type("java.net.URI")
+StandardCharsets    = Java.type("java.nio.charset.StandardCharsets")
+Files               = Java.type("java.nio.file.Files")
+Paths               = Java.type("java.nio.file.Paths")
+StandardOpenOption  = Java.type("java.nio.file.StandardOpenOption")
+SimpleDateFormat    = Java.type("java.text.SimpleDateFormat")
+ConcurrentHashMap   = Java.type("java.util.concurrent.ConcurrentHashMap")
+Collectors          = Java.type("java.util.stream.Collectors")
+AppConstants        = Java.type("logbook.constants.AppConstants")
+BattlePhaseKind     = Java.type("logbook.dto.BattlePhaseKind")
+EnemyShipDto        = Java.type("logbook.dto.EnemyShipDto")
+ShipDto             = Java.type("logbook.dto.ShipDto")
+Item                = Java.type("logbook.internal.Item")
+IOUtils             = Java.type("org.apache.commons.io.IOUtils")
 
 //#region メモ部分
 // ・洋上補給には拡張版は対応していない
@@ -824,6 +825,7 @@ var detectOrDefault = function (date, battle, friends, enemies, friendHp, enemyH
     } else {
         saveLog(dayBattle, torpedoAttack, nightBattle)
     }
+
     setTmpData(date, [dayBattle,torpedoAttack, nightBattle])
 
     ret[0] = toDispString(dayBattle.sort(errorDescending)[0])

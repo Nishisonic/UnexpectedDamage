@@ -4,6 +4,8 @@ load("script/UnexpectedDamage.js")
 
 //Import部分
 SimpleDateFormat   = Java.type("java.text.SimpleDateFormat")
+Optional           = Java.type("java.util.Optional")
+ConcurrentHashMap  = Java.type("java.util.concurrent.ConcurrentHashMap")
 IntStream          = Java.type("java.util.stream.IntStream")
 FillLayout         = Java.type("org.eclipse.swt.layout.FillLayout")
 SWT                = Java.type("org.eclipse.swt.SWT")
@@ -67,7 +69,7 @@ function create(table, data, index) {
                         break
                     }
                     case SWT.DefaultSelection:{
-                        var count = getData(table.getItem(point).data.battleDate).map(function(dataList){
+                        var count = Optional.ofNullable(getData(table.getItem(point).data.battleDate)).orElse([]).map(function(dataList){
                             return dataList.length
                         }).reduce(function(p,v) {
                             return p + v
@@ -256,12 +258,12 @@ function genBattleHtml(dataLists){
  */
 function genHeaderHtml(data,power){
     var result = '<table style="margin-bottom:5px;">'
-    result += '<tr><th>艦</th><th></th><th>艦</th><th>ダメージ</th><th>理論値</th></tr>'
+    result += '<tr><th>艦</th><th></th><th>艦</th><th>ダメージ</th><th>理論値</th><th>弾薬補正</th></tr>'
     var armor = data.defender.soukou + getArmorBonus(data.mapCell, data.attacker, data.defender)
     var aftPower = power.getAfterCapPower()
     var dmgWidth = Math.floor(aftPower[0] - armor * 1.3 + 0.6) + " ~ " + Math.floor(aftPower[1] - armor * 0.7)
     result += '<tr><td class="' + (data.attacker.isFriend() ? 'friend' : 'enemy') + '">' + (data.attack.attacker + 1) + '.' + data.attacker.friendlyName + '</td><td>→</td><td class="' + (data.defender.isFriend() ? 'friend' : 'enemy') + '">'
-        + (data.attack.defender + 1) + '.' + data.defender.friendlyName + '</td><td style="' + (isCritical(data.attack) ? 'font-weight:bold;' : '') + '">' + data.attack.damage + '</td><td>' + dmgWidth + '</td></tr>'
+        + (data.attack.defender + 1) + '.' + data.defender.friendlyName + '</td><td style="' + (isCritical(data.attack) ? 'font-weight:bold;' : '') + '">' + data.attack.damage + '</td><td>' + dmgWidth + '</td><td>' + getAmmoBonus(data.attacker).toFixed(2) + '</td></tr>'
     result += '</table>'
     return result
 }
@@ -309,8 +311,8 @@ function genDayBattleHtml(data,power){
     result += '<tr><td>' + power.getBasePower().toFixed(2) + '</td><td>' + power.getImprovementBonus().toFixed(2) + '</td><td>' + power.getCombinedPowerBonus() + '</td><td></td><td></td><td></td><td></td></tr>'
     result += '<tr><th>キャップ前火力</th><th>陸上補正</th><th>WG補正</th><th>交戦形態補正</th><th>攻撃側陣形補正</th><th>損傷補正</th><th>特殊砲補正</th></tr>'
     result += '<tr><td>' + power.getBeforeCapPower().toFixed(2) + '</td><td>' + getLandBonus(data.attacker, data.defender).toFixed(2) + '</td><td>' + getWg42Bonus(data.attacker, data.defender) + '</td><td>' + getFormationMatchBonus(data.formation).toFixed(1) + '</td><td>' + power.getFormationBonus().toFixed(1) + '</td><td>' + power.getConditionBonus().toFixed(1) + '</td><td>' + getOriginalGunPowerBonus(power.attacker).toFixed(2) + '</td></tr>'
-    result += '<tr><th rowspan="2">最終攻撃力</th><th>キャップ値</th><th>キャップ後火力</th><th>集積地棲姫特効</th><th>PT小鬼群特効</th><th>北端上陸姫乗算特効</th><th>北端上陸姫加算特効</th></tr>'
-    result += '<tr><td>' + power.CAP_VALUE + '</td><td>' + getAfterCapValue(power.getBeforeCapPower(), power.CAP_VALUE).toFixed(2) + '</td><td>' + getSupplyDepotPrincessTargetBonus(data.attacker, data.defender).toFixed(2) + '</td><td>' + getPtImpPackTargetBonus(data.attacker, data.defender).toFixed(1) + '</td><td>' + getNorthernmostLandingPrincessTargetBonus(data.attacker, data.defender).toFixed(2) + '</td><td>' + getNorthernmostLandingPrincessTargetPowerBonus(data.attacker, data.defender) + '</td></tr>'
+    result += '<tr><th rowspan="2">最終攻撃力</th><th>キャップ値</th><th>キャップ後火力</th><th>特殊敵乗算特効</th><th>特殊敵加算特効</th><th></th><th></th></tr>'
+    result += '<tr><td>' + power.CAP_VALUE + '</td><td>' + getAfterCapValue(power.getBeforeCapPower(), power.CAP_VALUE).toFixed(2) + '</td><td>' + getMultiplySlayerBonus(data.attacker, data.defender).toFixed(2) + '</td><td>' + getAddSlayerBonus(data.attacker, data.defender) + '</td><td></td><td></td></tr>'
     result += '<tr><td rowspan="2" style="font-weight:bold;">' + power.getAfterCapPower().map(function(power){ return power.toFixed(2) }).join(' ~ ') + '</td><th>弾着観測射撃補正</th><th>戦爆連合CI攻撃補正</th><th>徹甲弾補正</th><th>クリティカル補正</th><th>熟練度補正</th><th></th></tr>'
     var skilled = data.shouldUseSkilled ? getSkilledBonus(data.date, data.attack, data.attacker, data.defender).map(function(value){ return value.toFixed(2) }).join(' ~ ') : '1.00'
     result += '<tr><td>' + power.getSpottingBonus().toFixed(2) + '</td><td>' + power.getUnifiedBombingBonus().toFixed(2) + '</td><td>' + power.getAPshellBonus().toFixed(2) + '</td><td>' + getCriticalBonus(data.attack).toFixed(1) + '</td><td>' + skilled + '</td><td></td></tr>'
@@ -344,10 +346,10 @@ function genNightBattleHtml(data,power){
     result += '<tr><td>' + power.getBasePower().toFixed(2) + '</td><td>' + power.getImprovementBonus().toFixed(2) + '</td><td>' + power.getNightTouchPlaneBonus() + '</td><td></td><td></td><td></td><td></td></tr>'
     result += '<tr><th>キャップ前火力</th><th>陸上補正</th><th>WG補正</th><th>攻撃側陣形補正</th><th>夜戦特殊攻撃補正</th><th>損傷補正</th><th>特殊砲補正</th></tr>'
     result += '<tr><td>' + power.getBeforeCapPower().toFixed(2) + '</td><td>' + getLandBonus(data.attacker, data.defender).toFixed(2) + '</td><td>' + getWg42Bonus(data.attacker, data.defender) + '</td><td>' + power.getFormationBonus().toFixed(1) + '</td><td>' + power.getCutinBonus().toFixed(2) + '</td><td>' + power.getConditionBonus().toFixed(1) + '</td><td>' + getOriginalGunPowerBonus(power.attacker).toFixed(2) + '</td></tr>'
-    result += '<tr><th rowspan="2">最終攻撃力</th><th>キャップ値</th><th>キャップ後火力</th><th>集積地棲姫特効</th><th>北端上陸姫乗算特効</th><th>北端上陸姫加算特効</th><th></th></tr>'
-    result += '<tr><td>' + power.CAP_VALUE + '</td><td>' + getAfterCapValue(power.getBeforeCapPower(), power.CAP_VALUE).toFixed(2) + '</td><td>' + getSupplyDepotPrincessTargetBonus(data.attacker, data.defender).toFixed(2) + '</td><td>' + getNorthernmostLandingPrincessTargetBonus(data.attacker, data.defender).toFixed(2) + '</td><td>' + getNorthernmostLandingPrincessTargetPowerBonus(data.attacker, data.defender) + '</td><td></td></tr>'
-    result += '<tr><td rowspan="2" style="font-weight:bold;">' + power.getAfterCapPower().map(function(power){ return power.toFixed(2) }).join('~') + '</td><th>クリティカル補正</th><th>熟練度補正</th><th>PT小鬼群特効</th><th></th><th></th><th></th></tr>'
+    result += '<tr><th rowspan="2">最終攻撃力</th><th>キャップ値</th><th>キャップ後火力</th><th>特殊敵乗算特効</th><th>特殊敵加算特効</th><th></th><th></th></tr>'
+    result += '<tr><td>' + power.CAP_VALUE + '</td><td>' + getAfterCapValue(power.getBeforeCapPower(), power.CAP_VALUE).toFixed(2) + '</td><td>' + getMultiplySlayerBonus(data.attacker, data.defender).toFixed(2) + '</td><td>' + getAddSlayerBonus(data.attacker, data.defender) + '</td><td></td><td></td></tr>'
+    result += '<tr><td rowspan="2" style="font-weight:bold;">' + power.getAfterCapPower().map(function(power){ return power.toFixed(2) }).join('~') + '</td><th>クリティカル補正</th><th>熟練度補正</th><th></th><th></th><th></th><th></th></tr>'
     var skilled = data.shouldUseSkilled ? getSkilledBonus(data.date, data.attack, data.attacker, data.defender).map(function(value){ return value.toFixed(2) }).join(' ~ ') : '1.00'
-    result += '<tr><td>' + getCriticalBonus(data.attack).toFixed(1) + '</td><td>' + skilled + '</td><td>' + getPtImpPackTargetBonus(data.attacker, data.defender).toFixed(1) + '</td><td></td><td></td><td></td></tr>'
+    result += '<tr><td>' + getCriticalBonus(data.attack).toFixed(1) + '</td><td>' + skilled + '</td><td></td><td></td><td></td><td></td></tr>'
     return '<table>' + result + '</table>'
 }
