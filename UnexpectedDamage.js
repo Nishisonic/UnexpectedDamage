@@ -1028,6 +1028,19 @@ NightBattlePower.prototype.getAfterCapPower = function () {
  * @return {Number} 倍率
  */
 NightBattlePower.prototype.getCutinBonus = function () {
+    /**
+     * 駆逐専用CI:12.7cm連装砲D型改二ボーナスを返します
+     * @return {Number} 倍率
+     */
+    var getDTypeGunBonus = function(){
+        var num = Java.from(this.attack.showItem).filter(function (id) { return Number(id) == 267 }).length
+        switch(num){
+            case 1: return 1.25
+            case 2: return 1.4
+        }
+        return 1
+    }
+
     switch (Number(this.attack.attackType)) {
         case 1: return 1.2  // 連撃
         case 2: return 1.3  // カットイン(主砲/魚雷)
@@ -1055,11 +1068,9 @@ NightBattlePower.prototype.getCutinBonus = function () {
             if (kind1 == 1 || kind3 == 2) return 1.18 // CI種類F
             return 1.0
         case 7:             // 駆逐カットイン(主砲/魚雷/電探)
-            var dTypeGunBonus = Java.from(this.attack.showItem).some(function (id) { return Number(id) == 267 }) ? 1.25 : 1.0
-            return 1.3 * dTypeGunBonus
+            return 1.3 * getDTypeGunBonus(showItem)
         case 8:             // 駆逐カットイン(魚雷/見張員/電探)
-            var dTypeGunBonus = Java.from(this.attack.showItem).some(function (id) { return Number(id) == 267 }) ? 1.25 : 1.0
-            return 1.2 * dTypeGunBonus
+            return 1.2 * getDTypeGunBonus(showItem)
         default: return 1.0
     }
 }
