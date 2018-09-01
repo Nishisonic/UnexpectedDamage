@@ -1,11 +1,11 @@
 /**
  * 異常ダメージ検知
- * @version 1.2.5
+ * @version 1.2.6
  * @author Nishisonic
  */
 
 /** バージョン */
-var VERSION = 1.25
+var VERSION = 1.26
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update2.txt"
 /** ファイルの場所 */
@@ -36,25 +36,26 @@ var PHASE_STRING = {
 // Library
 load("script/ScriptData.js")
 load("script/UnexpectedDamage.js")
-PrintWriter         = Java.type("java.io.PrintWriter")
+PrintWriter = Java.type("java.io.PrintWriter")
 ComparableArrayType = Java.type("java.lang.Comparable[]")
-URI                 = Java.type("java.net.URI")
-StandardCharsets    = Java.type("java.nio.charset.StandardCharsets")
-Files               = Java.type("java.nio.file.Files")
-Paths               = Java.type("java.nio.file.Paths")
-StandardOpenOption  = Java.type("java.nio.file.StandardOpenOption")
-SimpleDateFormat    = Java.type("java.text.SimpleDateFormat")
-ConcurrentHashMap   = Java.type("java.util.concurrent.ConcurrentHashMap")
-Collectors          = Java.type("java.util.stream.Collectors")
-AppConstants        = Java.type("logbook.constants.AppConstants")
-BattlePhaseKind     = Java.type("logbook.dto.BattlePhaseKind")
-EnemyShipDto        = Java.type("logbook.dto.EnemyShipDto")
-ShipDto             = Java.type("logbook.dto.ShipDto")
-Item                = Java.type("logbook.internal.Item")
-IOUtils             = Java.type("org.apache.commons.io.IOUtils")
+URI = Java.type("java.net.URI")
+StandardCharsets = Java.type("java.nio.charset.StandardCharsets")
+Files = Java.type("java.nio.file.Files")
+Paths = Java.type("java.nio.file.Paths")
+StandardOpenOption = Java.type("java.nio.file.StandardOpenOption")
+SimpleDateFormat = Java.type("java.text.SimpleDateFormat")
+ConcurrentHashMap = Java.type("java.util.concurrent.ConcurrentHashMap")
+Collectors = Java.type("java.util.stream.Collectors")
+AppConstants = Java.type("logbook.constants.AppConstants")
+BattlePhaseKind = Java.type("logbook.dto.BattlePhaseKind")
+EnemyShipDto = Java.type("logbook.dto.EnemyShipDto")
+ShipDto = Java.type("logbook.dto.ShipDto")
+Item = Java.type("logbook.internal.Item")
+IOUtils = Java.type("org.apache.commons.io.IOUtils")
 
 //#region メモ部分
 // ・洋上補給には拡張版は対応していない
+// ・渦潮には拡張版は対応していない
 //#endregion
 
 //#region 主部分
@@ -109,7 +110,7 @@ function end() {
 function updateFile() {
     try {
         if (VERSION < Number(IOUtils.toString(URI.create(UPDATE_CHECK_URL), StandardCharsets.UTF_8))) {
-            FILE_URL.forEach(function(url,i){
+            FILE_URL.forEach(function (url, i) {
                 IOUtils.write(IOUtils.toString(URI.create(url), StandardCharsets.UTF_8), Files.newOutputStream(Paths.get(EXECUTABLE_FILE[i]), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING), StandardCharsets.UTF_8)
             })
         }
@@ -176,7 +177,8 @@ function appendLog(dayBattle, torpedoAttack, nightBattle) {
  */
 var isInvestiagate = function (battle) {
     var REFACTORING_DATE = getJstDate(2017, 11, 17, 12, 0, 0)
-    var MAELSTROM_MAP_LIST = [
+    var END_1ST_MAP_DATE = getJstDate(2018, 8, 15, 13, 0, 0)
+    var MAELSTROM_1ST_MAP_LIST = [
         [1, 3],
         [3, 2],
         [3, 3],
@@ -185,12 +187,22 @@ var isInvestiagate = function (battle) {
         [4, 4],
         [6, 2],
     ]
+    var MAELSTROM_2ND_MAP_LIST = [
+        [4, 3],
+        [4, 4],
+        [3, 4],
+        [6, 2],
+        [7, 1],
+    ]
     return battle.exVersion >= 2  // version確認
         && !battle.isPractice()   // 演習確認
         // 渦潮(弾薬減)マップ除外
-        && !MAELSTROM_MAP_LIST.some(function (map) { return map[0] == battle.mapCellDto.map[0] && map[1] == battle.mapCellDto.map[1] })
+        && !(END_1ST_MAP_DATE.after(battle.battleDate) && MAELSTROM_1ST_MAP_LIST.some(function (map) { return map[0] == battle.mapCellDto.map[0] && map[1] == battle.mapCellDto.map[1] }))
+        && !(END_1ST_MAP_DATE.before(battle.battleDate) && MAELSTROM_2ND_MAP_LIST.some(function (map) { return map[0] == battle.mapCellDto.map[0] && map[1] == battle.mapCellDto.map[1] }))
         // フォーマット変更以前のデータは除外
         && REFACTORING_DATE.before(battle.battleDate)
+        // 過去のイベント分は除外
+        && !(battle.mapCellDto.map[0] >= 22 && battle.mapCellDto.map[0] <= 41)
     // 何らかのフィルタを条件する際はここに追加
 }
 
@@ -826,7 +838,7 @@ var detectOrDefault = function (date, battle, friends, enemies, friendHp, enemyH
         saveLog(dayBattle, torpedoAttack, nightBattle)
     }
 
-    setTmpData(date, [dayBattle,torpedoAttack, nightBattle])
+    setTmpData(date, [dayBattle, torpedoAttack, nightBattle])
 
     ret[0] = toDispString(dayBattle.sort(errorDescending)[0])
     ret[1] = toDispString(torpedoAttack.sort(errorDescending)[0])

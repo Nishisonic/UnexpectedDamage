@@ -3,21 +3,21 @@ load("script/ScriptData.js")
 load("script/UnexpectedDamage.js")
 
 //Import部分
-SimpleDateFormat   = Java.type("java.text.SimpleDateFormat")
-Optional           = Java.type("java.util.Optional")
-ConcurrentHashMap  = Java.type("java.util.concurrent.ConcurrentHashMap")
-IntStream          = Java.type("java.util.stream.IntStream")
-FillLayout         = Java.type("org.eclipse.swt.layout.FillLayout")
-SWT                = Java.type("org.eclipse.swt.SWT")
-ShellAdapter       = Java.type("org.eclipse.swt.events.ShellAdapter")
-TableItem          = Java.type("org.eclipse.swt.widgets.TableItem")
-Browser            = Java.type("org.eclipse.swt.browser.Browser")
-Point              = Java.type("org.eclipse.swt.graphics.Point")
-Listener           = Java.type("org.eclipse.swt.widgets.Listener")
-Shell              = Java.type("org.eclipse.swt.widgets.Shell")
+SimpleDateFormat = Java.type("java.text.SimpleDateFormat")
+Optional = Java.type("java.util.Optional")
+ConcurrentHashMap = Java.type("java.util.concurrent.ConcurrentHashMap")
+IntStream = Java.type("java.util.stream.IntStream")
+FillLayout = Java.type("org.eclipse.swt.layout.FillLayout")
+SWT = Java.type("org.eclipse.swt.SWT")
+ShellAdapter = Java.type("org.eclipse.swt.events.ShellAdapter")
+TableItem = Java.type("org.eclipse.swt.widgets.TableItem")
+Browser = Java.type("org.eclipse.swt.browser.Browser")
+Point = Java.type("org.eclipse.swt.graphics.Point")
+Listener = Java.type("org.eclipse.swt.widgets.Listener")
+Shell = Java.type("org.eclipse.swt.widgets.Shell")
 SWTResourceManager = Java.type("org.eclipse.wb.swt.SWTResourceManager")
-AppConstants       = Java.type("logbook.constants.AppConstants")
-ReportUtils        = Java.type("logbook.util.ReportUtils")
+AppConstants = Java.type("logbook.constants.AppConstants")
+ReportUtils = Java.type("logbook.util.ReportUtils")
 
 data_prefix = "damage_"
 
@@ -25,7 +25,7 @@ var dateIndex = -1
 var phaseIndex = [-1, -1, -1]
 
 function begin(header) {
-    IntStream.range(0,header.length).forEach(function(i){
+    IntStream.range(0, header.length).forEach(function (i) {
         if (header[i].equals("昼砲撃戦")) {
             phaseIndex[0] = i
         }
@@ -59,55 +59,55 @@ function create(table, data, index) {
     item.setText(ReportUtils.toStringArray(data))
 
     var WindowListener = new Listener({
-        handleEvent : function(event) {
-               switch (event.type) {
-                    case SWT.MouseDown: {
-                        var selected = table.getSelectionIndex()
-                        point = new Point(event.x, event.y)
-                        var tableItem = table.getItem(point)
-                        column = getColumnIndex(point,tableItem)
-                        break
-                    }
-                    case SWT.DefaultSelection:{
-                        var count = Optional.ofNullable(getData(table.getItem(point).data.battleDate)).orElse([]).map(function(dataList){
-                            return dataList.length
-                        }).reduce(function(p,v) {
-                            return p + v
-                        },0)
-                        if (selected != -1
-                        && phaseIndex.some(function(index,i){ return index === column && count > 0 })) {
-                            // 初期設定
-                            if(shell === null){
-                                shell = new Shell(table.getShell(),SWT.CLOSE | SWT.TITLE | SWT.MAX | SWT.MIN | SWT.RESIZE)
-                                shell.setLayout(new FillLayout(SWT.VERTICAL))
-                                shell.addShellListener(new ShellAdapter({
-                                    shellClosed:function (e) {
-                                        e.doit = false
-                                        shell.setVisible(false)
-                                    }
-                                }))
-                                browser = new Browser(shell, SWT.NONE)
-                                browser.setBounds(0,0,900,670)
-                                shell.pack()
-                                shell.open()
-                            } else {
-                                shell.setVisible(true)
-                            }
-                            shell.setText("異常ダメージ")
-                            browser.setText(genBattleHtml(getData(table.getItem(point).data.battleDate)))
-                        } else if(shell !== null) {
-                            shell.setVisible(false)
+        handleEvent: function (event) {
+            switch (event.type) {
+                case SWT.MouseDown: {
+                    var selected = table.getSelectionIndex()
+                    point = new Point(event.x, event.y)
+                    var tableItem = table.getItem(point)
+                    column = getColumnIndex(point, tableItem)
+                    break
+                }
+                case SWT.DefaultSelection: {
+                    var count = Optional.ofNullable(getData(table.getItem(point).data.battleDate)).orElse([]).map(function (dataList) {
+                        return dataList.length
+                    }).reduce(function (p, v) {
+                        return p + v
+                    }, 0)
+                    if (selected != -1
+                        && phaseIndex.some(function (index, i) { return index === column && count > 0 })) {
+                        // 初期設定
+                        if (shell === null) {
+                            shell = new Shell(table.getShell(), SWT.CLOSE | SWT.TITLE | SWT.MAX | SWT.MIN | SWT.RESIZE)
+                            shell.setLayout(new FillLayout(SWT.VERTICAL))
+                            shell.addShellListener(new ShellAdapter({
+                                shellClosed: function (e) {
+                                    e.doit = false
+                                    shell.setVisible(false)
+                                }
+                            }))
+                            browser = new Browser(shell, SWT.NONE)
+                            browser.setBounds(0, 0, 900, 670)
+                            shell.pack()
+                            shell.open()
+                        } else {
+                            shell.setVisible(true)
                         }
-                        break
+                        shell.setText("異常ダメージ")
+                        browser.setText(genBattleHtml(getData(table.getItem(point).data.battleDate)))
+                    } else if (shell !== null) {
+                        shell.setVisible(false)
                     }
+                    break
+                }
             }
         }
     })
 
-    if(getData("set") == null){
+    if (getData("set") == null) {
         table.addListener(SWT.MouseDown, WindowListener)
         table.addListener(SWT.DefaultSelection, WindowListener)
-        setTmpData("set",true)
+        setTmpData("set", true)
     }
 
     return item
@@ -115,15 +115,15 @@ function create(table, data, index) {
 
 function end() { }
 
-function getColumnIndex(pt,item){
+function getColumnIndex(pt, item) {
     var columns = item.getParent().getColumnCount()
-    return IntStream.range(0,columns).filter(function(index){
+    return IntStream.range(0, columns).filter(function (index) {
         var rect = item.getBounds(index)
         return pt.x >= rect.x && pt.x < rect.x + rect.width
     }).findFirst().orElse(-1)
 }
 
-function toFormation(kind){
+function toFormation(kind) {
     switch (kind) {
         case 1: return "単縦陣"
         case 2: return "複縦陣"
@@ -139,17 +139,17 @@ function toFormation(kind){
     }
 }
 
-function toIntercept(kind){
+function toIntercept(kind) {
     switch (kind) {
         case 1: return "同航戦"
         case 2: return "反航戦"
         case 3: return "T字有利"
         case 4: return "T字不利"
-        default:return "不明"
+        default: return "不明"
     }
 }
 
-function toCombined(kind){
+function toCombined(kind) {
     switch (kind) {
         case 1: return "機動連合"
         case 2: return "水上連合"
@@ -158,13 +158,20 @@ function toCombined(kind){
     }
 }
 
-function genBattleHtml(dataLists){
+// Array.prototype.flat()
+function flatten(array) {
+    return array.reduce(function (a, c) {
+        return Array.isArray(c) ? a.concat(flatten(c)) : a.concat(c)
+    }, [])
+}
+
+function genBattleHtml(dataLists) {
     // データがあるものをひとまず検索
-    var masterData = Array.prototype.concat.apply([],dataLists[0],dataLists[1],dataLists[2])[0]
+    var masterData = flatten([dataLists[0], dataLists[1], dataLists[2]]).filter(function (d) { return d })[0]
     var touchPlane = dataLists[2].length > 0 ? dataLists[2][0].touchPlane : [-1, -1]
     var sdf = new SimpleDateFormat(AppConstants.DATE_FORMAT)
     var html =
-    '<html><head><style type="text/css">' +
+        '<html><head><style type="text/css">' +
         "body {font-family:'Lucida Grande','Hiragino Kaku Gothic ProN','ヒラギノ角ゴ ProN W3',Meiryo,メイリオ,sans-serif;}" +
         "div.box{margin-top:10px;margin-bottom:10px;font-size:small;}" +
         "body{background-color:#FAFAFA;}" +
@@ -184,69 +191,69 @@ function genBattleHtml(dataLists){
         "td.friend{color:#00F;}" +
         ".param{font-weight:bold;}" +
         "header{position:fixed;top:0px;left:0px;padding-left:10px;background-color:#FAFAFA;width:100%;}" +
-    '</style></head>' +
-    '<body>' +
-    '<header>' +
-    '<h2>' + masterData.mapCell + '（' + sdf.format(masterData.date) + '）</h2>' +
-    '<h2>会敵情報</h2>' +
-    '<div>会敵: '+ toIntercept(Number(masterData.formation[2])) + '</div>' +
-    '<table>' +
+        '</style></head>' +
+        '<body>' +
+        '<header>' +
+        '<h2>' + masterData.mapCell + '（' + sdf.format(masterData.date) + '）</h2>' +
+        '<h2>会敵情報</h2>' +
+        '<div>会敵: ' + toIntercept(Number(masterData.formation[2])) + '</div>' +
+        '<table>' +
         '<tr>' +
-            '<th></th>' +
-            '<th>艦隊</th>' +
-            '<th>陣形</th>' +
-            '<th title="夜戦時に異常ダメージがあった場合のみ表示">夜間触接</th>' +
+        '<th></th>' +
+        '<th>艦隊</th>' +
+        '<th>陣形</th>' +
+        '<th title="夜戦時に異常ダメージがあった場合のみ表示">夜間触接</th>' +
         '</tr>' +
         '<tr>' +
-            '<td>自</td>' +
-            '<td>' + toCombined(masterData.friendCombinedKind) + '</td>' +
-            '<td>' + toFormation(Number(masterData.formation[0])) + '</td>' +
-            '<td>' + (touchPlane[0] > 0 ? Item.get(touchPlane[0]).name : "") + '</td>' +
+        '<td>自</td>' +
+        '<td>' + toCombined(masterData.friendCombinedKind) + '</td>' +
+        '<td>' + toFormation(Number(masterData.formation[0])) + '</td>' +
+        '<td>' + (touchPlane[0] > 0 ? Item.get(touchPlane[0]).name : "") + '</td>' +
         '</tr>' +
         '<tr>' +
-            '<td>敵</td>' +
-            '<td>' + (masterData.isEnemyCombined ? '連合艦隊' : '通常艦隊') + '</td>' +
-            '<td>' + toFormation(Number(masterData.formation[1])) + '</td>' +
-            '<td>' + (touchPlane[1] > 0 ? Item.get(touchPlane[1]).name : "") + '</td>' +
+        '<td>敵</td>' +
+        '<td>' + (masterData.isEnemyCombined ? '連合艦隊' : '通常艦隊') + '</td>' +
+        '<td>' + toFormation(Number(masterData.formation[1])) + '</td>' +
+        '<td>' + (touchPlane[1] > 0 ? Item.get(touchPlane[1]).name : "") + '</td>' +
         '</tr>' +
-    '</table>' +
-    '<h2>異常ダメ検知攻撃一覧</h2>' +
-    '<hr color:"#BBB" style="margin-right:15px;"></hr>' +
-    '</header>' +
-    '<div style="width:100%; height:235px;"></div>' +
-    '<div style="overflow: auto; min-width:500px; border:#000000 solid 1px; width: 100%; font-size:small;">' +
-    // 昼砲撃戦
-    dataLists[0].map(function(data){
-        var power = getDayBattlePower(data.date, data.kind, data.friendCombinedKind, data.isEnemyCombined,
-            data.attackNum, data.formation, data.attack, data.attacker, data.defender, data.attackerHp, data.shouldUseSkilled)
-        var result = '<div style="border:#000000 solid 1px; padding:5px; margin:5px; background-color:#fce4d6;">'
-        result += genHeaderHtml(data,power)
-        result += isSubMarine(data.defender) ? genAntiSubMarineHtml(data,power) : genDayBattleHtml(data,power)
-        result += genDefenseArmorHtml(data)
-        return result + '</div>'
-    }).join('') +
-    // 昼雷撃戦
-    dataLists[1].map(function(data){
-        var power = getTorpedoPower(data.date, data.kind, data.friendCombinedKind, data.isEnemyCombined,
-            data.attackNum, data.formation, data.attack, data.attacker, data.defender, data.attackerHp)
-        var result = '<div style="border:#000000 solid 1px; padding:5px; margin:5px; background-color:#ddebf7;">'
-        result += genHeaderHtml(data,power)
-        result += genTorpedoAttackHtml(data,power)
-        result += genDefenseArmorHtml(data)
-        return result + '</div>'
-    }).join('') +
-    // 夜戦
-    dataLists[2].map(function(data){
-        var power = getNightBattlePower(data.date, data.kind, data.friendCombinedKind, data.isEnemyCombined,
-            data.attackNum, data.formation, data.touchPlane, data.attack, data.attacker, data.defender, data.attackerHp, data.shouldUseSkilled)
-        var result = '<div style="border:#000000 solid 1px; padding:5px; margin:5px; background-color:#e8d9f3;">'
-        result += genHeaderHtml(data,power)
-        result += isSubMarine(data.defender) ? genAntiSubMarineHtml(data,power) : genNightBattleHtml(data,power)
-        result += genDefenseArmorHtml(data)
-        return result + '</div>'
-    }).join('') +
-    '</div>' +
-    '</body></html>'
+        '</table>' +
+        '<h2>異常ダメ検知攻撃一覧</h2>' +
+        '<hr color:"#BBB" style="margin-right:15px;"></hr>' +
+        '</header>' +
+        '<div style="width:100%; height:235px;"></div>' +
+        '<div style="overflow: auto; min-width:500px; border:#000000 solid 1px; width: 100%; font-size:small;">' +
+        // 昼砲撃戦
+        dataLists[0].map(function (data) {
+            var power = getDayBattlePower(data.date, data.kind, data.friendCombinedKind, data.isEnemyCombined,
+                data.attackNum, data.formation, data.attack, data.attacker, data.defender, data.attackerHp, data.shouldUseSkilled)
+            var result = '<div style="border:#000000 solid 1px; padding:5px; margin:5px; background-color:#fce4d6;">'
+            result += genHeaderHtml(data, power)
+            result += isSubMarine(data.defender) ? genAntiSubMarineHtml(data, power) : genDayBattleHtml(data, power)
+            result += genDefenseArmorHtml(data)
+            return result + '</div>'
+        }).join('') +
+        // 昼雷撃戦
+        dataLists[1].map(function (data) {
+            var power = getTorpedoPower(data.date, data.kind, data.friendCombinedKind, data.isEnemyCombined,
+                data.attackNum, data.formation, data.attack, data.attacker, data.defender, data.attackerHp)
+            var result = '<div style="border:#000000 solid 1px; padding:5px; margin:5px; background-color:#ddebf7;">'
+            result += genHeaderHtml(data, power)
+            result += genTorpedoAttackHtml(data, power)
+            result += genDefenseArmorHtml(data)
+            return result + '</div>'
+        }).join('') +
+        // 夜戦
+        dataLists[2].map(function (data) {
+            var power = getNightBattlePower(data.date, data.kind, data.friendCombinedKind, data.isEnemyCombined,
+                data.attackNum, data.formation, data.touchPlane, data.attack, data.attacker, data.defender, data.attackerHp, data.shouldUseSkilled)
+            var result = '<div style="border:#000000 solid 1px; padding:5px; margin:5px; background-color:#e8d9f3;">'
+            result += genHeaderHtml(data, power)
+            result += isSubMarine(data.defender) ? genAntiSubMarineHtml(data, power) : genNightBattleHtml(data, power)
+            result += genDefenseArmorHtml(data)
+            return result + '</div>'
+        }).join('') +
+        '</div>' +
+        '</body></html>'
     return html
 }
 
@@ -256,7 +263,7 @@ function genBattleHtml(dataLists){
  * @param {AntiSubmarinePower|DayBattlePower|TorpedoPower|NightBattlePower} power 対潜火力
  * @return {String} HTML
  */
-function genHeaderHtml(data,power){
+function genHeaderHtml(data, power) {
     var result = '<table style="margin-bottom:5px;">'
     result += '<tr><th>艦</th><th></th><th>艦</th><th>ダメージ</th><th>理論値</th><th>弾薬補正</th></tr>'
     var armor = data.defender.soukou + getArmorBonus(data.mapCell, data.attacker, data.defender)
@@ -273,7 +280,7 @@ function genHeaderHtml(data,power){
  * @param {DetectDto} data 検知データ
  * @return {String} HTML
  */
-function genDefenseArmorHtml(data){
+function genDefenseArmorHtml(data) {
     var result = '<table style="margin-top:5px;">'
     result += '<tr><th colspan="4">防御側</th></tr>'
     result += '<tr><th>装甲乱数</th><th>実装甲値</th><th>表示装甲値</th><th>特殊補正</th>'
@@ -289,14 +296,14 @@ function genDefenseArmorHtml(data){
  * @param {AntiSubmarinePower} power 対潜火力
  * @return {String} HTML
  */
-function genAntiSubMarineHtml(data,power){
+function genAntiSubMarineHtml(data, power) {
     var result = '<tr><th rowspan="8" style="padding: 0px 3px;">攻<br>撃<br>側</th><th>基本攻撃力</th><th>改修火力</th><th>艦種定数</th><th></th><th></th></tr>'
     result += '<tr><td>' + power.getBasePower().toFixed(2) + '</td><td>' + power.getImprovementBonus().toFixed(2) + '</td><td>' + power.getShipTypeConstant() + '</td><td></td><td></td></tr>'
     result += '<tr><th>キャップ前火力</th><th>交戦形態補正</th><th>攻撃側陣形補正</th><th>損傷補正</th><th>シナジー補正</th></tr>'
     result += '<tr><td>' + power.getBeforeCapPower().toFixed(2) + '</td><td>' + getFormationMatchBonus(data.formation).toFixed(1) + '</td><td>' + power.getFormationBonus().toFixed(1) + '</td><td>' + power.getConditionBonus().toFixed(1) + '</td><td>' + power.getSynergyBonus().toFixed(2) + '</td></tr>'
     result += '<tr><th>最終攻撃力</th><th>キャップ値</th><th>キャップ後火力</th><th>クリティカル補正</th><th>熟練度補正</th></tr>'
-    var skilled = data.shouldUseSkilled ? getSkilledBonus(data.date, data.attack, data.attacker, data.defender).map(function(value){ return value.toFixed(2) }).join(' ~ ') : '1.00'
-    result += '<tr><td style="font-weight:bold;">' + power.getAfterCapPower().map(function(power){ return power.toFixed(2) }).join(' ~ ') + '</td><td>' + power.CAP_VALUE + '</td><td>' + getAfterCapValue(power.getBeforeCapPower(), power.CAP_VALUE).toFixed(2) + '</td><td>' + getCriticalBonus(data.attack).toFixed(1) + '</td><td>' + skilled + '</td>'
+    var skilled = data.shouldUseSkilled ? getSkilledBonus(data.date, data.attack, data.attacker, data.defender, data.attackerHp).map(function (value) { return value.toFixed(2) }).join(' ~ ') : '1.00'
+    result += '<tr><td style="font-weight:bold;">' + power.getAfterCapPower().map(function (power) { return power.toFixed(2) }).join(' ~ ') + '</td><td>' + power.CAP_VALUE + '</td><td>' + getAfterCapValue(power.getBeforeCapPower(), power.CAP_VALUE).toFixed(2) + '</td><td>' + getCriticalBonus(data.attack).toFixed(1) + '</td><td>' + skilled + '</td>'
     return '<table>' + result + '</table>'
 }
 
@@ -306,15 +313,15 @@ function genAntiSubMarineHtml(data,power){
  * @param {DayBattlePower} power 砲撃火力
  * @return {String} HTML
  */
-function genDayBattleHtml(data,power){
+function genDayBattleHtml(data, power) {
     var result = '<tr><th rowspan="8" style="padding: 0px 3px;">攻<br>撃<br>側</th><th>基本攻撃力</th><th>改修火力</th><th>連合補正</th><th></th><th></th><th></th><th></th></th>'
     result += '<tr><td>' + power.getBasePower().toFixed(2) + '</td><td>' + power.getImprovementBonus().toFixed(2) + '</td><td>' + power.getCombinedPowerBonus() + '</td><td></td><td></td><td></td><td></td></tr>'
     result += '<tr><th>キャップ前火力</th><th>陸上補正</th><th>WG補正</th><th>交戦形態補正</th><th>攻撃側陣形補正</th><th>損傷補正</th><th>特殊砲補正</th></tr>'
     result += '<tr><td>' + power.getBeforeCapPower().toFixed(2) + '</td><td>' + getLandBonus(data.attacker, data.defender).toFixed(2) + '</td><td>' + getWg42Bonus(data.attacker, data.defender) + '</td><td>' + getFormationMatchBonus(data.formation).toFixed(1) + '</td><td>' + power.getFormationBonus().toFixed(1) + '</td><td>' + power.getConditionBonus().toFixed(1) + '</td><td>' + getOriginalGunPowerBonus(power.attacker).toFixed(2) + '</td></tr>'
     result += '<tr><th rowspan="2">最終攻撃力</th><th>キャップ値</th><th>キャップ後火力</th><th>特殊敵乗算特効</th><th>特殊敵加算特効</th><th></th><th></th></tr>'
     result += '<tr><td>' + power.CAP_VALUE + '</td><td>' + getAfterCapValue(power.getBeforeCapPower(), power.CAP_VALUE).toFixed(2) + '</td><td>' + getMultiplySlayerBonus(data.attacker, data.defender).toFixed(2) + '</td><td>' + getAddSlayerBonus(data.attacker, data.defender) + '</td><td></td><td></td></tr>'
-    result += '<tr><td rowspan="2" style="font-weight:bold;">' + power.getAfterCapPower().map(function(power){ return power.toFixed(2) }).join(' ~ ') + '</td><th>弾着観測射撃補正</th><th>戦爆連合CI攻撃補正</th><th>徹甲弾補正</th><th>クリティカル補正</th><th>熟練度補正</th><th></th></tr>'
-    var skilled = data.shouldUseSkilled ? getSkilledBonus(data.date, data.attack, data.attacker, data.defender).map(function(value){ return value.toFixed(2) }).join(' ~ ') : '1.00'
+    result += '<tr><td rowspan="2" style="font-weight:bold;">' + power.getAfterCapPower().map(function (power) { return power.toFixed(2) }).join(' ~ ') + '</td><th>弾着観測射撃補正</th><th>戦爆連合CI攻撃補正</th><th>徹甲弾補正</th><th>クリティカル補正</th><th>熟練度補正</th><th></th></tr>'
+    var skilled = data.shouldUseSkilled ? getSkilledBonus(data.date, data.attack, data.attacker, data.defender, data.attackerHp).map(function (value) { return value.toFixed(2) }).join(' ~ ') : '1.00'
     result += '<tr><td>' + power.getSpottingBonus().toFixed(2) + '</td><td>' + power.getUnifiedBombingBonus().toFixed(2) + '</td><td>' + power.getAPshellBonus().toFixed(2) + '</td><td>' + getCriticalBonus(data.attack).toFixed(1) + '</td><td>' + skilled + '</td><td></td></tr>'
     return '<table>' + result + '</table>'
 }
@@ -325,7 +332,7 @@ function genDayBattleHtml(data,power){
  * @param {TorpedoPower} power 雷撃火力
  * @return {String} HTML
  */
-function genTorpedoAttackHtml(data,power){
+function genTorpedoAttackHtml(data, power) {
     var result = '<tr><th rowspan="8" style="padding: 0px 3px;">攻<br>撃<br>側</th><th>基本攻撃力</th><th>改修火力</th><th>連合補正</th><th></th></tr>'
     result += '<tr><td>' + power.getBasePower().toFixed(2) + '</td><td>' + power.getImprovementBonus().toFixed(2) + '</td><td>' + power.getCombinedPowerBonus() + '</td><td></td></tr>'
     result += '<tr><th>キャップ前火力</th><th>交戦形態補正</th><th>攻撃側陣形補正</th><th>損傷補正</th></tr>'
@@ -341,15 +348,15 @@ function genTorpedoAttackHtml(data,power){
  * @param {NightBattlePower} power 夜戦火力
  * @return {String} HTML
  */
-function genNightBattleHtml(data,power){
+function genNightBattleHtml(data, power) {
     var result = '<tr><th rowspan="8" style="padding: 0px 3px;">攻<br>撃<br>側</th><th>基本攻撃力</th><th>改修火力</th><th>触接補正</th><th></th><th></th><th></th><th></th></th>'
     result += '<tr><td>' + power.getBasePower().toFixed(2) + '</td><td>' + power.getImprovementBonus().toFixed(2) + '</td><td>' + power.getNightTouchPlaneBonus() + '</td><td></td><td></td><td></td><td></td></tr>'
     result += '<tr><th>キャップ前火力</th><th>陸上補正</th><th>WG補正</th><th>攻撃側陣形補正</th><th>夜戦特殊攻撃補正</th><th>損傷補正</th><th>特殊砲補正</th></tr>'
     result += '<tr><td>' + power.getBeforeCapPower().toFixed(2) + '</td><td>' + getLandBonus(data.attacker, data.defender).toFixed(2) + '</td><td>' + getWg42Bonus(data.attacker, data.defender) + '</td><td>' + power.getFormationBonus().toFixed(1) + '</td><td>' + power.getCutinBonus().toFixed(2) + '</td><td>' + power.getConditionBonus().toFixed(1) + '</td><td>' + getOriginalGunPowerBonus(power.attacker).toFixed(2) + '</td></tr>'
     result += '<tr><th rowspan="2">最終攻撃力</th><th>キャップ値</th><th>キャップ後火力</th><th>特殊敵乗算特効</th><th>特殊敵加算特効</th><th></th><th></th></tr>'
     result += '<tr><td>' + power.CAP_VALUE + '</td><td>' + getAfterCapValue(power.getBeforeCapPower(), power.CAP_VALUE).toFixed(2) + '</td><td>' + getMultiplySlayerBonus(data.attacker, data.defender).toFixed(2) + '</td><td>' + getAddSlayerBonus(data.attacker, data.defender) + '</td><td></td><td></td></tr>'
-    result += '<tr><td rowspan="2" style="font-weight:bold;">' + power.getAfterCapPower().map(function(power){ return power.toFixed(2) }).join('~') + '</td><th>クリティカル補正</th><th>熟練度補正</th><th></th><th></th><th></th><th></th></tr>'
-    var skilled = data.shouldUseSkilled ? getSkilledBonus(data.date, data.attack, data.attacker, data.defender).map(function(value){ return value.toFixed(2) }).join(' ~ ') : '1.00'
+    result += '<tr><td rowspan="2" style="font-weight:bold;">' + power.getAfterCapPower().map(function (power) { return power.toFixed(2) }).join('~') + '</td><th>クリティカル補正</th><th>熟練度補正</th><th></th><th></th><th></th><th></th></tr>'
+    var skilled = data.shouldUseSkilled ? getSkilledBonus(data.date, data.attack, data.attacker, data.defender, data.attackerHp).map(function (value) { return value.toFixed(2) }).join(' ~ ') : '1.00'
     result += '<tr><td>' + getCriticalBonus(data.attack).toFixed(1) + '</td><td>' + skilled + '</td><td></td><td></td><td></td><td></td></tr>'
     return '<table>' + result + '</table>'
 }
