@@ -1,11 +1,11 @@
 /**
  * 異常ダメージ検知
- * @version 1.2.6
+ * @version 1.2.7
  * @author Nishisonic
  */
 
 /** バージョン */
-var VERSION = 1.26
+var VERSION = 1.27
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update2.txt"
 /** ファイルの場所 */
@@ -482,18 +482,21 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
             for (var idx in json.api_at_eflag) {
                 var friendAttack = Number(json.api_at_eflag[idx]) === 0
                 var attackType = json.api_at_type[idx]
-                var attacker = json.api_at_list[idx]
                 var showItem = json.api_si_list[idx]
                 result[idx] = []
                 for (var didx in json.api_df_list[idx]) {
                     var lastAttack = didx + 1 < json.api_df_list[idx].length ? Number(json.api_df_list[idx][didx + 1]) === -1 : true
-                    var defender = json.api_df_list[idx][didx]
-                    var damage = Math.floor(json.api_damage[idx][didx])
-                    var critical = json.api_cl_list[idx][didx]
-                    if (friendAttack) {
-                        result[idx][didx] = new AttackDto(phase.kind, friendAttack, attacker < friendNum, attacker % Math.max(6, friendNum), defender < enemyNum, defender % Math.max(6, enemyNum), lastAttack, damage, critical, attackType, showItem)
-                    } else {
-                        result[idx][didx] = new AttackDto(phase.kind, friendAttack, attacker < enemyNum, attacker % Math.max(6, enemyNum), defender < friendNum, defender % Math.max(6, friendNum), lastAttack, damage, critical, attackType, showItem)
+                    if (Number(json.api_df_list[idx][didx]) !== -1) {
+                        // Nelson Touch(v1.2.7)
+                        var attacker = Number(attackType) === 100 ? didx * 2 : json.api_at_list[idx]
+                        var defender = json.api_df_list[idx][didx]
+                        var damage = Math.floor(json.api_damage[idx][didx])
+                        var critical = json.api_cl_list[idx][didx]
+                        if (friendAttack) {
+                            result[idx][didx] = new AttackDto(phase.kind, friendAttack, attacker < friendNum, attacker % Math.max(6, friendNum), defender < enemyNum, defender % Math.max(6, enemyNum), lastAttack, damage, critical, attackType, showItem)
+                        } else {
+                            result[idx][didx] = new AttackDto(phase.kind, friendAttack, attacker < enemyNum, attacker % Math.max(6, enemyNum), defender < friendNum, defender % Math.max(6, friendNum), lastAttack, damage, critical, attackType, showItem)
+                        }
                     }
                 }
             }
@@ -529,12 +532,13 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
             for (var idx in json.api_at_eflag) {
                 var friendAttack = Number(json.api_at_eflag[idx]) === 0
                 var attackType = json.api_sp_list[idx]
-                var attacker = json.api_at_list[idx]
                 var showItem = json.api_si_list[idx]
                 result[idx] = []
                 for (var didx in json.api_df_list[idx]) {
                     var lastAttack = didx + 1 < json.api_df_list[idx].length ? Number(json.api_df_list[idx][didx + 1]) === -1 : true
                     if (Number(json.api_df_list[idx][didx]) !== -1) {
+                        // Nelson Touch(v1.2.7)
+                        var attacker = Number(attackType) === 100 ? didx * 2 : json.api_at_list[idx]
                         var defender = json.api_df_list[idx][didx]
                         var damage = Math.floor(json.api_damage[idx][didx])
                         var critical = json.api_cl_list[idx][didx]

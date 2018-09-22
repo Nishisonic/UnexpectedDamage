@@ -614,6 +614,7 @@ DayBattlePower.prototype.getSpottingBonus = function () {
         case 5: return 1.3   // 主砲+徹甲弾
         case 6: return 1.5   // 主砲+主砲
         //case 7: return 1.0 // 戦爆連合CI
+        case 100: return Number(this.formation[2]) === 4 ? 2.5 : 2.0 // Nelson Touch(≠弾着攻撃)
         default: return 1.0  // それ以外
     }
 }
@@ -1065,6 +1066,8 @@ NightBattlePower.prototype.getCutinBonus = function () {
             return 1.3 * getDTypeGunBonus(this.attack.showItem)
         case 8:             // 駆逐カットイン(魚雷/見張員/電探)
             return 1.2 * getDTypeGunBonus(this.attack.showItem)
+        case 100:           // Nelson Touch
+            return Number(this.formation[2]) === 4 ? 2.5 : 2.0
         default: return 1.0
     }
 }
