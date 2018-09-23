@@ -1,4 +1,4 @@
-// Library
+//#region Library
 Calendar = Java.type("java.util.Calendar")
 TimeZone = Java.type("java.util.TimeZone")
 DataType = Java.type("logbook.data.DataType")
@@ -6,6 +6,33 @@ BattlePhaseKind = Java.type("logbook.dto.BattlePhaseKind")
 EnemyShipDto = Java.type("logbook.dto.EnemyShipDto")
 ShipDto = Java.type("logbook.dto.ShipDto")
 Item = Java.type("logbook.internal.Item")
+//#endregion
+
+//#region 全般
+
+/** バージョン */
+var VERSION = 1.28
+/** バージョン確認URL */
+var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update2.txt"
+/** ファイルの場所 */
+var FILE_URL = [
+    "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/drop_unexpectedDamage.js",
+    "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/UnexpectedDamage.js",
+    "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/dropstyle.js",
+]
+/** 保存場所 */
+var EXECUTABLE_FILE = [
+    "script/drop_unexpectedDamage.js",
+    "script/UnexpectedDamage.js",
+    "script/dropstyle.js",
+]
+/** ログファイル保存の場所 */
+var LOG_FILE = "damage.log"
+
+/** ScriptData用 */
+var data_prefix = "damage_"
+
+//#endregion
 
 //#region 艦これ計算部分
 
@@ -677,11 +704,11 @@ DayBattlePower.prototype.getCombinedPowerBonus = function () {
                 case COMBINED_FLEET.NONE:               // 敵:通常艦隊 -> 味方:通常艦隊
                     return 0
                 case COMBINED_FLEET.CARRIER_TASK_FORCE: // 敵:通常艦隊 -> 味方:空母機動部隊(第一艦隊/第二艦隊)
-                    return this.attack.mainAttack ? 10 : 5
+                    return this.attack.mainDefense ? 10 : 5
                 case COMBINED_FLEET.SURFACE_TASK_FORCE: // 敵:通常艦隊 -> 味方:水上打撃部隊(第一艦隊/第二艦隊)
-                    return this.attack.mainAttack ? 5 : -5
+                    return this.attack.mainDefense ? 5 : -5
                 case COMBINED_FLEET.TRANSPORT_ESCORT:   // 敵:通常艦隊 -> 味方:輸送護衛部隊(第一艦隊/第二艦隊)
-                    return this.attack.mainAttack ? 10 : 5
+                    return this.attack.mainDefense ? 10 : 5
             }
         }
     }

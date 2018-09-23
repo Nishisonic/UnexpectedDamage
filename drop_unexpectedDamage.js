@@ -1,39 +1,10 @@
 /**
  * 異常ダメージ検知
- * @version 1.2.7
+ * @version 1.2.8
  * @author Nishisonic
  */
 
-/** バージョン */
-var VERSION = 1.27
-/** バージョン確認URL */
-var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update2.txt"
-/** ファイルの場所 */
-var FILE_URL = [
-    "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/drop_unexpectedDamage.js",
-    "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/UnexpectedDamage.js",
-    "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/dropstyle.js",
-]
-/** 保存場所 */
-var EXECUTABLE_FILE = [
-    "script/drop_unexpectedDamage.js",
-    "script/UnexpectedDamage.js",
-    "script/dropstyle.js",
-]
-/** ログファイル保存の場所 */
-var LOG_FILE = "damage.log"
-
-/** ScriptData用 */
-data_prefix = "damage_"
-
-/** フェーズ */
-var PHASE_STRING = {
-    0: "昼砲撃戦",
-    1: "昼雷撃戦",
-    2: "夜戦",
-}
-
-// Library
+//#region Library
 load("script/ScriptData.js")
 load("script/UnexpectedDamage.js")
 PrintWriter = Java.type("java.io.PrintWriter")
@@ -52,6 +23,18 @@ EnemyShipDto = Java.type("logbook.dto.EnemyShipDto")
 ShipDto = Java.type("logbook.dto.ShipDto")
 Item = Java.type("logbook.internal.Item")
 IOUtils = Java.type("org.apache.commons.io.IOUtils")
+//#endregion
+
+//#region 全般
+
+/** フェーズ */
+var PHASE_STRING = {
+    0: "昼砲撃戦",
+    1: "昼雷撃戦",
+    2: "夜戦",
+}
+
+//#endregion
 
 //#region メモ部分
 // ・洋上補給には拡張版は対応していない
@@ -96,8 +79,8 @@ function end() {
         var sf = new SimpleDateFormat(AppConstants.DATE_FORMAT)
         var str = logs.sort(function (a, b) {
             return a.date.equals(b.date) ? (a.phase - b.phase) : a.date.compareTo(b.date)
-        }).map(function (log) {
-            return sf.format(log.date) + " " + log.mapCell + " " + PHASE_STRING[log.phase] + " " + toDispString(log)
+        }).map(function (log, i) {
+            return (i === 0 || log.date !== logs[i - 1].date ? "■" : "｜") + sf.format(log.date) + " " + log.mapCell + " " + PHASE_STRING[log.phase] + " " + toDispString(log)
         }).join("\r\n")
         writeLog(str)
     }
@@ -743,7 +726,7 @@ var detectOrDefault = function (date, battle, friends, enemies, friendHp, enemyH
                     return Math.floor(attack.damage) > 0
                 }).filter(function (attack) {
                     // 味方艦隊への誤爆排除
-                    return attack.friendAtack
+                    return attack.friendAttack
                 }).forEach(function (attack) {
                     var ship = getAtkDef(attack, friends, enemies)
                     var hp = getAtkDefHp(attack, friendHp, enemyHp)
@@ -879,10 +862,10 @@ var damageControl = function (shipHp, ship) {
         var items = getItems(ship)
         items.some(function (item) {
             switch (item.slotitemId) {
-                case 43: // 応急修理要員
+                case 42: // 応急修理要員
                     shipHp.now = Math.floor(shipHp.max * 0.2)
                     return true
-                case 44: // 応急修理女神
+                case 43: // 応急修理女神
                     shipHp.now = shipHp.max
                     return true
             }

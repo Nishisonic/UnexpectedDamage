@@ -19,8 +19,6 @@ SWTResourceManager = Java.type("org.eclipse.wb.swt.SWTResourceManager")
 AppConstants = Java.type("logbook.constants.AppConstants")
 ReportUtils = Java.type("logbook.util.ReportUtils")
 
-data_prefix = "damage_"
-
 var dateIndex = -1
 var phaseIndex = [-1, -1, -1]
 
@@ -93,7 +91,7 @@ function create(table, data, index) {
                         } else {
                             shell.setVisible(true)
                         }
-                        shell.setText("異常ダメージ")
+                        shell.setText("異常ダメージ検知 " + String(VERSION).replace(".","").split("").join("."))
                         browser.setText(genBattleHtml(getData(table.getItem(point).data.battleDate)))
                     } else if (shell !== null) {
                         shell.setVisible(false)
@@ -170,6 +168,7 @@ function genBattleHtml(dataLists) {
     var masterData = flatten([dataLists[0], dataLists[1], dataLists[2]]).filter(function (d) { return d })[0]
     var touchPlane = dataLists[2].length > 0 ? dataLists[2][0].touchPlane : [-1, -1]
     var sdf = new SimpleDateFormat(AppConstants.DATE_FORMAT)
+    var idx = 0
     var html =
         '<html><head><style type="text/css">' +
         "body {font-family:'Lucida Grande','Hiragino Kaku Gothic ProN','ヒラギノ角ゴ ProN W3',Meiryo,メイリオ,sans-serif;}" +
@@ -230,6 +229,7 @@ function genBattleHtml(dataLists) {
             result += genHeaderHtml(data, power)
             result += isSubMarine(data.defender) ? genAntiSubMarineHtml(data, power) : genDayBattleHtml(data, power)
             result += genDefenseArmorHtml(data)
+            result += genGimmickHtml(data, power, idx++)
             return result + '</div>'
         }).join('') +
         // 昼雷撃戦
@@ -240,6 +240,7 @@ function genBattleHtml(dataLists) {
             result += genHeaderHtml(data, power)
             result += genTorpedoAttackHtml(data, power)
             result += genDefenseArmorHtml(data)
+            result += genGimmickHtml(data, power, idx++)
             return result + '</div>'
         }).join('') +
         // 夜戦
@@ -250,6 +251,7 @@ function genBattleHtml(dataLists) {
             result += genHeaderHtml(data, power)
             result += isSubMarine(data.defender) ? genAntiSubMarineHtml(data, power) : genNightBattleHtml(data, power)
             result += genDefenseArmorHtml(data)
+            result += genGimmickHtml(data, power, idx++)
             return result + '</div>'
         }).join('') +
         '</div>' +
@@ -260,17 +262,18 @@ function genBattleHtml(dataLists) {
 /**
  * 名前や理論値などのヘッダー部分のHTMLを生成して返す
  * @param {DetectDto} data 検知データ
- * @param {AntiSubmarinePower|DayBattlePower|TorpedoPower|NightBattlePower} power 対潜火力
+ * @param {AntiSubmarinePower|DayBattlePower|TorpedoPower|NightBattlePower} power 火力
  * @return {String} HTML
  */
 function genHeaderHtml(data, power) {
     var result = '<table style="margin-bottom:5px;">'
-    result += '<tr><th>艦</th><th></th><th>艦</th><th>ダメージ</th><th>理論値</th><th>弾薬補正</th></tr>'
+    result += '<tr><th>艦</th><th></th><th>艦</th><th>ダメージ</th><th>残りHP</th><th>理論値</th><th>弾薬補正</th></tr>'
     var armor = data.defender.soukou + getArmorBonus(data.mapCell, data.attacker, data.defender)
     var aftPower = power.getAfterCapPower()
     var dmgWidth = Math.floor(aftPower[0] - armor * 1.3 + 0.6) + " ~ " + Math.floor(aftPower[1] - armor * 0.7)
     result += '<tr><td class="' + (data.attacker.isFriend() ? 'friend' : 'enemy') + '">' + (data.attack.attacker + 1) + '.' + data.attacker.friendlyName + '</td><td>→</td><td class="' + (data.defender.isFriend() ? 'friend' : 'enemy') + '">'
-        + (data.attack.defender + 1) + '.' + data.defender.friendlyName + '</td><td style="' + (isCritical(data.attack) ? 'font-weight:bold;' : '') + '">' + data.attack.damage + '</td><td>' + dmgWidth + '</td><td>' + getAmmoBonus(data.attacker).toFixed(2) + '</td></tr>'
+        + (data.attack.defender + 1) + '.' + data.defender.friendlyName + '</td><td style="' + (isCritical(data.attack) ? 'font-weight:bold;' : '') + '">' + data.attack.damage + '</td><td class="' + (data.defender.isFriend() ? 'friend' : 'enemy') + '">'
+        + data.defenderHp.now + '→' + (data.defenderHp.now - data.attack.damage) + '</td><td>' + dmgWidth + '</td><td>' + getAmmoBonus(data.attacker).toFixed(2) + '</td></tr>'
     result += '</table>'
     return result
 }
@@ -281,11 +284,40 @@ function genHeaderHtml(data, power) {
  * @return {String} HTML
  */
 function genDefenseArmorHtml(data) {
-    var result = '<table style="margin-top:5px;">'
+    var result = '<table style="margin-top:5px; float:left; margin-right:5px;">'
     result += '<tr><th colspan="4">防御側</th></tr>'
     result += '<tr><th>装甲乱数</th><th>実装甲値</th><th>表示装甲値</th><th>特殊補正</th>'
     var armor = data.defender.soukou + getArmorBonus(data.mapCell, data.attacker, data.defender)
     result += '<tr><td style="font-weight:bold;">' + (armor * 0.7).toFixed(1) + ' ~ ' + (armor * 1.3 - 0.6).toFixed(1) + '</td><td>' + armor + '</td><td>' + data.defender.soukou + '</td><td>' + getArmorBonus(data.mapCell, data.attacker, data.defender) + '</td></tr>'
+    result += '</table>'
+    return result
+}
+
+/**
+ * ギミック簡易計算用のHTMLを生成して返す
+ * @param {DetectDto} data 検知データ
+ * @param {DayBattlePower|AntiSubmarinePower|TorpedoPower|NightBattlePower} power 火力
+ * @return {String} HTML
+ */
+function genGimmickHtml(data, power, idx) {
+    var result = '<script type="text/javascript">'
+    result += 'function func' + idx + '(){'
+    result += 'var gimmick = document.getElementById("gimmick' + idx + '").value;'
+    result += 'var minA = Math.floor(' + power.getAfterCapPower()[0] + ' * gimmick);'
+    result += 'var maxA = Math.floor(' + power.getAfterCapPower()[1] + ' * gimmick);'
+    result += 'var armor = ' + (data.defender.soukou + getArmorBonus(data.mapCell, data.attacker, data.defender)) + ';'
+    result += 'document.getElementById("afterpower' + idx + '").innerHTML = minA + " ~ " + maxA;'
+    result += 'document.getElementById("theoretical' + idx + '").innerHTML = Math.floor(minA - armor * 1.3 + 0.6) + " ~ " + Math.floor(maxA - armor * 0.7);'
+    result += 'document.getElementById("border' + idx + '").innerHTML = Math.floor(maxA - armor * 0.7) >= ' + Math.floor(data.attack.damage) + ' && ' + Math.floor(data.attack.damage) + ' >= Math.floor(minA - armor * 1.3 + 0.6) ? "○" : "x";'
+    result += '}</script>'
+    result += '<table style="margin-top:5px;">'
+    result += '<tr><th colspan="4">ギミック簡易計算(a10)</th></tr>'
+    result += '<tr><th>倍率</th><th>ギミック後攻撃力</th><th>理論値</th><th>範囲内</th>'
+    result += '<tr><td><input id="gimmick' + idx + '" type="number" value="1" style="width: 80px;" onkeyup="func' + idx + '();"></td>'
+    var armor = data.defender.soukou + getArmorBonus(data.mapCell, data.attacker, data.defender)
+    var aftPower = power.getAfterCapPower()
+    var dmgWidth = Math.floor(aftPower[0] - armor * 1.3 + 0.6) + " ~ " + Math.floor(aftPower[1] - armor * 0.7)
+    result += '<td id="afterpower' + idx + '">' + aftPower[0] + ' ~ ' + aftPower[1] + '</td><td id="theoretical' + idx + '">' + dmgWidth + '</td><td id="border' + idx + '">x</td></tr>'
     result += '</table>'
     return result
 }
