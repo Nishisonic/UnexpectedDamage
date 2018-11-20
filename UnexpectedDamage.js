@@ -13,7 +13,7 @@ Item = Java.type("logbook.internal.Item")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.29
+var VERSION = 1.30
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update2.txt"
 /** ファイルの場所 */
@@ -688,9 +688,9 @@ DayBattlePower.prototype.getSpottingBonus = function () {
             var tmp = this.attack.lastAttack * 10 + this.origins[this.attack.mainAttack ? "main" : "escort"][1].shipId === 276
             switch (tmp) {
                 case 0: return 1.2   // 3発目:随伴≠陸奥改
-                case 1: return 1.61  // 3発目:随伴=陸奥改
+                case 1: return 1.62  // 3発目:随伴=陸奥改
                 case 10: return 1.4  // 1,2発目:随伴≠陸奥改
-                case 11: return 1.62 // 1,2発目:随伴=陸奥改
+                case 11: return 1.61 // 1,2発目:随伴=陸奥改
             }
         default: return 1.0  // それ以外
     }
@@ -1151,9 +1151,9 @@ NightBattlePower.prototype.getCutinBonus = function () {
             var tmp = (this.attack.lastAttack | 0) * 10 + (this.origins[this.attack.mainAttack ? "main" : "escort"][1].shipId === 276 | 0)
             switch (tmp) {
                 case 0: return 1.2   // 3発目:随伴≠陸奥改
-                case 1: return 1.61  // 3発目:随伴=陸奥改
+                case 1: return 1.62  // 3発目:随伴=陸奥改
                 case 10: return 1.4  // 1,2発目:随伴≠陸奥改
-                case 11: return 1.62 // 1,2発目:随伴=陸奥改
+                case 11: return 1.61 // 1,2発目:随伴=陸奥改
             }
         default: return 1.0
     }
