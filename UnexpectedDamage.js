@@ -2,6 +2,8 @@
 Calendar = Java.type("java.util.Calendar")
 TimeZone = Java.type("java.util.TimeZone")
 DataType = Java.type("logbook.data.DataType")
+AkakariSyutsugekiLogReader = Java.type("logbook.builtinscript.akakariLog.AkakariSyutsugekiLogReader")
+AppConstants = Java.type("logbook.constants.AppConstants")
 BattlePhaseKind = Java.type("logbook.dto.BattlePhaseKind")
 EnemyShipDto = Java.type("logbook.dto.EnemyShipDto")
 ShipDto = Java.type("logbook.dto.ShipDto")
@@ -11,7 +13,7 @@ Item = Java.type("logbook.internal.Item")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.28
+var VERSION = 1.29
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update2.txt"
 /** ファイルの場所 */
@@ -32,6 +34,8 @@ var LOG_FILE = "damage.log"
 /** ScriptData用 */
 var data_prefix = "damage_"
 
+var isAkakari = AppConstants.NAME.indexOf("赤仮") >= 0
+
 //#endregion
 
 //#region 艦これ計算部分
@@ -49,15 +53,16 @@ var data_prefix = "damage_"
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} defender 防御艦
  * @param {ShipHpDto} attackerHp 攻撃艦Hp
  * @param {Boolean} shouldUseSkilled 熟練度を使用すべきか
+ * @param {FleetDto} origins 攻撃側艦隊
  * @return {AntiSubmarinePower|DayBattlePower} 昼戦火力
  */
-var getDayBattlePower = function (date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, attack, attacker, defender, attackerHp, shouldUseSkilled) {
+var getDayBattlePower = function (date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, attack, attacker, defender, attackerHp, shouldUseSkilled, origins) {
     if (isSubMarine(defender)) {
         // 対潜水艦
-        return new AntiSubmarinePower(date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, attack, attacker, defender, attackerHp, shouldUseSkilled)
+        return new AntiSubmarinePower(date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, attack, attacker, defender, attackerHp, shouldUseSkilled, origins)
     } else {
         // 対水上艦
-        return new DayBattlePower(date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, attack, attacker, defender, attackerHp, shouldUseSkilled)
+        return new DayBattlePower(date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, attack, attacker, defender, attackerHp, shouldUseSkilled, origins)
     }
 }
 
@@ -93,15 +98,16 @@ var getTorpedoPower = function (date, kind, friendCombinedKind, isEnemyCombined,
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} defender 防御艦
  * @param {ShipHpDto} attackerHp 攻撃艦Hp
  * @param {Boolean} shouldUseSkilled 熟練度を使用すべきか
+ * @param {FleetDto} origins 攻撃側艦隊
  * @return {AntiSubmarinePower|NightBattlePower} 夜戦火力
  */
-var getNightBattlePower = function (date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, touchPlane, attack, attacker, defender, attackerHp, shouldUseSkilled) {
+var getNightBattlePower = function (date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, touchPlane, attack, attacker, defender, attackerHp, shouldUseSkilled, origins) {
     if (isSubMarine(defender)) {
         // 対潜水艦
-        return new AntiSubmarinePower(date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, attack, attacker, defender, attackerHp, shouldUseSkilled)
+        return new AntiSubmarinePower(date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, attack, attacker, defender, attackerHp, shouldUseSkilled, origins)
     } else {
         // 対水上艦
-        return new NightBattlePower(date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, touchPlane, attack, attacker, defender, attackerHp, shouldUseSkilled)
+        return new NightBattlePower(date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, touchPlane, attack, attacker, defender, attackerHp, shouldUseSkilled, origins)
     }
 }
 
@@ -117,33 +123,33 @@ var getAttackTypeAtDay = function (attack, attacker, defender) {
     // ロケットフラグ判定
     // 大発エフェクトid取得
 
-    if (attacker.shipId == 352) {
+    if (attacker.shipId === 352) {
         if (isSubMarine(defender)) {
-            if (getItems(attacker).some(function (item) { return item.type2 == 8 && item.param.taisen > 0 || item.type2 == 7 || item.type2 == 25 })) {
+            if (getItems(attacker).some(function (item) { return item.type2 === 8 && item.param.taisen > 0 || item.type2 === 7 || item.type2 === 25 })) {
                 return 1
             } else {
                 return 2
             }
-        } else if (getItems(attacker).some(function (item) { return item.type2 == 8 })) {
+        } else if (getItems(attacker).some(function (item) { return item.type2 === 8 })) {
             return 1
         } else {
             return 0
         }
     }
 
-    if (attacker.stype == 7 || attacker.stype == 11 || attacker.stype == 18) {
+    if (attacker.stype === 7 || attacker.stype === 11 || attacker.stype === 18) {
         return 1
     }
 
     if (isSubMarine(defender)) {
-        if (attacker.stype == 6 || attacker.stype == 10 || attacker.stype == 16 || attacker.stype == 17) {
+        if (attacker.stype === 6 || attacker.stype === 10 || attacker.stype === 16 || attacker.stype === 17) {
             return 1
         } else {
             return 2
         }
     }
 
-    if (attack.showItem[0] != -1 && (Item.get(attack.showItem[0]).type2 == 5 || Item.get(attack.showItem[0]).type2 == 32)) {
+    if (Number(attack.showItem[0]) !== -1 && (Item.get(attack.showItem[0]).type2 === 5 || Item.get(attack.showItem[0]).type2 === 32)) {
         return 3
     }
 
@@ -163,18 +169,18 @@ var getAttackTypeAtNight = function (attack, attacker, defender) {
     // 大発エフェクトid取得
     // 夜戦空母攻撃判定
 
-    if (attacker.stype == 7) {
+    if (attacker.stype === 7) {
         if (isSubMarine(defender)) {
             return 2
         }
     }
 
-    if (attacker.stype == 7 || attacker.stype == 11 || attacker.stype == 18) {
-        if (attacker.shipId == 353 || attacker.shipId == 432 || attacker.shipId == 433) {
+    if (attacker.stype === 7 || attacker.stype === 11 || attacker.stype === 18) {
+        if (attacker.shipId === 353 || attacker.shipId === 432 || attacker.shipId === 433) {
             return 0
-        } else if (attacker.name == "リコリス棲姫") {
+        } else if (attacker.name === "リコリス棲姫") {
             return 0
-        } else if (attacker.name == "深海海月姫") {
+        } else if (attacker.name === "深海海月姫") {
             return 0
         } else {
             return 1
@@ -186,14 +192,14 @@ var getAttackTypeAtNight = function (attack, attacker, defender) {
     }
 
     if (isSubMarine(defender)) {
-        if (attacker.stype == 6 || attacker.stype == 10 || attacker.stype == 16 || attacker.stype == 17) {
+        if (attacker.stype === 6 || attacker.stype === 10 || attacker.stype === 16 || attacker.stype === 17) {
             return 1
         } else {
             return 2
         }
     }
 
-    if (attack.showItem[0] != -1 && (Item.get(attack.showItem[0]).type2 == 5 || Item.get(attack.showItem[0]).type2 == 32)) {
+    if (Number(attack.showItem[0]) !== -1 && (Item.get(attack.showItem[0]).type2 === 5 || Item.get(attack.showItem[0]).type2 === 32)) {
         return 3
     }
 
@@ -206,7 +212,7 @@ var getAttackTypeAtNight = function (attack, attacker, defender) {
  * @return {boolean} 潜水艦か
  */
 var isSubMarine = function (ship) {
-    return ship.stype == 13 || ship.stype == 14
+    return ship.stype === 13 || ship.stype === 14
 }
 
 /**
@@ -227,7 +233,7 @@ var isGround = function (ship) {
 var getItems = function (ship) {
     var items = Java.from(ship.item2.toArray())
     if (ship instanceof ShipDto) items.push(ship.slotExItem)
-    return items.filter(function (item) { return item != null })
+    return items.filter(function (item) { return item !== null })
 }
 
 //#region 対潜関連
@@ -244,9 +250,10 @@ var getItems = function (ship) {
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} defender 防御艦
  * @param {ShipHpDto} attackerHp 攻撃艦Hp
+ * @param {FleetDto} origins 攻撃側艦隊
  * @param {Boolean} shouldUseSkilled 熟練度を使用すべきか
  */
-var AntiSubmarinePower = function (date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, attack, attacker, defender, attackerHp, shouldUseSkilled) {
+var AntiSubmarinePower = function (date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, attack, attacker, defender, attackerHp, shouldUseSkilled, origins) {
     this.date = date
     this.kind = kind
     this.friendCombinedKind = friendCombinedKind
@@ -259,6 +266,7 @@ var AntiSubmarinePower = function (date, kind, friendCombinedKind, isEnemyCombin
     this.attackerHp = attackerHp
     this.items = getItems(attacker)
     this.shouldUseSkilled = shouldUseSkilled
+    this.origins = origins
     /**
      * キャップ値
      * ～2017/11/10 17:07?:100
@@ -272,11 +280,43 @@ var AntiSubmarinePower = function (date, kind, friendCombinedKind, isEnemyCombin
  * @return {Number} 対潜火力(基本攻撃力)
  */
 AntiSubmarinePower.prototype.getBasePower = function () {
-    // 大鷹型フィットボーナス
-    var ADD_FIT_DATE = getJstDate(2018, 8, 30, 18, 0, 0)
-    var fitBonus = (ADD_FIT_DATE.before(this.date) && this.attacker.name.contains("大鷹")) * this.items.map(function (item) {
-        return item.slotitemId == 82 // 九七式艦攻(九三一空)
-    }).length
+    // フィットボーナス
+    var fitBonus = function (that) {
+        var ADD_FIT_DATE = getJstDate(2018, 8, 30, 18, 0, 0)
+        var ids = that.items.map(function (item) {
+            return item.slotitemId
+        })
+        var result = 0
+        if (ADD_FIT_DATE.before(that.date) && that.attacker.name.contains("大鷹")) {
+            result += ids.filter(function (item) {
+                return item.slotitemId === 82 // 九七式艦攻(九三一空)
+            }).length
+            result += ids.filter(function (item) {
+                return item.slotitemId === 302 // 九七式艦攻(九三一空/熟練)
+            }).length
+            result += ids.filter(function (item) {
+                return item.slotitemId === 305 // Ju87C改二(KMX搭載機)
+            }).length
+            result += ids.filter(function (item) {
+                return item.slotitemId === 306 // Ju87C改二(KMX搭載機／熟練)
+            }).length
+        }
+        if (that.attacker.name.contains("神鷹")) {
+            result += ids.filter(function (item) {
+                return item.slotitemId === 82 // 九七式艦攻(九三一空)
+            }).length
+            result += ids.filter(function (item) {
+                return item.slotitemId === 302 // 九七式艦攻(九三一空/熟練)
+            }).length
+            result += ids.filter(function (item) {
+                return item.slotitemId === 305 // Ju87C改二(KMX搭載機)
+            }).length * 3
+            result += ids.filter(function (item) {
+                return item.slotitemId === 306 // Ju87C改二(KMX搭載機／熟練)
+            }).length * 3
+        }
+        return result
+    }(this)
     var taisenShip = this.attacker.taisen - this.attacker.slotParam.taisen - fitBonus
     var taisenItem = this.items.map(function (item) {
         switch (item.type2) {
@@ -323,13 +363,13 @@ AntiSubmarinePower.prototype.getImprovementBonus = function () {
 AntiSubmarinePower.prototype.getShipTypeConstant = function () {
     if (isSubMarine(this.defender)) {
         if (!this.attack.kind.isNight()) {
-            if (getAttackTypeAtDay(this.attack, this.attacker, this.defender) == 1) {
+            if (getAttackTypeAtDay(this.attack, this.attacker, this.defender) === 1) {
                 return 8
             } else {
                 return 13
             }
         } else {
-            if (getAttackTypeAtNight(this.attack, this.attacker, this.defender) == 1) {
+            if (getAttackTypeAtNight(this.attack, this.attacker, this.defender) === 1) {
                 return 8
             } else {
                 return 13
@@ -346,13 +386,13 @@ AntiSubmarinePower.prototype.getShipTypeConstant = function () {
  */
 AntiSubmarinePower.prototype.getSynergyBonus = function () {
     // 旧型シナジー
-    var synergy1 = (this.items.some(function (item) { return item.type3 == 18 })
-        && this.items.some(function (item) { return item.type3 == 17 })) ? 1.15 : 1
+    var synergy1 = (this.items.some(function (item) { return item.type3 === 18 })
+        && this.items.some(function (item) { return item.type3 === 17 })) ? 1.15 : 1
     // 新型シナジー
     var synergy2 = 1
-    if (this.items.some(function (item) { return item.slotitemId == 44 || item.slotitemId == 45 })
-        && this.items.some(function (item) { return item.slotitemId == 226 || item.slotitemId == 227 })) {
-        if (this.items.some(function (item) { return item.type2 == 14 })) {
+    if (this.items.some(function (item) { return item.slotitemId === 44 || item.slotitemId === 45 })
+        && this.items.some(function (item) { return item.slotitemId === 226 || item.slotitemId === 227 })) {
+        if (this.items.some(function (item) { return item.type2 === 14 })) {
             // 小型ソナー/爆雷投射機/爆雷シナジー
             synergy2 = 1.25
         } else {
@@ -432,8 +472,9 @@ AntiSubmarinePower.prototype.getConditionBonus = function () {
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} defender 防御艦
  * @param {ShipHpDto} attackerHp 攻撃艦Hp
  * @param {Boolean} shouldUseSkilled 熟練度を使用すべきか
+ * @param {FleetDto} origins 攻撃側艦隊
  */
-var DayBattlePower = function (date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, attack, attacker, defender, attackerHp, shouldUseSkilled) {
+var DayBattlePower = function (date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, attack, attacker, defender, attackerHp, shouldUseSkilled, origins) {
     this.date = date
     this.kind = kind
     this.friendCombinedKind = friendCombinedKind
@@ -446,6 +487,7 @@ var DayBattlePower = function (date, kind, friendCombinedKind, isEnemyCombined, 
     this.attackerHp = attackerHp
     this.items = getItems(attacker)
     this.shouldUseSkilled = shouldUseSkilled
+    this.origins = origins
     this.CAP_VALUE = getJstDate(2017, 3, 17, 12, 0, 0).before(this.date) ? 180 : 150
 }
 
@@ -455,7 +497,7 @@ var DayBattlePower = function (date, kind, friendCombinedKind, isEnemyCombined, 
  */
 DayBattlePower.prototype.getBasePower = function () {
     // 空撃または陸上型かつ艦上爆撃機,艦上攻撃機,陸上攻撃機,噴式戦闘爆撃機,噴式攻撃機所持時?
-    if (getAttackTypeAtDay(this.attack, this.attacker, this.defender) == 1 || isGround(this.attacker) && this.items.some(function (item) { return item.type2 == 7 || item.type2 == 8 || item.type2 == 47 || item.type2 == 57 || item.type2 == 58 })) {
+    if (getAttackTypeAtDay(this.attack, this.attacker, this.defender) === 1 || isGround(this.attacker) && this.items.some(function (item) { return item.type2 === 7 || item.type2 === 8 || item.type2 === 47 || item.type2 === 57 || item.type2 === 58 })) {
         // 空撃
         var rai = !isGround(this.defender) ? this.attacker.slotParam.raig : 0
         var baku = this.attacker.slotParam.baku
@@ -487,7 +529,7 @@ DayBattlePower.prototype.getImprovementBonus = function () {
                 case 42: return 1       // 大型探照灯
                 case 21: return 1       // 機銃
                 case 15:                // 爆雷(投射機)
-                    return item.slotitemId == 44 || item.slotitemId == 45 ? 0.75 : 0
+                    return item.slotitemId === 44 || item.slotitemId === 45 ? 0.75 : 0
                 case 14: return 0.75    // ソナー
                 case 40: return 0.75    // 大型ソナー
                 case 24: return 1       // 上陸用舟艇
@@ -496,7 +538,7 @@ DayBattlePower.prototype.getImprovementBonus = function () {
             }
         }
         // 副砲
-        if (item.type2 == 4) {
+        if (item.type2 === 4) {
             // 2017/3/17～2017/5/2
             if (CHANGE_SUB_GUN_BONUS_DATE.before(this.date) && RECHANGE_SUB_GUN_BONUS_DATE.after(this.date)) {
                 switch (item.type3) {
@@ -594,10 +636,10 @@ DayBattlePower.prototype.getConditionBonus = function () {
  */
 DayBattlePower.prototype.getAPshellBonus = function () {
     if (this.isAPshellBonusTarget()) {
-        var mainGun = this.items.some(function (item) { return item.type1 == 1 })
-        var subGun = this.items.some(function (item) { return item.type1 == 2 })
-        var apShell = this.items.some(function (item) { return item.type1 == 25 })
-        var radar = this.items.some(function (item) { return item.type1 == 8 })
+        var mainGun = this.items.some(function (item) { return item.type1 === 1 })
+        var subGun = this.items.some(function (item) { return item.type1 === 2 })
+        var apShell = this.items.some(function (item) { return item.type1 === 25 })
+        var radar = this.items.some(function (item) { return item.type1 === 8 })
         if (mainGun && apShell) {
             if (subGun) return 1.15
             if (radar) return 1.1
@@ -642,6 +684,14 @@ DayBattlePower.prototype.getSpottingBonus = function () {
         case 6: return 1.5   // 主砲+主砲
         //case 7: return 1.0 // 戦爆連合CI
         case 100: return Number(this.formation[2]) === 4 ? 2.5 : 2.0 // Nelson Touch(≠弾着攻撃)
+        case 101: // 一斉射かッ…胸が熱いな！
+            var tmp = this.attack.lastAttack * 10 + this.origins[this.attack.mainAttack ? "main" : "escort"][1].shipId === 276
+            switch (tmp) {
+                case 0: return 1.2   // 3発目:随伴≠陸奥改
+                case 1: return 1.61  // 3発目:随伴=陸奥改
+                case 10: return 1.4  // 1,2発目:随伴≠陸奥改
+                case 11: return 1.62 // 1,2発目:随伴=陸奥改
+            }
         default: return 1.0  // それ以外
     }
 }
@@ -651,16 +701,16 @@ DayBattlePower.prototype.getSpottingBonus = function () {
  * @return {Number} 倍率
  */
 DayBattlePower.prototype.getUnifiedBombingBonus = function () {
-    if (this.attack.attackType == 7) {
+    if (Number(this.attack.attackType) === 7) {
         var type2list = Java.from(this.attack.showItem).map(function (id) { return Item.get(Number(id)).type2 })
-        var fighter = type2list.filter(function (type2) { return type2 == 6 }).length
-        var bomber = type2list.filter(function (type2) { return type2 == 7 }).length
-        var attacker = type2list.filter(function (type2) { return type2 == 8 }).length
-        if (fighter == 1 && bomber == 1 && attacker == 1) {
+        var fighter = type2list.filter(function (type2) { return type2 === 6 }).length
+        var bomber = type2list.filter(function (type2) { return type2 === 7 }).length
+        var attacker = type2list.filter(function (type2) { return type2 === 8 }).length
+        if (fighter === 1 && bomber === 1 && attacker === 1) {
             return 1.25
-        } else if (bomber == 2 && attacker == 1) {
+        } else if (bomber === 2 && attacker === 1) {
             return 1.2
-        } else if (bomber == 1 && attacker == 1) {
+        } else if (bomber === 1 && attacker === 1) {
             return 1.15
         }
     }
@@ -892,8 +942,9 @@ TorpedoPower.prototype.getCombinedPowerBonus = function () {
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} defender 防御艦
  * @param {ShipHpDto} attackerHp 攻撃艦Hp
  * @param {Boolean} shouldUseSkilled 熟練度を使用すべきか
+ * @param {FleetDto} origins 攻撃側艦隊
  */
-var NightBattlePower = function (date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, touchPlane, attack, attacker, defender, attackerHp, shouldUseSkilled) {
+var NightBattlePower = function (date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, touchPlane, attack, attacker, defender, attackerHp, shouldUseSkilled, origins) {
     this.date = date
     this.kind = kind
     this.friendCombinedKind = friendCombinedKind
@@ -907,6 +958,7 @@ var NightBattlePower = function (date, kind, friendCombinedKind, isEnemyCombined
     this.attackerHp = attackerHp
     this.items = getItems(attacker)
     this.shouldUseSkilled = shouldUseSkilled
+    this.origins = origins
     this.CAP_VALUE = 300
 }
 
@@ -920,11 +972,11 @@ NightBattlePower.prototype.getBasePower = function () {
     if (isNightCvAttack(this.attacker, this.attackerHp)) {
         var karyoku = this.attacker.karyoku - this.attacker.slotParam.karyoku
         var nightPlaneBonus = this.items.map(function (item, i) {
-            if (item != null && this.attacker.onSlot[i] > 0) {
+            if (item !== null && getOnSlot(this.attacker, this.date)[i] > 0) {
                 // 夜戦、夜攻
-                if (item.type3 == 45 || item.type3 == 46) {
+                if (item.type3 === 45 || item.type3 === 46) {
                     // 火力+雷装+3*機数+0.45*(火力+雷装+爆装+対潜)*sqrt(機数)*sqrt(★)
-                    return item.param.karyoku + (useRaisou ? item.param.raisou : 0) + 3 * this.attacker.onSlot[i] + 0.45 * (item.param.karyoku + item.param.raisou + item.param.baku + item.param.taisen) * Math.sqrt(this.attacker.onSlot[i]) + Math.sqrt(item.level)
+                    return item.param.karyoku + (useRaisou ? item.param.raisou : 0) + 3 * getOnSlot(this.attacker, this.date)[i] + 0.45 * (item.param.karyoku + item.param.raisou + item.param.baku + item.param.taisen) * Math.sqrt(getOnSlot(this.attacker, this.date)[i]) + Math.sqrt(item.level)
                 } else {
                     switch (item.slotitemId) {
                         case 154: // 零戦62型(爆戦/岩井隊)
@@ -932,7 +984,7 @@ NightBattlePower.prototype.getBasePower = function () {
                         case 243: // Swordfish Mk.II(熟練)
                         case 244: // Swordfish Mk.III(熟練)
                             // 火力+雷装+0.3*(火力+雷装+爆装+対潜)*sqrt(機数)*sqrt(★)
-                            return item.param.karyoku + item.param.raisou + 0.3 * (item.param.karyoku + item.param.raisou + item.param.baku + item.param.taisen) * Math.sqrt(this.attacker.onSlot[i]) + Math.sqrt(item.level)
+                            return item.param.karyoku + item.param.raisou + 0.3 * (item.param.karyoku + item.param.raisou + item.param.baku + item.param.taisen) * Math.sqrt(getOnSlot(this.attacker, this.date)[i]) + Math.sqrt(item.level)
                     }
                 }
             }
@@ -941,7 +993,7 @@ NightBattlePower.prototype.getBasePower = function () {
         return karyoku + nightPlaneBonus + this.getNightTouchPlaneBonus()
     } else {
         // Ark Royal、Ark Royal改
-        if (this.attacker.shipId == 393 || this.attacker.shipId == 515) {
+        if (this.attacker.shipId === 393 || this.attacker.shipId === 515) {
             return this.attacker.karyoku
                 - this.attacker.slotParam.karyoku
                 + this.items.map(function (item) {
@@ -1055,7 +1107,7 @@ NightBattlePower.prototype.getCutinBonus = function () {
      * @return {Number} 倍率
      */
     var getDTypeGunBonus = function (showItem) {
-        var num = Java.from(showItem).filter(function (id) { return Number(id) == 267 }).length
+        var num = Java.from(showItem).filter(function (id) { return Number(id) === 267 }).length
         switch (num) {
             case 1: return 1.25
             case 2: return 1.4
@@ -1067,11 +1119,11 @@ NightBattlePower.prototype.getCutinBonus = function () {
         case 1: return 1.2  // 連撃
         case 2: return 1.3  // カットイン(主砲/魚雷)
         case 3:
-            if (Java.from(this.attack.showItem).filter(function (id) { return Number(id) == 213 || Number(id) == 214 }).length >= 1
-                && Java.from(this.attack.showItem).filter(function (id) { return Number(id) == 210 || Number(id) == 211 }).length >= 1) {
+            if (Java.from(this.attack.showItem).filter(function (id) { return Number(id) === 213 || Number(id) === 214 }).length >= 1
+                && Java.from(this.attack.showItem).filter(function (id) { return Number(id) === 210 || Number(id) === 211 }).length >= 1) {
                 return 1.75  // カットイン(後魚/潜電)
             }
-            if (Java.from(this.attack.showItem).filter(function (id) { return Number(id) == 213 || Number(id) == 214 }).length >= 2) {
+            if (Java.from(this.attack.showItem).filter(function (id) { return Number(id) === 213 || Number(id) === 214 }).length >= 2) {
                 return 1.6  // カットイン(後魚/後魚)
             }
             return 1.5      // カットイン(魚雷/魚雷)
@@ -1079,15 +1131,15 @@ NightBattlePower.prototype.getCutinBonus = function () {
         case 5: return 2.0  // カットイン(主砲/主砲)
         case 6:             // 夜襲カットイン
             var items = Java.from(this.attack.showItem).map(function (id) { return Item.get(Number(id)) })
-            var kind1 = items.filter(function (item) { return item.type3 == 45 }).length
-            var kind2 = items.filter(function (item) { return item.type3 == 46 }).length
-            var kind3 = items.map(function (item) { return item.slotitemId }).filter(function (id) { return id == 242 || id == 243 || id == 244 || id == 154 }).length
-            if (kind1 == 1 || kind2 == 1) return 1.2  // CI種類A
-            if (kind1 == 2 || kind2 == 1) return 1.25 // CI種類B
-            if (kind1 == 3) return 1.18 // CI種類C
-            if (kind1 == 1 || kind2 == 1 || kind3 == 1) return 1.18 // CI種類D
-            if (kind1 == 2 || kind3 == 1) return 1.18 // CI種類E
-            if (kind1 == 1 || kind3 == 2) return 1.18 // CI種類F
+            var kind1 = items.filter(function (item) { return item.type3 === 45 }).length
+            var kind2 = items.filter(function (item) { return item.type3 === 46 }).length
+            var kind3 = items.map(function (item) { return item.slotitemId }).filter(function (id) { return id === 242 || id === 243 || id === 244 || id === 154 }).length
+            if (kind1 === 1 || kind2 === 1) return 1.2  // CI種類A
+            if (kind1 === 2 || kind2 === 1) return 1.25 // CI種類B
+            if (kind1 === 3) return 1.18 // CI種類C
+            if (kind1 === 1 || kind2 === 1 || kind3 === 1) return 1.18 // CI種類D
+            if (kind1 === 2 || kind3 === 1) return 1.18 // CI種類E
+            if (kind1 === 1 || kind3 === 2) return 1.18 // CI種類F
             return 1.0
         case 7:             // 駆逐カットイン(主砲/魚雷/電探)
             return 1.3 * getDTypeGunBonus(this.attack.showItem)
@@ -1095,6 +1147,14 @@ NightBattlePower.prototype.getCutinBonus = function () {
             return 1.2 * getDTypeGunBonus(this.attack.showItem)
         case 100:           // Nelson Touch
             return Number(this.formation[2]) === 4 ? 2.5 : 2.0
+        case 101:           // 一斉射かッ…胸が熱いな！
+            var tmp = (this.attack.lastAttack | 0) * 10 + (this.origins[this.attack.mainAttack ? "main" : "escort"][1].shipId === 276 | 0)
+            switch (tmp) {
+                case 0: return 1.2   // 3発目:随伴≠陸奥改
+                case 1: return 1.61  // 3発目:随伴=陸奥改
+                case 10: return 1.4  // 1,2発目:随伴≠陸奥改
+                case 11: return 1.62 // 1,2発目:随伴=陸奥改
+            }
         default: return 1.0
     }
 }
@@ -1126,6 +1186,24 @@ NightBattlePower.prototype.getNightTouchPlaneBonus = function () {
 //#region 全般使用系
 
 /**
+ * スロットを返す
+ * @param {logbook.dto.ShipDto} attacker 攻撃艦
+ * @param {java.util.Date} date 戦闘日時
+ * @return {[Number]} スロット
+ */
+function getOnSlot(attacker, date) {
+    if (isAkakari) {
+        try {
+            var json = AkakariSyutsugekiLogReader.shipAfterBattle(date, attacker.id) || AkakariSyutsugekiLogReader.shipEndPort(date, attacker.id)
+            if (json) {
+                return Java.from(json.get("api_onslot"))
+            }
+        } catch (e) { }
+    }
+    return attacker.onSlot
+}
+
+/**
  * 夜襲攻撃かを返す
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
  * @param {ShipHpDto} attackerHp 攻撃艦Hp
@@ -1137,13 +1215,13 @@ function isNightCvAttack(attacker, attackerHp) {
         return item.slotitemId
     }).some(function (itemid) {
         // 夜間作戦航空要員 or 夜間作戦航空要員＋熟練甲板員
-        return itemid == 258 || itemid == 259
+        return itemid === 258 || itemid === 259
         // Saratoga Mk.II
-    }) || attacker.shipId == 545) && items.map(function (item) {
+    }) || attacker.shipId === 545) && items.map(function (item) {
         return item.type3
     }).indexOf(45) >= 0 // 夜間戦闘機
         // 中破未満または装甲空母
-        && (!attackerHp.isHalfDamage() || attacker.stype == 18)
+        && (!attackerHp.isHalfDamage() || attacker.stype === 18)
 }
 
 /**
@@ -1169,13 +1247,13 @@ var getMultiplySlayerBonus = function (attacker, defender) {
         case 1639:
         case 1640: // PT小鬼群
             // 小口径主砲
-            var sMainGun = items.filter(function (item) { item.type2 == 1 }).length
+            var sMainGun = items.filter(function (item) { item.type2 === 1 }).length
             // 機銃
-            var aaGun = items.filter(function (item) { item.type2 == 21 }).length
+            var aaGun = items.filter(function (item) { item.type2 === 21 }).length
             // 副砲
-            var subGun = items.filter(function (item) { item.type2 == 4 }).length
+            var subGun = items.filter(function (item) { item.type2 === 4 }).length
             // 三式弾
-            var type3Shell = items.filter(function (item) { item.type2 == 18 }).length
+            var type3Shell = items.filter(function (item) { item.type2 === 18 }).length
             var aaGunBonus = (aaGun >= 2) ? 1.1 : 1.0;
             var sMainGunBonus = function () {
                 switch (attacker.shipId) {
@@ -1205,26 +1283,26 @@ var getMultiplySlayerBonus = function (attacker, defender) {
         case 1656:
         case 1657:
         case 1658: // 集積地棲姫-壊
-            var wg42 = items.filter(function (item) { return item.slotitemId == 126 }).length
-            var rikuDaihatsu = items.filter(function (item) { return item.slotitemId == 166 }).map(function (item) { return item.level })
+            var wg42 = items.filter(function (item) { return item.slotitemId === 126 }).length
+            var rikuDaihatsu = items.filter(function (item) { return item.slotitemId === 166 }).map(function (item) { return item.level })
             var rikuDaihatsuLv = rikuDaihatsu > 0 ? rikuDaihatsu.reduce(function (prev, current) { return prev + current }, 0) / rikuDaihatsu.length : 0
             var rikuDaihatsuLvBonus = 1 + rikuDaihatsuLv / 50
-            var kamisha = items.filter(function (item) { return item.slotitemId == 167 }).map(function (item) { return item.level })
+            var kamisha = items.filter(function (item) { return item.slotitemId === 167 }).map(function (item) { return item.level })
             var kamishaLv = kamisha > 0 ? kamisha.reduce(function (prev, current) { return prev + current }, 0) / kamisha.length : 0
             var kamishaLvBonus = 1 + kamishaLv / 30
-            var shikonDaihatsuBonus = items.filter(function (item) { return item.slotitemId == 230 }).length > 0 ? 3.5 : 1
+            var shikonDaihatsuBonus = items.filter(function (item) { return item.slotitemId === 230 }).length > 0 ? 3.5 : 1
             var wg42Bonus = function (num) {
-                if (num == 1) return 1.25
+                if (num === 1) return 1.25
                 if (num >= 2) return 1.625
                 return 1.0
             }(wg42)
             var rikuDaihatsuBonus = function (num) {
-                if (num == 1) return 1.30
+                if (num === 1) return 1.30
                 if (num >= 2) return 2.08
                 return 1.0
             }(rikuDaihatsu.length)
             var kamishaBonus = function (num) {
-                if (num == 1) return 1.70
+                if (num === 1) return 1.70
                 if (num >= 2) return 2.50
                 return 1.0
             }(kamisha.length)
@@ -1232,8 +1310,8 @@ var getMultiplySlayerBonus = function (attacker, defender) {
         case 1725:
         case 1726:
         case 1727: // 北端上陸姫
-            var type3shellBonus = items.filter(function (item) { return item.slotitemId == 35 }).length > 0 ? 1.3 : 1.0
-            var wg42Bonus = items.filter(function (item) { return item.slotitemId == 126 }).length > 0 ? 1.4 : 1.0
+            var type3shellBonus = items.filter(function (item) { return item.slotitemId === 35 }).length > 0 ? 1.3 : 1.0
+            var wg42Bonus = items.filter(function (item) { return item.slotitemId === 126 }).length > 0 ? 1.4 : 1.0
             return type3shellBonus * wg42Bonus
     }
     return 1.0
@@ -1254,14 +1332,14 @@ var getAddSlayerBonus = function (attacker, defender) {
         case 1656:
         case 1657:
         case 1658: // 集積地棲姫-壊
-            var shikonDaihatsuBonus = items.filter(function (item) { return item.slotitemId == 230 }).length > 0 ? 5 : 0
+            var shikonDaihatsuBonus = items.filter(function (item) { return item.slotitemId === 230 }).length > 0 ? 5 : 0
             return shikonDaihatsuBonus
         case 1725:
         case 1726:
         case 1727: // 北端上陸姫
             var items = getItems(attacker)
-            var type3shellBonus = items.filter(function (item) { return item.slotitemId == 35 }).length > 0 ? 1 : 0
-            var wg42Bonus = items.filter(function (item) { return item.slotitemId == 126 }).length > 0 ? 15 : 0
+            var type3shellBonus = items.filter(function (item) { return item.slotitemId === 35 }).length > 0 ? 1 : 0
+            var wg42Bonus = items.filter(function (item) { return item.slotitemId === 126 }).length > 0 ? 15 : 0
             return type3shellBonus + wg42Bonus
     }
     return 0
@@ -1272,7 +1350,7 @@ var getAddSlayerBonus = function (attacker, defender) {
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} ship 艦
  */
 var isNorthernmostLandingPrincess = function (ship) {
-    return [1725, 1726, 1727].some(function (id) { return id == ship.shipId })
+    return [1725, 1726, 1727].some(function (id) { return id === ship.shipId })
 }
 
 /**
@@ -1288,19 +1366,19 @@ var getLandBonus = function (attacker, defender) {
         return items.map(function (item) {
             return item.slotitemId
         }).filter(function (itemid) {
-            return Array.isArray(id) ? id.indexOf(itemid) >= 0 : id == itemid
+            return Array.isArray(id) ? id.indexOf(itemid) >= 0 : id === itemid
         }).length
     }
     var type3shell = getItemNum(35)
     var daihatsu = getItemNum(68)
-    var daihatsuLv = daihatsu > 0 ? items.filter(function (item) { return item.slotitemId == 68 }).map(function (item) { return item.level }).reduce(function (p, c) { return p + c }, 0) / daihatsu : 0
+    var daihatsuLv = daihatsu > 0 ? items.filter(function (item) { return item.slotitemId === 68 }).map(function (item) { return item.level }).reduce(function (p, c) { return p + c }, 0) / daihatsu : 0
     var rikuDaihatsu = getItemNum(166)
-    var rikuDaihatsuLv = (daihatsu + rikuDaihatsu) > 0 ? items.filter(function (item) { return item.slotitemId == 68 || item.slotitemId == 166 }).map(function (item) { return item.level }).reduce(function (p, c) { return p + c }, 0) / (daihatsu + rikuDaihatsu) : 0
+    var rikuDaihatsuLv = (daihatsu + rikuDaihatsu) > 0 ? items.filter(function (item) { return item.slotitemId === 68 || item.slotitemId === 166 }).map(function (item) { return item.level }).reduce(function (p, c) { return p + c }, 0) / (daihatsu + rikuDaihatsu) : 0
     var kamisha = getItemNum(167)
-    var kamishaLv = kamisha > 0 ? items.filter(function (item) { return item.slotitemId == 167 }).map(function (item) { return item.level }).reduce(function (p, c) { return p + c }, 0) / kamisha : 0
+    var kamishaLv = kamisha > 0 ? items.filter(function (item) { return item.slotitemId === 167 }).map(function (item) { return item.level }).reduce(function (p, c) { return p + c }, 0) / kamisha : 0
     var tokuRikuDaihatsu = getItemNum(230)
-    var suijo = items.filter(function (item) { return item.type2 == 11 || item.type2 == 45 }).length
-    var apShell = items.filter(function (item) { return item.type2 == 19 }).length
+    var suijo = items.filter(function (item) { return item.type2 === 11 || item.type2 === 45 }).length
+    var apShell = items.filter(function (item) { return item.type2 === 19 }).length
     var wg42 = getItemNum(126)
     var tokuDaihatsu = getItemNum(193)
 
@@ -1314,28 +1392,28 @@ var getLandBonus = function (attacker, defender) {
             var rikuDaihatsuBonus = (rikuDaihatsu >= 1 ? 1.72 : 1.0) // 要検証
             var kamishaBonus = (kamisha >= 1 ? 2.32 : 1.0) // 要検証
             var type3shellBonus = (type3shell >= 1) ? 1.75 : 1.0
-            var wg42Bonus = (wg42 >= 2) ? 2.1 : (wg42 == 1 ? 1.4 : 1.0)
+            var wg42Bonus = (wg42 >= 2) ? 2.1 : (wg42 === 1 ? 1.4 : 1.0)
             var tokuRikuDaihatsuBonus = (tokuRikuDaihatsu >= 1) ? 3.4 : 1.0 // 3.4~3.8
             return daihatsuBonus * rikuDaihatsuBonus * kamishaBonus * type3shellBonus * wg42Bonus * tokuRikuDaihatsuBonus
         case 1665:
         case 1666:
         case 1667: // 砲台小鬼
             // 駆逐・軽巡のみ
-            var stypeBonus = (attacker.stype == 2 || attacker.stype == 3) ? 1.4 : 1.0
+            var stypeBonus = (attacker.stype === 2 || attacker.stype === 3) ? 1.4 : 1.0
             var daihatsuBonus = (daihatsu >= 1 ? 1.8 : 1.0) * (1 + daihatsuLv / 50)
             var rikuDaihatsuBonus = function (num) {
                 if (num >= 2) return 3.0
-                if (num == 1) return 2.2 // 2.19
+                if (num === 1) return 2.2 // 2.19
                 return 1.0
             }(rikuDaihatsu) * (1 + rikuDaihatsuLv / 50)
             var kamishaBonus = function (num) {
                 if (num >= 2) return 3.2
-                if (num == 1) return 2.4
+                if (num === 1) return 2.4
                 return 1.0
             }(kamisha) * (1 + kamishaLv / 30)
             var suijoBonus = (suijo >= 1) ? 1.5 : 1.0
             var apShellBonus = (apShell >= 1) ? 1.85 : 1.00
-            var wg42Bonus = (wg42 >= 2) ? 2.72 : (wg42 == 1 ? 1.60 : 1.00)
+            var wg42Bonus = (wg42 >= 2) ? 2.72 : (wg42 === 1 ? 1.60 : 1.00)
             var tokuDaihatsuBonus = (tokuDaihatsu >= 1) ? 2.05 : 1.00
             var tokuRikuDaihatsuBonus = (tokuRikuDaihatsu >= 1) ? 3.4 : 1.0 // 3.4~3.6
             return stypeBonus * (rikuDaihatsu > 0 ? rikuDaihatsuBonus : daihatsuBonus) * kamishaBonus * suijoBonus * apShellBonus * wg42Bonus * tokuDaihatsuBonus * tokuRikuDaihatsuBonus
@@ -1383,7 +1461,7 @@ var getLandBonus = function (attacker, defender) {
 var getWg42Bonus = function (attacker, defender) {
     if (!isGround(defender) || isNorthernmostLandingPrincess(defender)) return 0
     var items = getItems(attacker)
-    var count = items.filter(function (item) { return item.slotitemId == 126 }).length
+    var count = items.filter(function (item) { return item.slotitemId === 126 }).length
     switch (count) {
         case 1: return 75
         case 2: return 110
@@ -1430,7 +1508,7 @@ var getCriticalBonus = function (attack) {
 /**
  * 熟練度倍率を返します
  * (戦爆連合CIは中途半端対応)
- * @param {java.util.Date} date 日付
+ * @param {java.util.Date} date 戦闘日時
  * @param {AttackDto} attack 攻撃
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} defender 防御艦
@@ -1463,29 +1541,31 @@ var getSkilledBonus = function (date, attack, attacker, defender, attackerHp) {
     }
     var ADD_SKILLED_DATE = getJstDate(2017, 10, 18, 12, 0, 0)
     var result = [1.0, 1.0]
-    // rounds == 0 先制対潜
+    // rounds === 0 先制対潜
     // 自軍攻撃 && クリティカル && 先制対潜ではない && (昼戦攻撃が空撃 || 夜戦攻撃が夜襲 || 夜戦攻撃艦がArk Royal(改)) && (攻撃艦が補給艦かつ防御艦が潜水艦)ではない
     if (attack.friendAttack && isCritical(attack)/* && attack.rounds !== 0*/
         && (!attack.kind.isNight() && getAttackTypeAtDay(attack, attacker, defender) === 1 || attack.kind.isNight() && (isNightCvAttack(attacker, attackerHp) || [393, 515].indexOf(attacker.shipId) >= 0))
         && !(attacker.stype === 22 && isSubMarine(defender))) {
         var items = Java.from(attacker.item2.toArray())
         // 戦爆連合CI(熟練度は2017/10/18以降から)
-        if (!attack.kind.isNight() && Number(attack.attackType) == 7 && date.after(ADD_SKILLED_DATE)) {
+        if (!attack.kind.isNight() && Number(attack.attackType) === 7 && date.after(ADD_SKILLED_DATE)) {
             // ちゃんと区別出来ないが、slotitemIdでしか区別出来ないため
             // 隊長機編隊
-            if (items[0] != null && Java.from(attack.showItem).some(function (slotitemId) { return slotitemId == items[0].slotitemId })) {
+            if (items[0] !== null && Java.from(attack.showItem).some(function (slotitemId) { return Number(slotitemId) === items[0].slotitemId })) {
                 result[0] = result[1] += 0.15
             }
             // 一旦平均で取っておく(後で修正)
-            var sumAlv = items.filter(function (item, i) { return item != null && isSkilledObject(item) && attacker.onSlot[i] > 0 }).map(function (item) { return item.alv }).reduce(function (p, c) { return p + c }, 0)
-            var cnt = items.filter(function (item, i) { return item != null && isSkilledObject(item) && attacker.onSlot[i] > 0 }).length
+            var onSlot = getOnSlot(attacker, date)
+            var sumAlv = items.filter(function (item, i) { return item !== null && isSkilledObject(item) && onSlot[i] > 0 }).map(function (item) { return item.alv }).reduce(function (p, c) { return p + c }, 0)
+            var cnt = items.filter(function (item, i) { return item !== null && isSkilledObject(item) && onSlot[i] > 0 }).length
             result[0] += SKILLED[Math.floor(sumAlv / cnt)].DEPENDENCE_BONUS[0] / 100
             result[1] += SKILLED[Math.floor(sumAlv / cnt)].DEPENDENCE_BONUS[1] / 100
-        } else if (attack.kind.isNight() || !attack.kind.isNight() && Number(attack.attackType) != 7) {
+        } else if (attack.kind.isNight() || !attack.kind.isNight() && Number(attack.attackType) !== 7) {
+            var onSlot = getOnSlot(attacker, date)
             // 添字が必要なため(ズレる)
             items.forEach(function (item, i) {
-                if (item != null && isSkilledObject(item) && attacker.onSlot[i] > 0) {
-                    if (i == 0) {
+                if (item !== null && isSkilledObject(item) && onSlot[i] > 0) {
+                    if (i === 0) {
                         result[0] += Math.floor(Math.sqrt(SKILLED[item.alv].INTERNAL[0]) + SKILLED[item.alv].DEPENDENCE_BONUS[0]) / 100
                         result[1] += Math.floor(Math.sqrt(SKILLED[item.alv].INTERNAL[1]) + SKILLED[item.alv].DEPENDENCE_BONUS[1]) / 100
                     } else {
@@ -1505,7 +1585,7 @@ var getSkilledBonus = function (date, attack, attacker, defender, attackerHp) {
  * @return {Boolean} クリティカルか
  */
 var isCritical = function (attack) {
-    return attack.critical == 2
+    return Number(attack.critical) === 2
 }
 
 /**
@@ -1521,7 +1601,7 @@ var getOriginalGunPowerBonus = function (ship) {
         case 3:  // 軽巡
         case 4:  // 雷巡
         case 21: // 練巡
-            bonus += Math.sqrt(ids.filter(function (id) { return id == 65 || id == 119 || id == 139 }).length) * 2 + Math.sqrt(ids.filter(function (id) { return id == 4 || id == 11 }).length)
+            bonus += Math.sqrt(ids.filter(function (id) { return id === 65 || id === 119 || id === 139 }).length) * 2 + Math.sqrt(ids.filter(function (id) { return id === 4 || id === 11 }).length)
     }
     // 伊重巡フィット砲補正
     switch (ship.shipId) {
@@ -1530,7 +1610,7 @@ var getOriginalGunPowerBonus = function (ship) {
         case 496: // Zara due
         case 449: // Pola
         case 361: // Pola改
-            bonus += Math.sqrt(ids.filter(function (id) { return id == 162 }).length)
+            bonus += Math.sqrt(ids.filter(function (id) { return id === 162 }).length)
     }
     return bonus
 }
@@ -1543,16 +1623,16 @@ var getOriginalGunPowerBonus = function (ship) {
  * @return {Number} 装甲補正
  */
 var getArmorBonus = function (mapCell, attacker, defender) {
-    var mediumBulge = getItems(defender).filter(function (item) { return item.type2 == 27 }).map(function (item) { return 0.2 * item.level }).reduce(function (p, c) { return p + c }, 0)
-    var largeBulge = getItems(defender).filter(function (item) { return item.type2 == 28 }).map(function (item) { return 0.2 * item.level }).reduce(function (p, c) { return p + c }, 0)
+    var mediumBulge = getItems(defender).filter(function (item) { return item.type2 === 27 }).map(function (item) { return 0.2 * item.level }).reduce(function (p, c) { return p + c }, 0)
+    var largeBulge = getItems(defender).filter(function (item) { return item.type2 === 28 }).map(function (item) { return 0.2 * item.level }).reduce(function (p, c) { return p + c }, 0)
     var depthCharge = isSubMarine(defender) ? getItems(attacker).map(function (item) {
         switch (item.slotitemId) {
-            case 226: return Math.sqrt(2) + (attacker.stype == 1 ? 1 : 0)
-            case 227: return Math.sqrt(5) + (attacker.stype == 1 ? 1 : 0)
+            case 226: return Math.sqrt(2) + (attacker.stype === 1 ? 1 : 0)
+            case 227: return Math.sqrt(5) + (attacker.stype === 1 ? 1 : 0)
             default: return 0
         }
     }).reduce(function (p, c) { return p + c }, 0) : 0
-    var northernSeaBulge = mapCell.map[0] == 3 && getItems(defender).some(function (item) { return item.slotitemId == 268 }) ? 3 : 0
+    var northernSeaBulge = mapCell.map[0] === 3 && getItems(defender).some(function (item) { return item.slotitemId === 268 }) ? 3 : 0
     return mediumBulge + largeBulge - depthCharge + northernSeaBulge
 }
 
@@ -1685,13 +1765,13 @@ function calcCombinedKind(battle) {
     // 空母機動部隊or輸送護衛部隊のAPIか
     if (phase.api.equals(DataType.COMBINED_BATTLE.apiName) || phase.api.equals(DataType.COMBINED_EACH_BATTLE.apiName)) {
         // 第一艦隊or第二艦隊が存在しない場合
-        if (battle.dock == null || battle.dockCombined == null) return -1
+        if (battle.dock === null || battle.dockCombined === null) return -1
         // 第一艦隊取得
         var ships = battle.dock.ships
         // 日付取得
         var date = battle.battleDate
         // 空母数取得
-        var cv = ships.stream().filter(function (ship) { return ship != null }).mapToInt(function (ship) { return ship.stype }).filter(function (stype) { return stype == 7 || stype == 11 || stype == 18 }).count()
+        var cv = ships.stream().filter(function (ship) { return ship !== null }).mapToInt(function (ship) { return ship.stype }).filter(function (stype) { return stype === 7 || stype === 11 || stype === 18 }).count()
         // 空母数2以上だと空母機動部隊振り分け
         if (cv >= 2) return 1
         // 輸送護衛部隊追加日以降か

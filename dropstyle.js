@@ -91,7 +91,7 @@ function create(table, data, index) {
                         } else {
                             shell.setVisible(true)
                         }
-                        shell.setText("異常ダメージ検知 " + String(VERSION).replace(".","").split("").join("."))
+                        shell.setText("異常ダメージ検知 " + String(VERSION).replace(".", "").split("").join("."))
                         browser.setText(genBattleHtml(getData(table.getItem(point).data.battleDate)))
                     } else if (shell !== null) {
                         shell.setVisible(false)
@@ -102,7 +102,7 @@ function create(table, data, index) {
         }
     })
 
-    if (getData("set") == null) {
+    if (getData("set") === null) {
         table.addListener(SWT.MouseDown, WindowListener)
         table.addListener(SWT.DefaultSelection, WindowListener)
         setTmpData("set", true)
@@ -224,7 +224,7 @@ function genBattleHtml(dataLists) {
         // 昼砲撃戦
         dataLists[0].map(function (data) {
             var power = getDayBattlePower(data.date, data.kind, data.friendCombinedKind, data.isEnemyCombined,
-                data.attackNum, data.formation, data.attack, data.attacker, data.defender, data.attackerHp, data.shouldUseSkilled)
+                data.attackNum, data.formation, data.attack, data.attacker, data.defender, data.attackerHp, data.shouldUseSkilled, data.origins)
             var result = '<div style="border:#000000 solid 1px; padding:5px; margin:5px; background-color:#fce4d6;">'
             result += genHeaderHtml(data, power)
             result += isSubMarine(data.defender) ? genAntiSubMarineHtml(data, power) : genDayBattleHtml(data, power)
@@ -246,7 +246,7 @@ function genBattleHtml(dataLists) {
         // 夜戦
         dataLists[2].map(function (data) {
             var power = getNightBattlePower(data.date, data.kind, data.friendCombinedKind, data.isEnemyCombined,
-                data.attackNum, data.formation, data.touchPlane, data.attack, data.attacker, data.defender, data.attackerHp, data.shouldUseSkilled)
+                data.attackNum, data.formation, data.touchPlane, data.attack, data.attacker, data.defender, data.attackerHp, data.shouldUseSkilled, data.origins)
             var result = '<div style="border:#000000 solid 1px; padding:5px; margin:5px; background-color:#e8d9f3;">'
             result += genHeaderHtml(data, power)
             result += isSubMarine(data.defender) ? genAntiSubMarineHtml(data, power) : genNightBattleHtml(data, power)
