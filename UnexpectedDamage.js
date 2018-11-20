@@ -13,7 +13,7 @@ Item = Java.type("logbook.internal.Item")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.30
+var VERSION = 1.31
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update2.txt"
 /** ファイルの場所 */
@@ -685,12 +685,12 @@ DayBattlePower.prototype.getSpottingBonus = function () {
         //case 7: return 1.0 // 戦爆連合CI
         case 100: return Number(this.formation[2]) === 4 ? 2.5 : 2.0 // Nelson Touch(≠弾着攻撃)
         case 101: // 一斉射かッ…胸が熱いな！
-            var tmp = this.attack.lastAttack * 10 + this.origins[this.attack.mainAttack ? "main" : "escort"][1].shipId === 276
+            var tmp = (this.attack.lastAttack | 0) * 10 + ((this.origins[this.attack.mainAttack ? "main" : "escort"][1].shipId === 276) | 0)
             switch (tmp) {
-                case 0: return 1.2   // 3発目:随伴≠陸奥改
-                case 1: return 1.62  // 3発目:随伴=陸奥改
-                case 10: return 1.4  // 1,2発目:随伴≠陸奥改
-                case 11: return 1.61 // 1,2発目:随伴=陸奥改
+                case 0: return 1.4   // 1,2発目:随伴≠陸奥改
+                case 1: return 1.61  // 1,2発目:随伴=陸奥改
+                case 10: return 1.2  // 3発目:随伴≠陸奥改
+                case 11: return 1.62 // 3発目:随伴=陸奥改
             }
         default: return 1.0  // それ以外
     }
@@ -1148,12 +1148,12 @@ NightBattlePower.prototype.getCutinBonus = function () {
         case 100:           // Nelson Touch
             return Number(this.formation[2]) === 4 ? 2.5 : 2.0
         case 101:           // 一斉射かッ…胸が熱いな！
-            var tmp = (this.attack.lastAttack | 0) * 10 + (this.origins[this.attack.mainAttack ? "main" : "escort"][1].shipId === 276 | 0)
+            var tmp = (this.attack.lastAttack | 0) * 10 + ((this.origins[this.attack.mainAttack ? "main" : "escort"][1].shipId === 276) | 0)
             switch (tmp) {
-                case 0: return 1.2   // 3発目:随伴≠陸奥改
-                case 1: return 1.62  // 3発目:随伴=陸奥改
-                case 10: return 1.4  // 1,2発目:随伴≠陸奥改
-                case 11: return 1.61 // 1,2発目:随伴=陸奥改
+                case 0: return 1.4   // 1,2発目:随伴≠陸奥改
+                case 1: return 1.61  // 1,2発目:随伴=陸奥改
+                case 10: return 1.2  // 3発目:随伴≠陸奥改
+                case 11: return 1.62 // 3発目:随伴=陸奥改
             }
         default: return 1.0
     }
