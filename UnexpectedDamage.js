@@ -2,7 +2,6 @@
 Calendar = Java.type("java.util.Calendar")
 TimeZone = Java.type("java.util.TimeZone")
 DataType = Java.type("logbook.data.DataType")
-AkakariSyutsugekiLogReader = Java.type("logbook.builtinscript.akakariLog.AkakariSyutsugekiLogReader")
 AppConstants = Java.type("logbook.constants.AppConstants")
 BattlePhaseKind = Java.type("logbook.dto.BattlePhaseKind")
 EnemyShipDto = Java.type("logbook.dto.EnemyShipDto")
@@ -13,7 +12,7 @@ Item = Java.type("logbook.internal.Item")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.31
+var VERSION = 1.32
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update2.txt"
 /** ファイルの場所 */
@@ -281,42 +280,34 @@ var AntiSubmarinePower = function (date, kind, friendCombinedKind, isEnemyCombin
  */
 AntiSubmarinePower.prototype.getBasePower = function () {
     // フィットボーナス
-    var fitBonus = function (that) {
+    var fitBonus = function (date, attacker, items) {
         var ADD_FIT_DATE = getJstDate(2018, 8, 30, 18, 0, 0)
-        var ids = that.items.map(function (item) {
-            return item.slotitemId
-        })
-        var result = 0
-        if (ADD_FIT_DATE.before(that.date) && that.attacker.name.contains("大鷹")) {
-            result += ids.filter(function (item) {
-                return item.slotitemId === 82 // 九七式艦攻(九三一空)
-            }).length
-            result += ids.filter(function (item) {
-                return item.slotitemId === 302 // 九七式艦攻(九三一空/熟練)
-            }).length
-            result += ids.filter(function (item) {
-                return item.slotitemId === 305 // Ju87C改二(KMX搭載機)
-            }).length
-            result += ids.filter(function (item) {
-                return item.slotitemId === 306 // Ju87C改二(KMX搭載機／熟練)
-            }).length
+        var BONUS_LIST = {
+            526: {
+                82: 1,  // 九七式艦攻(九三一空)
+                302: 1, // 九七式艦攻(九三一空/熟練)
+                305: 1, // Ju87C改二(KMX搭載機)
+                306: 1, // Ju87C改二(KMX搭載機／熟練)
+            },
+            380: 526,
+            529: 526,
+            534: {
+                82: 1,  // 九七式艦攻(九三一空)
+                302: 1, // 九七式艦攻(九三一空/熟練)
+                305: 3, // Ju87C改二(KMX搭載機)
+                306: 3, // Ju87C改二(KMX搭載機／熟練)
+            },
+            381: 534,
+            536: 534,
         }
-        if (that.attacker.name.contains("神鷹")) {
-            result += ids.filter(function (item) {
-                return item.slotitemId === 82 // 九七式艦攻(九三一空)
-            }).length
-            result += ids.filter(function (item) {
-                return item.slotitemId === 302 // 九七式艦攻(九三一空/熟練)
-            }).length
-            result += ids.filter(function (item) {
-                return item.slotitemId === 305 // Ju87C改二(KMX搭載機)
-            }).length * 3
-            result += ids.filter(function (item) {
-                return item.slotitemId === 306 // Ju87C改二(KMX搭載機／熟練)
-            }).length * 3
+        if (ADD_FIT_DATE.before(date) && BONUS_LIST[attacker.shipId]) {
+            var bonus = isNaN(BONUS_LIST[attacker.shipId]) ? BONUS_LIST[attacker.shipId] : BONUS_LIST[BONUS_LIST[attacker.shipId]]
+            return items.reduce(function (p, item) {
+                return p + (bonus[item.slotitemId] | 0)
+            }, 0)
         }
-        return result
-    }(this)
+        return 0
+    }(this.date, this.attacker, this.items)
     var taisenShip = this.attacker.taisen - this.attacker.slotParam.taisen - fitBonus
     var taisenItem = this.items.map(function (item) {
         switch (item.type2) {
@@ -1194,6 +1185,7 @@ NightBattlePower.prototype.getNightTouchPlaneBonus = function () {
 function getOnSlot(attacker, date) {
     if (isAkakari) {
         try {
+            AkakariSyutsugekiLogReader = Java.type("logbook.builtinscript.akakariLog.AkakariSyutsugekiLogReader")
             var json = AkakariSyutsugekiLogReader.shipAfterBattle(date, attacker.id) || AkakariSyutsugekiLogReader.shipEndPort(date, attacker.id)
             if (json) {
                 return Java.from(json.get("api_onslot"))
