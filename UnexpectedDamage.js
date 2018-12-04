@@ -1375,6 +1375,12 @@ var getLandBonus = function (attacker, defender) {
     var tokuDaihatsu = getItemNum(193)
 
     switch (defender.shipId) {
+        case 1573: // 港湾棲姫
+        case 1613: // 港湾棲姫-壊
+            var type3shellBonus = (type3shell >= 1) ? 2.5 : 1.0
+            var tokuRikuDaihatsuBonus = (tokuRikuDaihatsu >= 1) ? 2.2 : 1.0
+            var suijoBonus = (suijo >= 1) ? 1.2 : 1.0
+            return type3shellBonus * tokuRikuDaihatsuBonus * suijoBonus
         case 1668:
         case 1669:
         case 1670:
