@@ -1021,6 +1021,7 @@ NightBattlePower.prototype.getImprovementBonus = function () {
                 case 29: return 1 // 探照灯
                 case 42: return 1 // 大型探照灯
                 case 5: return 1 // 魚雷
+                case 22: return 1 // 特殊潜航艇
                 case 24: return 1 // 上陸用舟艇
                 case 46: return 1 // 特二式内火艇
                 default: return 0
