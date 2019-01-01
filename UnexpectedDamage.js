@@ -12,7 +12,7 @@ Item = Java.type("logbook.internal.Item")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.33
+var VERSION = 1.35
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update2.txt"
 /** ファイルの場所 */
