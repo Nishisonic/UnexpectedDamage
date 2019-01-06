@@ -438,9 +438,9 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
             battle.atacks.forEach(function (atack) {
                 Java.from(atack.damage).forEach(function (damage, i) {
                     if (atack.friendAtack) {
-                        airDamagedEnemyHp[atack.target[i] < enemyNum ? 'main' : 'escort'][atack.target[i] % enemyNum] += damage
+                        airDamagedEnemyHp[atack.target[i] < enemyNum ? 'main' : 'escort'][atack.target[i] % Math.max(6, enemyNum)] += damage
                     } else {
-                        airDamagedFriendHp[atack.target[i] < friendNum ? 'main' : 'escort'][atack.target[i] % friendNum] += damage
+                        airDamagedFriendHp[atack.target[i] < friendNum ? 'main' : 'escort'][atack.target[i] % Math.max(6, friendNum)] += damage
                     }
                 })
             })
@@ -451,9 +451,9 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
         atacks.forEach(function (atack) {
             Java.from(atack.damage).forEach(function (damage, i) {
                 if (atack.friendAtack) {
-                    supportDamagedEnemyHp[atack.target[i] < enemyNum ? 'main' : 'escort'][atack.target[i] % enemyNum] += damage
+                    supportDamagedEnemyHp[atack.target[i] < enemyNum ? 'main' : 'escort'][atack.target[i] % Math.max(6, enemyNum)] += damage
                 } else {
-                    supportDamagedFriendHp[atack.target[i] < friendNum ? 'main' : 'escort'][atack.target[i] % friendNum] += damage
+                    supportDamagedFriendHp[atack.target[i] < friendNum ? 'main' : 'escort'][atack.target[i] % Math.max(6, friendNum)] += damage
                 }
             })
         })
