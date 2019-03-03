@@ -12,7 +12,7 @@ Item = Java.type("logbook.internal.Item")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.35
+var VERSION = 1.36
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update2.txt"
 /** ファイルの場所 */
@@ -417,11 +417,12 @@ AntiSubmarinePower.prototype.getAfterCapPower = function () {
  * @return {Number} 倍率
  */
 AntiSubmarinePower.prototype.getFormationBonus = function () {
+    var CHANGE_ECHELON_BONUS_DATE = getJstDate(2019, 2, 27, 12, 0, 0)
     switch (Number(this.formation[this.attack.friendAttack ? 0 : 1])) {
         case FORMATION.LINE_AHEAD: return 0.6
         case FORMATION.DOUBLE_LINE: return 0.8
         case FORMATION.DIAMOND: return 1.2
-        case FORMATION.ECHELON: return 1.0
+        case FORMATION.ECHELON: return CHANGE_ECHELON_BONUS_DATE.after(this.date) ? 1.1 : 1.0
         case FORMATION.LINE_ABREAST: return 1.3
         case FORMATION.VANGUARD: return this.attack.attacker < Math.floor(this.attackNum / 2) ? 1.0 : 0.6
         case FORMATION.CRUISING_FORMATION_1: return 1.3
@@ -525,6 +526,7 @@ DayBattlePower.prototype.getImprovementBonus = function () {
                 case 40: return 0.75    // 大型ソナー
                 case 24: return 1       // 上陸用舟艇
                 case 46: return 1       // 特二式内火艇
+                case 18: return 1       // 三式弾
                 default: return 0
             }
         }
@@ -592,11 +594,12 @@ DayBattlePower.prototype.getAfterCapPower = function () {
  * @return {Number} 倍率
  */
 DayBattlePower.prototype.getFormationBonus = function () {
+    var CHANGE_ECHELON_BONUS_DATE = getJstDate(2019, 2, 27, 12, 0, 0)
     switch (Number(this.formation[this.attack.friendAttack ? 0 : 1])) {
         case FORMATION.LINE_AHEAD: return 1.0
         case FORMATION.DOUBLE_LINE: return 0.8
         case FORMATION.DIAMOND: return 0.7
-        case FORMATION.ECHELON: return 0.6
+        case FORMATION.ECHELON: return CHANGE_ECHELON_BONUS_DATE.before(this.date) ? 0.75 : 0.6
         case FORMATION.LINE_ABREAST: return 0.6
         case FORMATION.VANGUARD: return this.attack.attacker < Math.floor(this.attackNum / 2) ? 0.5 : 1.0
         case FORMATION.CRUISING_FORMATION_1: return 0.8
@@ -665,6 +668,9 @@ DayBattlePower.prototype.isAPshellBonusTarget = function () {
  * @return {Number} 倍率
  */
 DayBattlePower.prototype.getSpottingBonus = function () {
+    var ADD_ITEM_BONUS_DATE = getJstDate(2018, 12, 7, 12, 0, 0)
+    var UPDATE_SPECIAL_ATTACK_BONUS_DATE = getJstDate(2019, 2, 27, 12, 0, 0)
+
     switch (Number(this.attack.attackType)) {
         case 0: return 1.0   // 通常攻撃
         case 1: return 1.0   // レーザー攻撃
@@ -676,13 +682,60 @@ DayBattlePower.prototype.getSpottingBonus = function () {
         //case 7: return 1.0 // 戦爆連合CI
         case 100: return Number(this.formation[2]) === 4 ? 2.5 : 2.0 // Nelson Touch(≠弾着攻撃)
         case 101: // 一斉射かッ…胸が熱いな！
-            var tmp = (this.attack.lastAttack | 0) * 10 + ((this.origins[this.attack.mainAttack ? "main" : "escort"][1].shipId === 276) | 0)
-            switch (tmp) {
-                case 0: return 1.4   // 1,2発目:随伴≠陸奥改
-                case 1: return 1.61  // 1,2発目:随伴=陸奥改
-                case 10: return 1.2  // 3発目:随伴≠陸奥改
-                case 11: return 1.62 // 3発目:随伴=陸奥改
-            }
+            var secondShipId = this.origins[this.attack.mainAttack ? "main" : "escort"][1].shipId
+            var base = !this.attack.lastAttack ? 1.4 : 1.2
+            var secondShipBonus = function(date, secondShipId, lastAttack){
+                if (!lastAttack) {
+                    switch (secondShipId) {
+                        case 573: return 1.2  // 陸奥改二
+                        case 276: return 1.15 // 陸奥改
+                        case 576: return UPDATE_SPECIAL_ATTACK_BONUS_DATE.before(date) ? 1.1 : 1.0  // Nelson改
+                    }
+                } else {
+                    switch (secondShipId) {
+                        case 573: return 1.4  // 陸奥改二
+                        case 276: return 1.35 // 陸奥改
+                        case 576: return UPDATE_SPECIAL_ATTACK_BONUS_DATE.before(date) ? 1.25 : 1.0  // Nelson改
+                    }
+                }
+                return 1.0
+            }(this.date, secondShipId, this.attack.lastAttack)
+            var itemBonus = function(date, items) {
+                if (ADD_ITEM_BONUS_DATE.after(date)) return 1
+                var surfaceRadarBonus = items.some(function(item) {
+                    return item.type3 === 11 && item.param.saku >= 5
+                }) ? 1.15 : 1
+                var apShellBonus = items.some(function(item) {
+                    return item.type3 === 13
+                }) ? 1.35 : 1
+                return surfaceRadarBonus * apShellBonus
+            }(this.date, !this.attack.lastAttack ? this.items : getItems(this.origins[this.attack.mainAttack ? "main" : "escort"][1]))
+            return base * secondShipBonus * itemBonus
+        case 102: // 長門、いい？ いくわよ！ 主砲一斉射ッ！
+            var secondShipId = this.origins[this.attack.mainAttack ? "main" : "escort"][1].shipId
+            var base = !this.attack.lastAttack ? 1.4 : 1.2
+            var secondShipBonus = function(secondShipId, lastAttack){
+                if (!lastAttack) {
+                    switch (secondShipId) {
+                        case 541: return 1.2 // 長門改二
+                    }
+                } else {
+                    switch (secondShipId) {
+                        case 541: return 1.4 // 長門改二
+                    }
+                }
+                return 1.0
+            }(secondShipId, this.attack.lastAttack)
+            var itemBonus = function(items) {
+                var surfaceRadarBonus = items.some(function(item) {
+                    return item.type3 === 11 && item.param.saku >= 5
+                }) ? 1.15 : 1
+                var apShellBonus = items.some(function(item) {
+                    return item.type3 === 13
+                }) ? 1.35 : 1
+                return surfaceRadarBonus * apShellBonus
+            }(!this.attack.lastAttack ? this.items : getItems(this.origins[this.attack.mainAttack ? "main" : "escort"][1]))
+            return base * secondShipBonus * itemBonus
         default: return 1.0  // それ以外
     }
 }
@@ -961,7 +1014,98 @@ NightBattlePower.prototype.getBasePower = function () {
     var useRaisou = !isGround(this.defender) || isNorthernmostLandingPrincess(this.defender)
     // 夜襲
     if (isNightCvAttack(this.attacker, this.attackerHp)) {
-        var karyoku = this.attacker.karyoku - this.attacker.slotParam.karyoku
+        // フィットボーナス
+        var fitBonus = function (date, attacker, items) {
+            var BONUS_LIST = {
+                // Aquila改
+                365: {
+                    184: 1, // Re.2001 OR改
+                    188: 3, // Re.2001 G改
+                    316: 4, // Re.2001 CB改
+                },
+                // 飛竜改二
+                196: {
+                    type3: {
+                        9: [0, 3, 3, 3, 4, 4, 4, 4, 5, 5, 6],
+                    },
+                },
+                // 蒼龍改二
+                197: {
+                    type3: {
+                        9: [0, 3, 3, 3, 4, 4, 4, 4, 5, 5, 6],
+                    },
+                },
+                // Aquila
+                444: 365,
+                508: {
+                    type3: {
+                        9: [0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3],
+                    },
+                },
+                // 鈴谷航改二
+                509: 508,
+                // 熊野航改二
+                560: 508,
+                stype : {
+                    // 軽空母
+                    7: {
+                        type3: {
+                            9: [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2],
+                        },
+                    },
+                    // 正規空母
+                    11: 7,
+                    // 装甲空母
+                    18: 7,
+                }
+            }
+            if (BONUS_LIST[attacker.shipId]) {
+                var bonus = isNaN(BONUS_LIST[attacker.shipId]) ? BONUS_LIST[attacker.shipId] : BONUS_LIST[BONUS_LIST[attacker.shipId]]
+                return items.reduce(function (p, item) {
+                    // 装備ID
+                    if (bonus[item.slotitemId]) {
+                        if (Array.isArray(bonus[item.slotitemId])) {
+                            return bonus[item.slotitemId][item.level]
+                        }
+                        return p + bonus[item.slotitemId]
+                    }
+                    // カテゴリ
+                    for (var i = 0;i <= 4;i++) {
+                        if (bonus["type"+i][item["type"+i]]) {
+                            if (Array.isArray(bonus["type"+i][item["type"+i]])) {
+                                return bonus["type"+i][item["type"+i]][item.level]
+                            }
+                            return p + bonus["type"+i][item["type"+i]]
+                        }
+                    }
+                    return p
+                }, 0)
+            }
+            else if(BONUS_LIST.stype[attacker.stype]) {
+                var bonus = isNaN(BONUS_LIST.stype[attacker.stype]) ? BONUS_LIST.stype[attacker.stype] : BONUS_LIST.stype[BONUS_LIST.stype[attacker.stype]]
+                return items.reduce(function (p, item) {
+                    // 装備ID
+                    if (bonus[item.slotitemId]) {
+                        if (Array.isArray(bonus[item.slotitemId])) {
+                            return bonus[item.slotitemId][item.level]
+                        }
+                        return p + bonus[item.slotitemId]
+                    }
+                    // カテゴリ
+                    for (var i = 0;i <= 4;i++) {
+                        if (bonus["type"+i] && bonus["type"+i][item["type"+i]]) {
+                            if (Array.isArray(bonus["type"+i][item["type"+i]])) {
+                                return bonus["type"+i][item["type"+i]][item.level]
+                            }
+                            return p + bonus["type"+i][item["type"+i]]
+                        }
+                    }
+                    return p
+                }, 0)
+            }
+            return 0
+        }(this.date, this.attacker, this.items)
+        var karyoku = this.attacker.karyoku - this.attacker.slotParam.karyoku - fitBonus
         var nightPlaneBonus = this.items.map(function (item, i) {
             if (item !== null && getOnSlot(this.attacker, this.date)[i] > 0) {
                 // 夜戦、夜攻
@@ -1011,19 +1155,20 @@ NightBattlePower.prototype.getImprovementBonus = function () {
     return this.items.map(function (item) {
         var _getimprovementBonus = function () {
             switch (item.type2) {
-                case 1: return 1 // 小口径主砲
-                case 2: return 1 // 中口径主砲
-                case 3: return 1 // 大口径主砲
+                case 1: return 1  // 小口径主砲
+                case 2: return 1  // 中口径主砲
+                case 3: return 1  // 大口径主砲
                 case 38: return 1 // 大口径主砲(II)
-                case 4: return 1 // 副砲
+                case 4: return 1  // 副砲
                 case 19: return 1 // 対艦強化弾
                 case 36: return 1 // 高射装置
                 case 29: return 1 // 探照灯
                 case 42: return 1 // 大型探照灯
-                case 5: return 1 // 魚雷
+                case 5: return 1  // 魚雷
                 case 22: return 1 // 特殊潜航艇
                 case 24: return 1 // 上陸用舟艇
                 case 46: return 1 // 特二式内火艇
+                case 18: return 1 // 三式弾
                 default: return 0
             }
         }
@@ -1094,6 +1239,9 @@ NightBattlePower.prototype.getAfterCapPower = function () {
  * @return {Number} 倍率
  */
 NightBattlePower.prototype.getCutinBonus = function () {
+    var ADD_ITEM_BONUS_DATE = getJstDate(2018, 12, 7, 12, 0, 0)
+    var UPDATE_SPECIAL_ATTACK_BONUS_DATE = getJstDate(2019, 2, 27, 12, 0, 0)
+
     /**
      * 駆逐専用CI:12.7cm連装砲D型改二ボーナスを返します
      * @return {Number} 倍率
@@ -1139,14 +1287,61 @@ NightBattlePower.prototype.getCutinBonus = function () {
             return 1.2 * getDTypeGunBonus(this.attack.showItem)
         case 100:           // Nelson Touch
             return Number(this.formation[2]) === 4 ? 2.5 : 2.0
-        case 101:           // 一斉射かッ…胸が熱いな！
-            var tmp = (this.attack.lastAttack | 0) * 10 + ((this.origins[this.attack.mainAttack ? "main" : "escort"][1].shipId === 276) | 0)
-            switch (tmp) {
-                case 0: return 1.4   // 1,2発目:随伴≠陸奥改
-                case 1: return 1.61  // 1,2発目:随伴=陸奥改
-                case 10: return 1.2  // 3発目:随伴≠陸奥改
-                case 11: return 1.62 // 3発目:随伴=陸奥改
-            }
+        case 101: // 一斉射かッ…胸が熱いな！
+            var secondShipId = this.origins[this.attack.mainAttack ? "main" : "escort"][1].shipId
+            var base = !this.attack.lastAttack ? 1.4 : 1.2
+            var secondShipBonus = function(date, secondShipId, lastAttack){
+                if (!lastAttack) {
+                    switch (secondShipId) {
+                        case 573: return 1.2  // 陸奥改二
+                        case 276: return 1.15 // 陸奥改
+                        case 576: return UPDATE_SPECIAL_ATTACK_BONUS_DATE.before(date) ? 1.1 : 1.0  // Nelson改
+                    }
+                } else {
+                    switch (secondShipId) {
+                        case 573: return 1.4  // 陸奥改二
+                        case 276: return 1.35 // 陸奥改
+                        case 576: return UPDATE_SPECIAL_ATTACK_BONUS_DATE.before(date) ? 1.25 : 1.0  // Nelson改
+                    }
+                }
+                return 1.0
+            }(this.date, secondShipId, this.attack.lastAttack)
+            var itemBonus = function(date, items) {
+                if (ADD_ITEM_BONUS_DATE.after(date)) return 1
+                var surfaceRadarBonus = items.some(function(item) {
+                    return item.type3 === 11 && item.param.saku >= 5
+                }) ? 1.15 : 1
+                var apShellBonus = items.some(function(item) {
+                    return item.type3 === 13
+                }) ? 1.35 : 1
+                return surfaceRadarBonus * apShellBonus
+            }(this.date, !this.attack.lastAttack ? this.items : getItems(this.origins[this.attack.mainAttack ? "main" : "escort"][1]))
+            return base * secondShipBonus * itemBonus
+        case 102: // 長門、いい？ いくわよ！ 主砲一斉射ッ！
+            var secondShipId = this.origins[this.attack.mainAttack ? "main" : "escort"][1].shipId
+            var base = !this.attack.lastAttack ? 1.4 : 1.2
+            var secondShipBonus = function(secondShipId, lastAttack){
+                if (!lastAttack) {
+                    switch (secondShipId) {
+                        case 541: return 1.2 // 長門改二
+                    }
+                } else {
+                    switch (secondShipId) {
+                        case 541: return 1.4 // 長門改二
+                    }
+                }
+                return 1.0
+            }(secondShipId, this.attack.lastAttack)
+            var itemBonus = function(items) {
+                var surfaceRadarBonus = items.some(function(item) {
+                    return item.type3 === 11 && item.param.saku >= 5
+                }) ? 1.15 : 1
+                var apShellBonus = items.some(function(item) {
+                    return item.type3 === 13
+                }) ? 1.35 : 1
+                return surfaceRadarBonus * apShellBonus
+            }(!this.attack.lastAttack ? this.items : getItems(this.origins[this.attack.mainAttack ? "main" : "escort"][1]))
+            return base * secondShipBonus * itemBonus
         default: return 1.0
     }
 }
@@ -1303,7 +1498,7 @@ var getMultiplySlayerBonus = function (attacker, defender) {
         case 1725:
         case 1726:
         case 1727: // 北端上陸姫
-            var type3shellBonus = items.filter(function (item) { return item.slotitemId === 35 }).length > 0 ? 1.3 : 1.0
+            var type3shellBonus = items.filter(function (item) { return item.type2 === 18 }).length > 0 ? 1.3 : 1.0
             var wg42Bonus = items.filter(function (item) { return item.slotitemId === 126 }).length > 0 ? 1.4 : 1.0
             return type3shellBonus * wg42Bonus
     }
@@ -1331,7 +1526,7 @@ var getAddSlayerBonus = function (attacker, defender) {
         case 1726:
         case 1727: // 北端上陸姫
             var items = getItems(attacker)
-            var type3shellBonus = items.filter(function (item) { return item.slotitemId === 35 }).length > 0 ? 1 : 0
+            var type3shellBonus = items.filter(function (item) { return item.type2 === 18 }).length > 0 ? 1 : 0
             var wg42Bonus = items.filter(function (item) { return item.slotitemId === 126 }).length > 0 ? 15 : 0
             return type3shellBonus + wg42Bonus
     }
@@ -1362,7 +1557,7 @@ var getLandBonus = function (attacker, defender) {
             return Array.isArray(id) ? id.indexOf(itemid) >= 0 : id === itemid
         }).length
     }
-    var type3shell = getItemNum(35)
+    var type3shell = items.filter(function (item) { return item.type2 === 18 }).length
     var daihatsu = getItemNum(68)
     var daihatsuLv = daihatsu > 0 ? items.filter(function (item) { return item.slotitemId === 68 }).map(function (item) { return item.level }).reduce(function (p, c) { return p + c }, 0) / daihatsu : 0
     var rikuDaihatsu = getItemNum(166)
