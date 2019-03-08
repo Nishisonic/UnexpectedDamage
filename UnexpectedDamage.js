@@ -12,7 +12,7 @@ Item = Java.type("logbook.internal.Item")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.37
+var VERSION = 1.38
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update2.txt"
 /** ファイルの場所 */
@@ -422,7 +422,7 @@ AntiSubmarinePower.prototype.getFormationBonus = function () {
         case FORMATION.LINE_AHEAD: return 0.6
         case FORMATION.DOUBLE_LINE: return 0.8
         case FORMATION.DIAMOND: return 1.2
-        case FORMATION.ECHELON: return CHANGE_ECHELON_BONUS_DATE.after(this.date) ? 1.1 : 1.0
+        case FORMATION.ECHELON: return CHANGE_ECHELON_BONUS_DATE.before(this.date) ? 1.1 : 1.0
         case FORMATION.LINE_ABREAST: return 1.3
         case FORMATION.VANGUARD: return this.attack.attacker < Math.floor(this.attackNum / 2) ? 1.0 : 0.6
         case FORMATION.CRUISING_FORMATION_1: return 1.3
@@ -562,7 +562,8 @@ DayBattlePower.prototype.getImprovementBonus = function () {
  * @return {Number} 昼砲撃火力(キャップ前)
  */
 DayBattlePower.prototype.getBeforeCapPower = function () {
-    return (this.getBasePower() * getLandBonus(this.attacker, this.defender) + getWg42Bonus(this.attacker, this.defender)) * getFormationMatchBonus(this.formation) * this.getFormationBonus() * this.getConditionBonus() + getOriginalGunPowerBonus(this.attacker)
+    var landBonus = getLandBonus(this.attacker, this.defender)
+    return (this.getBasePower() * landBonus.multiplication + getWg42Bonus(this.attacker, this.defender) + landBonus.addition) * getFormationMatchBonus(this.formation) * this.getFormationBonus() * this.getConditionBonus() + getOriginalGunPowerBonus(this.attacker)
 }
 
 /**
@@ -1212,7 +1213,8 @@ NightBattlePower.prototype.getFormationBonus = function () {
  * @return {Number} 夜戦火力(キャップ前)
  */
 NightBattlePower.prototype.getBeforeCapPower = function () {
-    return (this.getBasePower() * getLandBonus(this.attacker, this.defender) + getWg42Bonus(this.attacker, this.defender)) * this.getFormationBonus() * this.getCutinBonus() * this.getConditionBonus() + getOriginalGunPowerBonus(this.attacker)
+    var landBonus = getLandBonus(this.attacker, this.defender)
+    return (this.getBasePower() * landBonus.multiplication + getWg42Bonus(this.attacker, this.defender) + landBonus.addition) * this.getFormationBonus() * this.getCutinBonus() * this.getConditionBonus() + getOriginalGunPowerBonus(this.attacker)
 }
 
 /**
@@ -1545,10 +1547,10 @@ var isNorthernmostLandingPrincess = function (ship) {
  * 陸上特効倍率を返します
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} defender 防御艦
- * @return {Number} 倍率
+ * @return {{multiplication:Number, addition: Number}} 倍率
  */
 var getLandBonus = function (attacker, defender) {
-    if (!isGround(defender)) return 1.0
+    if (!isGround(defender)) return {multiplication: 1.0, addition: 0}
     var items = getItems(attacker)
     var getItemNum = function (id) {
         return items.map(function (item) {
@@ -1564,85 +1566,97 @@ var getLandBonus = function (attacker, defender) {
     var rikuDaihatsuLv = (daihatsu + rikuDaihatsu) > 0 ? items.filter(function (item) { return item.slotitemId === 68 || item.slotitemId === 166 }).map(function (item) { return item.level }).reduce(function (p, c) { return p + c }, 0) / (daihatsu + rikuDaihatsu) : 0
     var kamisha = getItemNum(167)
     var kamishaLv = kamisha > 0 ? items.filter(function (item) { return item.slotitemId === 167 }).map(function (item) { return item.level }).reduce(function (p, c) { return p + c }, 0) / kamisha : 0
-    var tokuRikuDaihatsu = getItemNum(230)
+    var shikonDaihatsu = getItemNum(230)
     var suijo = items.filter(function (item) { return item.type2 === 11 || item.type2 === 45 }).length
     var apShell = items.filter(function (item) { return item.type2 === 19 }).length
     var wg42 = getItemNum(126)
     var tokuDaihatsu = getItemNum(193)
 
+    var type3shellBonus = 1
+    var apShellBonus = 1
+    var wg42Bonus = 1
+    var daihatsuBonus = 1
+    var rikuDaihatsuBonus = 1
+    var kamishaBonus = 1
+    var tokuDaihatsuBonus = 1
+    var shikonDaihatsuBonus = 1
+    var suijoBonus = 1
+    var stypeBonus = 1
+    var additionBonus = 0
+
     switch (defender.shipId) {
-        case 1573: // 港湾棲姫
-        case 1613: // 港湾棲姫-壊
-            var type3shellBonus = (type3shell >= 1) ? 2.5 : 1.0
-            var tokuRikuDaihatsuBonus = (tokuRikuDaihatsu >= 1) ? 2.2 : 1.0
-            var suijoBonus = (suijo >= 1) ? 1.2 : 1.0
-            return type3shellBonus * tokuRikuDaihatsuBonus * suijoBonus
         case 1668:
         case 1669:
         case 1670:
         case 1671:
         case 1672: // 離島棲姫
-            var daihatsuBonus = (daihatsu >= 1 ? 1.575 : 1.0) // 要検証
-            var rikuDaihatsuBonus = (rikuDaihatsu >= 1 ? 1.72 : 1.0) // 要検証
-            var kamishaBonus = (kamisha >= 1 ? 2.32 : 1.0) // 要検証
-            var type3shellBonus = (type3shell >= 1) ? 1.75 : 1.0
-            var wg42Bonus = (wg42 >= 2) ? 2.1 : (wg42 === 1 ? 1.4 : 1.0)
-            var tokuRikuDaihatsuBonus = (tokuRikuDaihatsu >= 1) ? 3.4 : 1.0 // 3.4~3.8
-            return daihatsuBonus * rikuDaihatsuBonus * kamishaBonus * type3shellBonus * wg42Bonus * tokuRikuDaihatsuBonus
+            type3shellBonus = type3shell ? 1.75 : 1
+            wg42Bonus = (wg42 >= 2) ? 2.1 : (wg42 ? 1.4 : 1)
+            daihatsuBonus = daihatsu ? 1.8 : 1
+            rikuDaihatsuBonus = rikuDaihatsu ? 1.72 : 1
+            kamishaBonus = kamisha ? 2.4 : 1
+            shikonDaihatsuBonus = shikonDaihatsu ? 3.4 : 1
+            break
         case 1665:
         case 1666:
         case 1667: // 砲台小鬼
-            // 駆逐・軽巡のみ
-            var stypeBonus = (attacker.stype === 2 || attacker.stype === 3) ? 1.4 : 1.0
-            var daihatsuBonus = (daihatsu >= 1 ? 1.8 : 1.0) * (1 + daihatsuLv / 50)
-            var rikuDaihatsuBonus = function (num) {
-                if (num >= 2) return 3.0
-                if (num === 1) return 2.2 // 2.19
-                return 1.0
-            }(rikuDaihatsu) * (1 + rikuDaihatsuLv / 50)
-            var kamishaBonus = function (num) {
-                if (num >= 2) return 3.2
-                if (num === 1) return 2.4
-                return 1.0
-            }(kamisha) * (1 + kamishaLv / 30)
-            var suijoBonus = (suijo >= 1) ? 1.5 : 1.0
-            var apShellBonus = (apShell >= 1) ? 1.85 : 1.00
-            var wg42Bonus = (wg42 >= 2) ? 2.72 : (wg42 === 1 ? 1.60 : 1.00)
-            var tokuDaihatsuBonus = (tokuDaihatsu >= 1) ? 2.05 : 1.00
-            var tokuRikuDaihatsuBonus = (tokuRikuDaihatsu >= 1) ? 3.4 : 1.0 // 3.4~3.6
-            return stypeBonus * (rikuDaihatsu > 0 ? rikuDaihatsuBonus : daihatsuBonus) * kamishaBonus * suijoBonus * apShellBonus * wg42Bonus * tokuDaihatsuBonus * tokuRikuDaihatsuBonus
+            apShellBonus = apShell ? 1.85 : 1
+            wg42Bonus = (wg42 >= 2 ? 1.7 : 1) * (wg42 ? 1.6 : 1)
+            daihatsuBonus = (daihatsu ? 1.8 : 1) * (1 + daihatsuLv / 50)
+            rikuDaihatsuBonus = (rikuDaihatsu >= 2 ? 3 : (rikuDaihatsu ? 2.2 : 1)) * (1 + rikuDaihatsuLv / 50)
+            kamishaBonus = (kamisha >= 2 ? 3.2 : (kamisha ? 2.4 : 1)) * (1 + kamishaLv / 30)
+            tokuDaihatsuBonus = tokuDaihatsu ? 2.05 : 1
+            shikonDaihatsuBonus = shikonDaihatsu ? 3.4 : 1
+            suijoBonus = suijo ? 1.5 : 1
+            stypeBonus = (attacker.stype === 2 || attacker.stype === 3) ? 1.4 : 1.0
+            break
         case 1699:
         case 1700:
         case 1701: // 港湾夏姫
         case 1702:
         case 1703:
         case 1704: // 港湾夏姫-壊
-            var wg42Bonus = (wg42 >= 1) ? 1.4 : 1.0
-            var daihatsuBonus = (daihatsu >= 1) ? 1.8 : 1.0
-            var rikuDaihatsuBonus = (rikuDaihatsu >= 1) ? 3.7 : 1.0
-            var kamishaBonus = (kamisha >= 1) ? 2.8 : 1.0
-            var type3shellBonus = (type3shell >= 1) ? 1.8 : 1.0
-            return wg42Bonus * daihatsuBonus * rikuDaihatsuBonus * kamishaBonus * type3shellBonus
+            type3shellBonus = type3shell ? 1.8 : 1
+            wg42Bonus = wg42 ? 1.4 : 1
+            daihatsuBonus = daihatsu ? 1.8 : 1
+            rikuDaihatsuBonus = rikuDaihatsu ? 3.7 : 1
+            kamishaBonus = kamisha ? 2.8 : 1
+            break
         case 1653:
         case 1654:
         case 1655: // 集積地棲姫
         case 1656:
         case 1657:
         case 1658: // 集積地棲姫-壊
-            var type3shellBonus = (type3shell >= 1) ? 2.5 : 1.0
-            return type3shellBonus
+            type3shellBonus = type3shell ? 2.5 : 1
+            wg42Bonus = (wg42 >= 2 ? 1.3 : 1) * (wg42 ? 1.25 : 1)
+            daihatsuBonus = (daihatsu ? 1.67 : 1) * (1 + daihatsuLv / 50)
+            rikuDaihatsuBonus = (rikuDaihatsu >= 2 ? 2.08 : (rikuDaihatsu ? 2.6 : 1)) * (1 + rikuDaihatsuLv / 50)
+            kamishaBonus = (kamisha >= 2 ? 2.5 : (kamisha ? 1.7 : 1)) * (1 + kamishaLv / 30)
+            if (shikonDaihatsu) {
+                shikonDaihatsuBonus = 3.5
+                additionBonus += 5
+            }
+            break
         case 1725:
         case 1726:
         case 1727: // 北端上陸姫
-        case 1725:
-        case 1726:
-        case 1727: // 北端上陸姫
-            return 1.0
-        default:
-            // ソフトスキン
-            var type3shellBonus = (type3shell >= 1) ? 2.5 : 1.0
-            var tokuRikuDaihatsuBonus = (tokuRikuDaihatsu >= 1) ? 2.2 : 1.0
-            return type3shellBonus * tokuRikuDaihatsuBonus
+            return {multiplication: 1.0, addition: 0}
+        default: // ソフトスキン
+            type3shellBonus = type3shell ? 2.5 : 1.0
+            wg42Bonus = (wg42 >= 2) ? 1.8 : (wg42 ? 1.3 : 1)
+            rikuDaihatsuBonus = (rikuDaihatsu ? 2.1 : 1.0) * (1 + rikuDaihatsuLv / 50)
+            kamishaBonus = (kamisha ? 1.5 : 1.0) * (1 + kamishaLv / 30)
+            if (shikonDaihatsu) {
+                shikonDaihatsuBonus = Math.sqrt(8)
+                additionBonus += 5
+            }
+            suijoBonus = suijo ? 1.2 : 1.0
+            break
+    }
+    return {
+        multiplication: type3shellBonus * apShellBonus * wg42Bonus * daihatsuBonus * rikuDaihatsuBonus * kamishaBonus * tokuDaihatsuBonus * shikonDaihatsuBonus * suijoBonus * stypeBonus,
+        addition: additionBonus
     }
 }
 
