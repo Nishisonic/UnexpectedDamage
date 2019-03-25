@@ -12,7 +12,7 @@ Item = Java.type("logbook.internal.Item")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.38
+var VERSION = 1.39
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update2.txt"
 /** ファイルの場所 */
@@ -1012,7 +1012,7 @@ var NightBattlePower = function (date, kind, friendCombinedKind, isEnemyCombined
  * @return {Number} 夜戦火力(基本攻撃力)
  */
 NightBattlePower.prototype.getBasePower = function () {
-    var useRaisou = !isGround(this.defender) || isNorthernmostLandingPrincess(this.defender)
+    var useRaisou = !isGround(this.defender) || isNorthernmostLandingPrincess(this.defender) || this.items.length === 0
     // 夜襲
     if (isNightCvAttack(this.attacker, this.attackerHp)) {
         // フィットボーナス
