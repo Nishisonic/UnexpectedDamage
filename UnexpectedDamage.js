@@ -12,7 +12,7 @@ Item = Java.type("logbook.internal.Item")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.39
+var VERSION = 1.40
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update2.txt"
 /** ファイルの場所 */
@@ -1617,7 +1617,7 @@ var getLandBonus = function (attacker, defender) {
         case 1703:
         case 1704: // 港湾夏姫-壊
             type3shellBonus = type3shell ? 1.8 : 1
-            wg42Bonus = wg42 ? 1.4 : 1
+            wg42Bonus = (wg42 >= 2 ? 1.3 : 1) * (wg42 ? 1.4 : 1)
             daihatsuBonus = daihatsu ? 1.8 : 1
             rikuDaihatsuBonus = rikuDaihatsu ? 3.7 : 1
             kamishaBonus = kamisha ? 2.8 : 1
