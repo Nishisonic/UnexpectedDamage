@@ -12,7 +12,7 @@ Item = Java.type("logbook.internal.Item")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.41
+var VERSION = 1.42
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update2.txt"
 /** ファイルの場所 */
@@ -1248,14 +1248,14 @@ NightBattlePower.prototype.getCutinBonus = function () {
      * 駆逐専用CI:12.7cm連装砲D型改二ボーナスを返します
      * @return {Number} 倍率
      */
-    var getDTypeGunBonus = function (showItem) {
-        var num = Java.from(showItem).filter(function (id) { return Number(id) === 267 }).length
+    var dTypeGunBonus = function (items) {
+        var num = items.filter(function (item) { return item.slotitemId === 267 }).length
         switch (num) {
             case 1: return 1.25
             case 2: return 1.4
         }
         return 1
-    }
+    }(this.items)
 
     switch (Number(this.attack.attackType)) {
         case 1: return 1.2  // 連撃
@@ -1284,9 +1284,9 @@ NightBattlePower.prototype.getCutinBonus = function () {
             if (kind1 === 1 || kind3 === 2) return 1.18 // CI種類F
             return 1.0
         case 7:             // 駆逐カットイン(主砲/魚雷/電探)
-            return 1.3 * getDTypeGunBonus(this.attack.showItem)
+            return 1.3 * dTypeGunBonus
         case 8:             // 駆逐カットイン(魚雷/見張員/電探)
-            return 1.2 * getDTypeGunBonus(this.attack.showItem)
+            return 1.2 * dTypeGunBonus
         case 100:           // Nelson Touch
             return Number(this.formation[2]) === 4 ? 2.5 : 2.0
         case 101: // 一斉射かッ…胸が熱いな！
