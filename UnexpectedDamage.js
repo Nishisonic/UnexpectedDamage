@@ -7,12 +7,13 @@ BattlePhaseKind = Java.type("logbook.dto.BattlePhaseKind")
 EnemyShipDto = Java.type("logbook.dto.EnemyShipDto")
 ShipDto = Java.type("logbook.dto.ShipDto")
 Item = Java.type("logbook.internal.Item")
+Ship = Java.type("logbook.internal.Ship")
 //#endregion
 
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.42
+var VERSION = 1.43
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update2.txt"
 /** ファイルの場所 */
@@ -280,35 +281,127 @@ var AntiSubmarinePower = function (date, kind, friendCombinedKind, isEnemyCombin
  */
 AntiSubmarinePower.prototype.getBasePower = function () {
     // フィットボーナス
-    var fitBonus = function (date, attacker, items) {
-        var ADD_FIT_DATE = getJstDate(2018, 8, 30, 18, 0, 0)
+    var equipmentBonus = function (date, attacker, items) {
         var BONUS_LIST = {
+            // 大鷹
             526: {
-                82: 1,  // 九七式艦攻(九三一空)
-                302: 1, // 九七式艦攻(九三一空/熟練)
-                305: 1, // Ju87C改二(KMX搭載機)
-                306: 1, // Ju87C改二(KMX搭載機／熟練)
+                82: {param:1, date: getJstDate(2018, 8, 30, 18, 0, 0)},  // 九七式艦攻(九三一空)
+                302: {param:1, date: getJstDate(2018, 8, 30, 18, 0, 0)}, // 九七式艦攻(九三一空/熟練)
+                305: {param:1, date: getJstDate(2018, 8, 30, 18, 0, 0)}, // Ju87C改二(KMX搭載機)
+                306: {param:1, date: getJstDate(2018, 8, 30, 18, 0, 0)}, // Ju87C改二(KMX搭載機／熟練)
             },
-            380: 526,
-            529: 526,
+            380: 526, // 大鷹改
+            529: 526, // 大鷹改二
+            // 神鷹
             534: {
                 82: 1,  // 九七式艦攻(九三一空)
                 302: 1, // 九七式艦攻(九三一空/熟練)
                 305: 3, // Ju87C改二(KMX搭載機)
                 306: 3, // Ju87C改二(KMX搭載機／熟練)
             },
+            // 神鷹改
             381: 534,
+            // 神鷹改二
             536: 534,
+            // 神風
+            471: {
+                47: {param: 3, date: getJstDate(2019, 1, 22, 12, 0, 0)} // 三式水中探信儀
+            },
+            476: 471, // 神風改
+            473: 471, // 春風
+            363: 471, // 春風改
+            43: 471, // 時雨
+            243: 471, // 時雨改
+            145: 471, // 時雨改二
+            457: 471, // 山風
+            369: 471, // 山風改
+            122: 471, // 舞風
+            294: 471, // 舞風改
+            425: 471, // 朝霜
+            344: 471, // 朝霜改
+            // 潮
+            16: {
+                47: {param: 2, date: getJstDate(2019, 1, 22, 12, 0, 0)} // 三式水中探信儀
+            },
+            233: 16, // 潮改
+            407: 16, // 潮改二
+            36: 16, // 雷
+            236: 16, // 雷改
+            414: 16, // 山雲
+            328: 16, // 山雲改
+            167: 16, // 磯風
+            320: 16, // 磯風改
+            557: 16, // 磯風乙改
+            170: 16, // 浜風
+            312: 16, // 浜風改
+            558: 16, // 浜風乙改
+            527: 16, // 岸波
+            686: 16, // 岸波改
+            // 伊勢改二
+            553: {
+                322: 1, // 瑞雲改二(六三四空)
+                323: 2, // 瑞雲改二(六三四空/熟練)
+                324: 1, // オ号観測機改
+                325: 2, // オ号観測機改二
+                326: 2, // S-51J
+                327: 3, // S-51J改
+            },
+            // 日向改二
+            554: {
+                322: 1, // 瑞雲改二(六三四空)
+                323: 2, // 瑞雲改二(六三四空/熟練)
+                324: 1, // オ号観測機改
+                325: 2, // オ号観測機改二
+                326: 3, // S-51J
+                327: 4, // S-51J改
+            },
+            ctype: {
+                // 球磨型
+                4: {
+                    304: 1, // S9 Osprey
+                },
+                // 川内型
+                16: 4,
+                // 長良型
+                20: 4,
+                // 阿賀野型
+                41: 4,
+                // Gotland級
+                89: {
+                    304: 2, // S9 Osprey
+                },
+            },
         }
-        if (ADD_FIT_DATE.before(date) && BONUS_LIST[attacker.shipId]) {
+        if (BONUS_LIST[attacker.shipId]) {
             var bonus = isNaN(BONUS_LIST[attacker.shipId]) ? BONUS_LIST[attacker.shipId] : BONUS_LIST[BONUS_LIST[attacker.shipId]]
-            return items.reduce(function (p, item) {
-                return p + (bonus[item.slotitemId] | 0)
+            return items.filter(function (item) {
+                return bonus[item.slotitemId]
+            }).filter(function (item) {
+                return isNaN(bonus[item.slotitemId]) ? bonus[item.slotitemId].date.before(date) : true
+            }).map(function (item) {
+                return isNaN(bonus[item.slotitemId]) ? bonus[item.slotitemId].param : bonus[item.slotitemId]
+            }).reduce(function (p, param) {
+                return p + param
             }, 0)
+        }
+        else {
+            var ctype = Ship.get(attacker.shipId).json.getJsonNumber("api_ctype").intValue()
+            if (BONUS_LIST.ctype[ctype]) {
+                var bonus = isNaN(BONUS_LIST.ctype[ctype]) ? BONUS_LIST.ctype[ctype] : BONUS_LIST.ctype[BONUS_LIST.ctype[ctype]]
+                return items.filter(function (item) {
+                    return bonus[item.slotitemId]
+                }).filter(function (item) {
+                    return isNaN(bonus[item.slotitemId]) ? bonus[item.slotitemId].date.before(date) : true
+                }).map(function (item) {
+                    return isNaN(bonus[item.slotitemId]) ? bonus[item.slotitemId].param : bonus[item.slotitemId]
+                }).reduce(function (p, param) {
+                    return p + param
+                }, 0)
+            }
         }
         return 0
     }(this.date, this.attacker, this.items)
-    var taisenShip = this.attacker.taisen - this.attacker.slotParam.taisen - fitBonus
+    var taisenShip = this.attacker.taisen - this.attacker.slotParam.taisen - equipmentBonus
     var taisenItem = this.items.map(function (item) {
         switch (item.type2) {
             case 7:  // 艦上爆撃機
@@ -737,6 +830,8 @@ DayBattlePower.prototype.getSpottingBonus = function () {
                 return surfaceRadarBonus * apShellBonus
             }(!this.attack.lastAttack ? this.items : getItems(this.origins[this.attack.mainAttack ? "main" : "escort"][1]))
             return base * secondShipBonus * itemBonus
+        case 200: return 1.35 // 瑞雲立体攻撃
+        case 201: return 1.3 // 海空立体攻撃
         default: return 1.0  // それ以外
     }
 }
@@ -1016,7 +1111,7 @@ NightBattlePower.prototype.getBasePower = function () {
     // 夜襲
     if (isNightCvAttack(this.attacker, this.attackerHp)) {
         // フィットボーナス
-        var fitBonus = function (date, attacker, items) {
+        var equipmentBonus = function (date, attacker, items) {
             var BONUS_LIST = {
                 // Aquila改
                 365: {
@@ -1024,7 +1119,7 @@ NightBattlePower.prototype.getBasePower = function () {
                     188: 3, // Re.2001 G改
                     316: 4, // Re.2001 CB改
                 },
-                // 飛竜改二
+                // 飛龍改二
                 196: {
                     type3: {
                         9: [0, 3, 3, 3, 4, 4, 4, 4, 5, 5, 6],
@@ -1106,7 +1201,7 @@ NightBattlePower.prototype.getBasePower = function () {
             }
             return 0
         }(this.date, this.attacker, this.items)
-        var karyoku = this.attacker.karyoku - this.attacker.slotParam.karyoku - fitBonus
+        var karyoku = this.attacker.karyoku - this.attacker.slotParam.karyoku - equipmentBonus
         var nightPlaneBonus = this.items.map(function (item, i) {
             if (item !== null && getOnSlot(this.attacker, this.date)[i] > 0) {
                 // 夜戦、夜攻
@@ -1344,6 +1439,8 @@ NightBattlePower.prototype.getCutinBonus = function () {
                 return surfaceRadarBonus * apShellBonus
             }(!this.attack.lastAttack ? this.items : getItems(this.origins[this.attack.mainAttack ? "main" : "escort"][1]))
             return base * secondShipBonus * itemBonus
+        case 200: return 1.35 // 瑞雲立体攻撃
+        case 201: return 1.3 // 海空立体攻撃
         default: return 1.0
     }
 }
@@ -1617,7 +1714,7 @@ var getLandBonus = function (attacker, defender) {
         case 1703:
         case 1704: // 港湾夏姫-壊
             type3shellBonus = type3shell ? 1.8 : 1
-            wg42Bonus = (wg42 >= 2 ? 1.3 : 1) * (wg42 ? 1.4 : 1)
+            wg42Bonus = wg42 ? 1.4 : 1
             daihatsuBonus = daihatsu ? 1.8 : 1
             rikuDaihatsuBonus = rikuDaihatsu ? 3.7 : 1
             kamishaBonus = kamisha ? 2.8 : 1
@@ -1644,7 +1741,7 @@ var getLandBonus = function (attacker, defender) {
             return {multiplication: 1.0, addition: 0}
         default: // ソフトスキン
             type3shellBonus = type3shell ? 2.5 : 1.0
-            wg42Bonus = (wg42 >= 2) ? 1.8 : (wg42 ? 1.3 : 1)
+            wg42Bonus = (wg42 >= 2 ? 1.4 : 1) * (wg42 ? 1.3 : 1)
             rikuDaihatsuBonus = (rikuDaihatsu ? 2.1 : 1.0) * (1 + rikuDaihatsuLv / 50)
             kamishaBonus = (kamisha ? 1.5 : 1.0) * (1 + kamishaLv / 30)
             if (shikonDaihatsu) {
