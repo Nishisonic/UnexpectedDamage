@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.45
+var VERSION = 1.46
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update2.txt"
 /** ファイルの場所 */
@@ -658,7 +658,7 @@ DayBattlePower.prototype.getImprovementBonus = function () {
  */
 DayBattlePower.prototype.getBeforeCapPower = function () {
     var landBonus = getLandBonus(this.attacker, this.defender)
-    return (this.getBasePower() * landBonus.multiplication + getWg42Bonus(this.attacker, this.defender) + landBonus.addition) * getFormationMatchBonus(this.formation) * this.getFormationBonus() * this.getConditionBonus() + getOriginalGunPowerBonus(this.attacker)
+    return (this.getBasePower() * landBonus.multi + getWg42Bonus(this.attacker, this.defender) + landBonus.add) * getFormationMatchBonus(this.formation) * this.getFormationBonus() * this.getConditionBonus() + getOriginalGunPowerBonus(this.attacker)
 }
 
 /**
@@ -1117,91 +1117,218 @@ NightBattlePower.prototype.getBasePower = function () {
             var BONUS_LIST = {
                 // Aquila改
                 365: {
-                    184: 1, // Re.2001 OR改
-                    188: 3, // Re.2001 G改
-                    316: 4, // Re.2001 CB改
+                    // Re.2001 OR改
+                    184: 1,
+                    // Re.2001 G改
+                    188: 3,
+                    // Re.2001 CB改
+                    316: 4,
                 },
                 // 飛龍改二
                 196: {
-                    type3: {
-                        9: [0, 3, 3, 3, 4, 4, 4, 4, 5, 5, 6],
-                    },
+                    // 二式艦上偵察機
+                    61: [0, 3, 3, 3, 4, 4, 4, 4, 5, 5, 6],
+                    // 九七式艦攻(友永隊)
+                    93: {param: 3, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
+                    // 天山一二型(友永隊)
+                    94: {param: 7, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
+                    // 九九式艦爆(江草隊)
+                    99: {param: 1, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
+                    // 彗星(江草隊)
+                    100: {param: 3, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
+                    // 彗星一二型(三一号光電管爆弾搭載機)
+                    320: {param: 3, count: 1},
                 },
                 // 蒼龍改二
                 197: {
-                    type3: {
-                        9: [0, 3, 3, 3, 4, 4, 4, 4, 5, 5, 6],
-                    },
+                    // 二式艦上偵察機
+                    61: [0, 3, 3, 3, 4, 4, 4, 4, 5, 5, 6],
+                    // 九七式艦攻(友永隊)
+                    93: {param: 1, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
+                    // 天山一二型(友永隊)
+                    94: {param: 3, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
+                    // 九九式艦爆(江草隊)
+                    99: {param: 4, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
+                    // 彗星(江草隊)
+                    100: {param: 6, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
+                    // 彗星一二型(三一号光電管爆弾搭載機)
+                    320: {param: 3, count: 1},
                 },
                 // Aquila
                 444: 365,
-                508: {
-                    type3: {
-                        9: [0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3],
-                    },
-                },
                 // 鈴谷航改二
-                509: 508,
+                508: {
+                    // 二式艦上偵察機
+                    61: [0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3],
+                    // 彗星一二型(三一号光電管爆弾搭載機)
+                    320: {param: 4, count: 1},
+                },
                 // 熊野航改二
+                509: 508,
+                // 瑞鳳改二乙
                 560: 508,
+                // 蒼龍
+                90: {
+                    // 九七式艦攻(友永隊)
+                    93: {param: 1, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
+                    // 九九式艦爆(江草隊)
+                    99: {param: 4, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
+                },
+                // 飛龍
+                91: {
+                    // 九七式艦攻(友永隊)
+                    93: {param: 3, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
+                    // 九九式艦爆(江草隊)
+                    99: {param: 1, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
+                },
+                // 蒼龍改
+                279: 99,
+                // 飛龍改
+                280: 91,
+                // 翔鶴
+                110: {
+                    // 九七式艦攻(村田隊)
+                    143: {param: 2, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
+                    // 天山(村田隊)
+                    144: {param: 2, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
+                },
+                // 翔鶴改
+                288: 110,
+                // 翔鶴改二
+                461: {
+                    // 九七式艦攻(村田隊)
+                    143: {param: 2, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
+                    // 天山(村田隊)
+                    144: {param: 4, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
+                },
+                // 翔鶴改二甲
+                466: 461,
+                // 瑞鶴
+                111: {
+                    // 九七式艦攻(村田隊)
+                    143: {param: 1, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
+                    // 天山(村田隊)
+                    144: {param: 1, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
+                },
+                // 瑞鶴改
+                112: 111,
+                // 瑞鶴改二
+                462: {
+                    // 九七式艦攻(村田隊)
+                    143: {param: 1, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
+                    // 天山(村田隊)
+                    144: {param: 2, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
+                },
+                // 瑞鶴改二甲
+                467: 462,
+                // 赤城改
+                277: {
+                    // 九七式艦攻(村田隊)
+                    143: {param: 3, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
+                    // 天山(村田隊)
+                    144: {param: 3, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
+                },
+                // 加賀改
+                278: {
+                    // 九七式艦攻(村田隊)
+                    143: {param: 2, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
+                    // 天山(村田隊)
+                    144: {param: 2, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
+                },
+                // 龍驤改二
+                157: {
+                    // 九七式艦攻(村田隊)
+                    143: {param: 1, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
+                    // 天山(村田隊)
+                    144: {param: 1, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
+                },
                 stype : {
                     // 軽空母
                     7: {
-                        type3: {
-                            9: [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2],
-                        },
+                        // 二式艦上偵察機
+                        61: [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2],
                     },
                     // 正規空母
                     11: 7,
                     // 装甲空母
-                    18: 7,
+                    18: {
+                        // 二式艦上偵察機
+                        61: [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2],
+                        // 試製景雲(艦偵型)
+                        151: [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2],
+                    },
                 }
             }
+
+            /**
+             * 連想配列か
+             * @param {Any} o アイテム
+             * @return {Boolean} 連想配列か
+             */
+            var isObject = function (o) {
+                return (o instanceof Object && !(o instanceof Array))
+            }
+
+            // polyfill
+            if (typeof Object.assign != 'function') {
+                // Must be writable: true, enumerable: false, configurable: true
+                Object.defineProperty(Object, "assign", {
+                    value: function assign(target, varArgs) { // .length of function is 2
+                        if (target == null) { // TypeError if undefined or null
+                            throw new TypeError('Cannot convert undefined or null to object')
+                        }
+
+                        var to = Object(target)
+
+                        for (var index = 1; index < arguments.length; index++) {
+                            var nextSource = arguments[index]
+
+                            if (nextSource != null) { // Skip over if undefined or null
+                                for (var nextKey in nextSource) {
+                                    // Avoid bugs when hasOwnProperty is shadowed
+                                    if (Object.prototype.hasOwnProperty.call(nextSource, nextKey)) {
+                                        to[nextKey] = nextSource[nextKey]
+                                    }
+                                }
+                            }
+                        }
+                        return to
+                    },
+                    writable: true,
+                    configurable: true
+                })
+            }
+
+            var bonus = {}
+            if(BONUS_LIST.stype[attacker.stype]) {
+                var tmp = isNaN(BONUS_LIST.stype[attacker.stype]) ? BONUS_LIST.stype[attacker.stype] : BONUS_LIST.stype[BONUS_LIST.stype[attacker.stype]]
+                Object.assign(bonus, tmp)
+            }
             if (BONUS_LIST[attacker.shipId]) {
-                var bonus = isNaN(BONUS_LIST[attacker.shipId]) ? BONUS_LIST[attacker.shipId] : BONUS_LIST[BONUS_LIST[attacker.shipId]]
-                return items.reduce(function (p, item) {
-                    // 装備ID
-                    if (bonus[item.slotitemId]) {
-                        if (Array.isArray(bonus[item.slotitemId])) {
-                            return bonus[item.slotitemId][item.level]
-                        }
-                        return p + bonus[item.slotitemId]
-                    }
-                    // カテゴリ
-                    for (var i = 0;i <= 4;i++) {
-                        if (bonus["type"+i][item["type"+i]]) {
-                            if (Array.isArray(bonus["type"+i][item["type"+i]])) {
-                                return bonus["type"+i][item["type"+i]][item.level]
-                            }
-                            return p + bonus["type"+i][item["type"+i]]
-                        }
-                    }
-                    return p
-                }, 0)
+                var tmp = isNaN(BONUS_LIST[attacker.shipId]) ? BONUS_LIST[attacker.shipId] : BONUS_LIST[BONUS_LIST[attacker.shipId]]
+                Object.assign(bonus, tmp)
             }
-            else if(BONUS_LIST.stype[attacker.stype]) {
-                var bonus = isNaN(BONUS_LIST.stype[attacker.stype]) ? BONUS_LIST.stype[attacker.stype] : BONUS_LIST.stype[BONUS_LIST.stype[attacker.stype]]
-                return items.reduce(function (p, item) {
-                    // 装備ID
-                    if (bonus[item.slotitemId]) {
-                        if (Array.isArray(bonus[item.slotitemId])) {
-                            return bonus[item.slotitemId][item.level]
-                        }
-                        return p + bonus[item.slotitemId]
+            var counts = {}
+            return items.filter(function (item) {
+                return bonus[item.slotitemId]
+            }).filter(function (item) {
+                return isObject(bonus[item.slotitemId]) && bonus[item.slotitemId].date ? bonus[item.slotitemId].date.before(date) : true
+            }).map(function (item) {
+                if (Array.isArray(bonus[item.slotitemId])) {
+                    return bonus[item.slotitemId][item.level]
+                }
+                if (isNaN(bonus[item.slotitemId])) {
+                    counts[item.slotitemId] = (counts[item.slotitemId] | 0) + 1
+                    if (!bonus[item.slotitemId].count && bonus[item.slotitemId].count > counts[item.slotitemId]) return 0
+                    if (Array.isArray(bonus[item.slotitemId].param)) {
+                        return bonus[item.slotitemId].param[item.level]
                     }
-                    // カテゴリ
-                    for (var i = 0;i <= 4;i++) {
-                        if (bonus["type"+i] && bonus["type"+i][item["type"+i]]) {
-                            if (Array.isArray(bonus["type"+i][item["type"+i]])) {
-                                return bonus["type"+i][item["type"+i]][item.level]
-                            }
-                            return p + bonus["type"+i][item["type"+i]]
-                        }
-                    }
-                    return p
-                }, 0)
-            }
-            return 0
+                    return bonus[item.slotitemId].param
+                }
+                return bonus[item.slotitemId]
+            }).reduce(function (p, param) {
+                return p + param
+            }, 0)
         }(this.date, this.attacker, this.items)
         var karyoku = this.attacker.karyoku - this.attacker.slotParam.karyoku - equipmentBonus
         var nightPlaneBonus = this.items.map(function (item, i) {
@@ -1311,7 +1438,7 @@ NightBattlePower.prototype.getFormationBonus = function () {
  */
 NightBattlePower.prototype.getBeforeCapPower = function () {
     var landBonus = getLandBonus(this.attacker, this.defender)
-    return (this.getBasePower() * landBonus.multiplication + getWg42Bonus(this.attacker, this.defender) + landBonus.addition) * this.getFormationBonus() * this.getCutinBonus() * this.getConditionBonus() + getOriginalGunPowerBonus(this.attacker)
+    return (this.getBasePower() * landBonus.multi + getWg42Bonus(this.attacker, this.defender) + landBonus.add) * this.getFormationBonus() * this.getCutinBonus() * this.getConditionBonus() + getOriginalGunPowerBonus(this.attacker)
 }
 
 /**
@@ -1319,8 +1446,8 @@ NightBattlePower.prototype.getBeforeCapPower = function () {
  * @return {[Number,Number]} 夜戦火力(キャップ後)
  */
 NightBattlePower.prototype.getAfterCapPower = function () {
-    // A = [キャップ後攻撃力 * 乗算特効補正 + 加算特効補正]
-    var value = Math.floor(getAfterCapValue(this.getBeforeCapPower(), this.CAP_VALUE) * getMultiplySlayerBonus(this.attacker, this.defender) + getAddSlayerBonus(this.attacker, this.defender))
+    // A = [[キャップ後攻撃力] * 乗算特効補正 + 加算特効補正]
+    var value = Math.floor(Math.floor(getAfterCapValue(this.getBeforeCapPower(), this.CAP_VALUE)) * getMultiplySlayerBonus(this.attacker, this.defender) + getAddSlayerBonus(this.attacker, this.defender))
     // クリティカル判定
     if (isCritical(this.attack)) {
         // A = [A * クリティカル補正 * 熟練度補正]
@@ -1368,15 +1495,16 @@ NightBattlePower.prototype.getCutinBonus = function () {
         case 5: return 2.0  // カットイン(主砲/主砲)
         case 6:             // 夜襲カットイン
             var items = Java.from(this.attack.showItem).map(function (id) { return Item.get(Number(id)) })
+            // 夜間戦闘機
             var kind1 = items.filter(function (item) { return item.type3 === 45 }).length
+            // 夜間攻撃機
             var kind2 = items.filter(function (item) { return item.type3 === 46 }).length
-            var kind3 = items.map(function (item) { return item.slotitemId }).filter(function (id) { return id === 242 || id === 243 || id === 244 || id === 154 }).length
-            if (kind1 === 1 || kind2 === 1) return 1.2  // CI種類A
-            if (kind1 === 2 || kind2 === 1) return 1.25 // CI種類B
-            if (kind1 === 3) return 1.18 // CI種類C
-            if (kind1 === 1 || kind2 === 1 || kind3 === 1) return 1.18 // CI種類D
-            if (kind1 === 2 || kind3 === 1) return 1.18 // CI種類E
-            if (kind1 === 1 || kind3 === 2) return 1.18 // CI種類F
+            // その他(SF,岩井,彗星(31号))
+            var kind3 = items.map(function (item) { return item.slotitemId }).filter(function (id) { return [154,242,243,244,320].indexOf(id) >= 0 }).length
+            var kind = kind1 * 100 + kind2 * 10 + kind3
+            if (kind === 210) return 1.25
+            if ([110, 101, 11].indexOf(kind) >= 0) return 1.2
+            if ([300, 111, 201, 102].indexOf(kind) >= 0) return 1.18
             return 1.0
         case 7:             // 駆逐カットイン(主砲/魚雷/電探)
             return 1.3 * dTypeGunBonus
@@ -1560,14 +1688,14 @@ var getMultiplySlayerBonus = function (attacker, defender) {
 
             var daihatsuGroupBonus = daihatsuGroupLv / 50 + 1
             var kamishaBonus = kamishaLv / 30 + 1
-            var wg42Bonus = wg42 >= 2 ? 1.625 : wg42 ? 1.45 : 1.0
-            if (rikuDaihatsu) {
-                daihatsuGroupBonus *= rikuDaihatsu >= 2 ? 2.08 : rikuDaihatsu ? 2.15 : 1.0
-            } else if (daihatsu) {
-                daihatsuGroupBonus *= 1.67 // 1.67-1.77
-            }
-            daihatsuGroupBonus *= shikonDaihatsu ? 1.7 : 1
-            kamishaBonus *= kamisha >= 2 ? 2.5 : kamisha ? 1.9 : 1.0
+            var wg42Bonus = (wg42 >= 2 ? 1.3 : 1) * (wg42 ? 1.25 : 1)
+            daihatsuGroupBonus *= daihatsuGroup ? 1.7 : 1.0
+            daihatsuGroupBonus *= tokuDaihatsu ? 1.2 : 1.0
+            daihatsuGroupBonus *= (rikuDaihatsu >= 2 ? 1.6 : 1) * (rikuDaihatsu ? 1.3 : 1.0)
+            // 戦車を持っていたら2回計算
+            daihatsuGroupBonus *= rikuDaihatsu ? (daihatsuGroupLv / 50 + 1) : 1
+            kamishaBonus *= (kamisha >= 2 ? 1.5 : 1) * (kamisha ? 1.7 : 1.0)
+            // java.lang.System.out.println(attacker.name + " " + items.map(function(item){return item.name}).join("/") + " " + type3shellBonus + " " + apShellBonus + " " + wg42Bonus + " " + daihatsuGroupBonus + " " + kamishaBonus + " " + suijoBonus + " " + stypeBonus + " " + bomberBonus)
             return wg42Bonus * daihatsuGroupBonus * kamishaBonus
     }
     return 1.0
@@ -1595,10 +1723,10 @@ var isNorthernmostLandingPrincess = function (ship) {
  * 陸上特効倍率を返します
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} defender 防御艦
- * @return {{multiplication:Number, addition: Number}} 倍率
+ * @return {{multi:Number, add: Number}} 倍率
  */
 var getLandBonus = function (attacker, defender) {
-    if (!isGround(defender)) return {multiplication: 1.0, addition: 0}
+    if (!isGround(defender)) return {multi: 1.0, add: 0}
     var items = getItems(attacker)
     var getItemNum = function (id) {
         return items.map(function (item) {
@@ -1619,6 +1747,7 @@ var getLandBonus = function (attacker, defender) {
     var suijo = items.filter(function (item) { return item.type2 === 11 || item.type2 === 45 }).length
     var apShell = items.filter(function (item) { return item.type2 === 19 }).length
     var wg42 = getItemNum(126)
+    var bomber = items.filter(function (item) { return item.type2 === 7 }).length
 
     var type3shellBonus = 1
     var apShellBonus = 1
@@ -1627,6 +1756,7 @@ var getLandBonus = function (attacker, defender) {
     var kamishaBonus = kamishaLv / 30 + 1
     var suijoBonus = 1
     var stypeBonus = 1
+    var bomberBonus = 1
     var additionBonus = 0
 
     switch (defender.shipId) {
@@ -1636,31 +1766,39 @@ var getLandBonus = function (attacker, defender) {
         case 1671:
         case 1672: // 離島棲姫
             type3shellBonus = type3shell ? 1.75 : 1
-            wg42Bonus = (wg42 >= 2) ? 2.1 : (wg42 ? 1.4 : 1)
-            if (rikuDaihatsu) {
-                daihatsuGroupBonus *= 1.72 // >1.72
-            } else if (daihatsu) {
-                daihatsuGroupBonus *= 1.8 // 1.8-2.0
+            wg42Bonus = (wg42 >= 2 ? 1.5 : 1) * (wg42 ? 1.4 : 1)
+            daihatsuGroupBonus *= daihatsuGroup ? 1.8 : 1.0
+            daihatsuGroupBonus *= tokuDaihatsu ? 1.15 : 1.0 // ソースが無いため仮置き
+            daihatsuGroupBonus *= (rikuDaihatsu >= 2 ? 1.4 : 1) * (rikuDaihatsu ? 1.2 : 1.0)
+            if (shikonDaihatsu) {
+                daihatsuGroupBonus *= 1.8 // ソースが無いため仮置き
+                additionBonus += 25
             }
-            daihatsuGroupBonus *= shikonDaihatsu ? 3.4 : 1 // 3.4-3.8
-            kamishaBonus *= kamisha ? 2.4 : 1 // 2.4-2.7
+            kamishaBonus *= (kamisha >= 2 ? 1.35 : 1) * (kamisha ? 2.4 : 1.0) // ソースが無いため仮置き
+            bomberBonus = bomber ? 1.4 : 1
+            if (attacker.stype === 13 || attacker.stype === 14) {
+                additionBonus += 30
+            }
             break
         case 1665:
         case 1666:
         case 1667: // 砲台小鬼
             apShellBonus = apShell ? 1.85 : 1
             wg42Bonus = (wg42 >= 2 ? 1.7 : 1) * (wg42 ? 1.6 : 1)
-            if (rikuDaihatsu) {
-                daihatsuGroupBonus *= (rikuDaihatsu >= 2 ? 3 : (rikuDaihatsu ? 2.2 : 1)) // 2.19,3
-            } else if (tokuDaihatsu) {
-                daihatsuGroupBonus *= 2.05 // 2.05(a12)
-            } else if (daihatsu) {
+            daihatsuGroupBonus *= daihatsuGroup ? 1.8 : 1.0
+            daihatsuGroupBonus *= tokuDaihatsu ? 1.15 : 1.0
+            daihatsuGroupBonus *= (rikuDaihatsu >= 2 ? 1.4 : 1) * (rikuDaihatsu ? 1.5 : 1.0)
+            if (shikonDaihatsu) {
                 daihatsuGroupBonus *= 1.8
+                additionBonus += 25
             }
-            daihatsuGroupBonus *= shikonDaihatsu ? 3.4 : 1 // 3.4-3.6
-            kamishaBonus *= (kamisha >= 2 ? 3.2 : (kamisha ? 2.4 : 1)) // 2.4,3.2
+            kamishaBonus *= (kamisha >= 2 ? 1.35 : 1) * (kamisha ? 2.4 : 1.0)
             suijoBonus = suijo ? 1.5 : 1
+            bomberBonus = bomber ? 1.5 : 1
             stypeBonus = (attacker.stype === 2 || attacker.stype === 3) ? 1.4 : 1.0
+            if (attacker.stype === 13 || attacker.stype === 14) {
+                additionBonus += 30
+            }
             break
         case 1699:
         case 1700:
@@ -1679,25 +1817,10 @@ var getLandBonus = function (attacker, defender) {
             }
             kamishaBonus *= kamisha ? 2.8 : 1
             break
-        case 1653:
-        case 1654:
-        case 1655: // 集積地棲姫
-        case 1656:
-        case 1657:
-        case 1658: // 集積地棲姫-壊
-            type3shellBonus = type3shell ? 2.5 : 1
-            wg42Bonus = wg42 === 1 ? 1.3 : 1
-            daihatsuGroupBonus *= rikuDaihatsu === 1 ? 2.15 : 1
-            if (shikonDaihatsu) {
-                daihatsuGroupBonus *= 1.4 * 1.8
-                additionBonus += 25
-            }
-            kamishaBonus *= kamisha === 1 ? 1.5 : 1.0
-            break
         case 1725:
         case 1726:
         case 1727: // 北端上陸姫
-            return {multiplication: 1.0, addition: 0}
+            return {multi: 1.0, add: 0}
         default: // ソフトスキン
             type3shellBonus = type3shell ? 2.5 : 1.0
             wg42Bonus = (wg42 >= 2 ? 1.4 : 1) * (wg42 ? 1.3 : 1)
@@ -1716,8 +1839,8 @@ var getLandBonus = function (attacker, defender) {
             break
     }
     return {
-        multiplication: type3shellBonus * apShellBonus * wg42Bonus * daihatsuGroupBonus * kamishaBonus * suijoBonus * stypeBonus,
-        addition: additionBonus
+        multi: type3shellBonus * apShellBonus * wg42Bonus * daihatsuGroupBonus * kamishaBonus * suijoBonus * stypeBonus * bomberBonus,
+        add: additionBonus
     }
 }
 

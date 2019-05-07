@@ -1,6 +1,6 @@
 /**
  * 異常ダメージ検知
- * @version 1.4.5
+ * @version 1.4.6
  * @author Nishisonic
  */
 
