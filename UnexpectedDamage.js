@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.46
+var VERSION = 1.47
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update2.txt"
 /** ファイルの場所 */
@@ -658,7 +658,7 @@ DayBattlePower.prototype.getImprovementBonus = function () {
  */
 DayBattlePower.prototype.getBeforeCapPower = function () {
     var landBonus = getLandBonus(this.attacker, this.defender)
-    return (this.getBasePower() * landBonus.multi + getWg42Bonus(this.attacker, this.defender) + landBonus.add) * getFormationMatchBonus(this.formation) * this.getFormationBonus() * this.getConditionBonus() + getOriginalGunPowerBonus(this.attacker)
+    return ((this.getBasePower() + landBonus.b12) * landBonus.multi + getWg42Bonus(this.attacker, this.defender) + landBonus.add) * getFormationMatchBonus(this.formation) * this.getFormationBonus() * this.getConditionBonus() + getOriginalGunPowerBonus(this.attacker)
 }
 
 /**
@@ -1438,7 +1438,7 @@ NightBattlePower.prototype.getFormationBonus = function () {
  */
 NightBattlePower.prototype.getBeforeCapPower = function () {
     var landBonus = getLandBonus(this.attacker, this.defender)
-    return (this.getBasePower() * landBonus.multi + getWg42Bonus(this.attacker, this.defender) + landBonus.add) * this.getFormationBonus() * this.getCutinBonus() * this.getConditionBonus() + getOriginalGunPowerBonus(this.attacker)
+    return ((this.getBasePower() + landBonus.b12) * landBonus.multi + getWg42Bonus(this.attacker, this.defender) + landBonus.add) * this.getFormationBonus() * this.getCutinBonus() * this.getConditionBonus() + getOriginalGunPowerBonus(this.attacker)
 }
 
 /**
@@ -1723,10 +1723,10 @@ var isNorthernmostLandingPrincess = function (ship) {
  * 陸上特効倍率を返します
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} defender 防御艦
- * @return {{multi:Number, add: Number}} 倍率
+ * @return {{multi:Number, add: Number, b12:Number}} 倍率
  */
 var getLandBonus = function (attacker, defender) {
-    if (!isGround(defender)) return {multi: 1.0, add: 0}
+    if (!isGround(defender)) return {multi: 1.0, add: 0, b12: 0}
     var items = getItems(attacker)
     var getItemNum = function (id) {
         return items.map(function (item) {
@@ -1758,6 +1758,7 @@ var getLandBonus = function (attacker, defender) {
     var stypeBonus = 1
     var bomberBonus = 1
     var additionBonus = 0
+    var b12 = 0 // 仮置き
 
     switch (defender.shipId) {
         case 1668:
@@ -1777,7 +1778,7 @@ var getLandBonus = function (attacker, defender) {
             kamishaBonus *= (kamisha >= 2 ? 1.35 : 1) * (kamisha ? 2.4 : 1.0) // ソースが無いため仮置き
             bomberBonus = bomber ? 1.4 : 1
             if (attacker.stype === 13 || attacker.stype === 14) {
-                additionBonus += 30
+                b12 += 30
             }
             break
         case 1665:
@@ -1797,7 +1798,7 @@ var getLandBonus = function (attacker, defender) {
             bomberBonus = bomber ? 1.5 : 1
             stypeBonus = (attacker.stype === 2 || attacker.stype === 3) ? 1.4 : 1.0
             if (attacker.stype === 13 || attacker.stype === 14) {
-                additionBonus += 30
+                b12 += 30
             }
             break
         case 1699:
@@ -1834,13 +1835,14 @@ var getLandBonus = function (attacker, defender) {
             kamishaBonus *= (kamisha >= 2 ? 1.2 : 1) * (kamisha ? 1.5 : 1.0)
             suijoBonus = suijo ? 1.2 : 1.0
             if (attacker.stype === 13 || attacker.stype === 14) {
-                additionBonus += 30
+                b12 += 30
             }
             break
     }
     return {
         multi: type3shellBonus * apShellBonus * wg42Bonus * daihatsuGroupBonus * kamishaBonus * suijoBonus * stypeBonus * bomberBonus,
-        add: additionBonus
+        add: additionBonus,
+        b12: b12,
     }
 }
 

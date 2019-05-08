@@ -270,7 +270,7 @@ function genHeaderHtml(data, power) {
     result += '<tr><th>艦</th><th></th><th>艦</th><th>ダメージ</th><th>残りHP</th><th>理論値</th><th>弾薬補正</th></tr>'
     var armor = data.defender.soukou + getArmorBonus(data.mapCell, data.attacker, data.defender)
     var aftPower = power.getAfterCapPower()
-    var dmgWidth = Math.floor((aftPower[0] - armor * 1.3 + 0.6) * getAmmoBonus(data.attacker)) + " ~ " + Math.floor((aftPower[1] - armor * 0.7) * getAmmoBonus(data.attacker))
+    var dmgWidth = Math.floor((aftPower[0] - (armor * 0.7 + Math.floor(armor - 1) * 0.6)) * getAmmoBonus(data.attacker)) + " ~ " + Math.floor((aftPower[1] - armor * 0.7) * getAmmoBonus(data.attacker))
     result += '<tr><td class="' + (data.attacker.isFriend() ? 'friend' : 'enemy') + '">' + (data.attack.attacker + 1) + '.' + data.attacker.friendlyName + '</td><td>→</td><td class="' + (data.defender.isFriend() ? 'friend' : 'enemy') + '">'
         + (data.attack.defender + 1) + '.' + data.defender.friendlyName + '</td><td style="' + (isCritical(data.attack) ? 'font-weight:bold;' : '') + '">' + data.attack.damage + '</td><td class="' + (data.defender.isFriend() ? 'friend' : 'enemy') + '">'
         + data.defenderHp.now + '→' + (data.defenderHp.now - data.attack.damage) + '</td><td>' + dmgWidth + '</td><td>' + getAmmoBonus(data.attacker).toFixed(2) + '</td></tr>'
@@ -288,7 +288,7 @@ function genDefenseArmorHtml(data) {
     result += '<tr><th colspan="4">防御側</th></tr>'
     result += '<tr><th>装甲乱数</th><th>実装甲値</th><th>表示装甲値</th><th>特殊補正</th>'
     var armor = data.defender.soukou + getArmorBonus(data.mapCell, data.attacker, data.defender)
-    result += '<tr><td style="font-weight:bold;">' + (armor * 0.7).toFixed(1) + ' ~ ' + (armor * 1.3 - 0.6).toFixed(1) + '</td><td>' + armor + '</td><td>' + data.defender.soukou + '</td><td>' + getArmorBonus(data.mapCell, data.attacker, data.defender) + '</td></tr>'
+    result += '<tr><td style="font-weight:bold;">' + (armor * 0.7).toFixed(1) + ' ~ ' + (armor * 0.7 + Math.floor(armor - 1) * 0.6).toFixed(1) + '</td><td>' + armor + '</td><td>' + data.defender.soukou + '</td><td>' + getArmorBonus(data.mapCell, data.attacker, data.defender) + '</td></tr>'
     result += '</table>'
     return result
 }
@@ -307,8 +307,8 @@ function genGimmickHtml(data, power, idx) {
     result += 'var maxA = Math.floor(' + power.getAfterCapPower()[1] + ' * gimmick);'
     result += 'var armor = ' + (data.defender.soukou + getArmorBonus(data.mapCell, data.attacker, data.defender)) + ';'
     result += 'document.getElementById("afterpower' + idx + '").innerHTML = minA + " ~ " + maxA;'
-    result += 'document.getElementById("theoretical' + idx + '").innerHTML = Math.floor(minA - armor * 0.7 - (armor - 1) * 0.6) + " ~ " + Math.floor(maxA - armor * 0.7);'
-    result += 'document.getElementById("border' + idx + '").innerHTML = Math.floor(maxA - armor * 0.7) >= ' + Math.floor(data.attack.damage) + ' && ' + Math.floor(data.attack.damage) + ' >= Math.floor(minA - armor * 0.7 - (armor - 1) * 0.6) ? "○" : "x";'
+    result += 'document.getElementById("theoretical' + idx + '").innerHTML = Math.floor(minA - armor * 0.7 - Math.floor(armor - 1) * 0.6) + " ~ " + Math.floor(maxA - armor * 0.7);'
+    result += 'document.getElementById("border' + idx + '").innerHTML = Math.floor(maxA - armor * 0.7) >= ' + Math.floor(data.attack.damage) + ' && ' + Math.floor(data.attack.damage) + ' >= Math.floor(minA - armor * 0.7 - Math.floor(armor - 1) * 0.6) ? "○" : "x";'
     result += '}</script>'
     result += '<table style="margin-top:5px;">'
     result += '<tr><th colspan="5">ギミック簡易計算(a10)</th></tr>'
@@ -316,8 +316,8 @@ function genGimmickHtml(data, power, idx) {
     result += '<tr><td><input id="gimmick' + idx + '" type="number" value="1" style="width: 80px;" onkeyup="func' + idx + '();"></td>'
     var armor = data.defender.soukou + getArmorBonus(data.mapCell, data.attacker, data.defender)
     var aftPower = power.getAfterCapPower()
-    var dmgWidth = Math.floor((aftPower[0] - armor * 1.3 + 0.6) * getAmmoBonus(data.attacker)) + " ~ " + Math.floor((aftPower[1] - armor * 0.7) * getAmmoBonus(data.attacker))
-    var back = (Math.ceil(data.attack.damage + armor * 0.7) / aftPower[0]).toFixed(4) + " ~ " + (Math.ceil(data.attack.damage + armor * 1.3 + 0.6) / aftPower[0]).toFixed(4)
+    var dmgWidth = Math.floor((aftPower[0] - (armor * 0.7 + Math.floor(armor - 1) * 0.6)) * getAmmoBonus(data.attacker)) + " ~ " + Math.floor((aftPower[1] - armor * 0.7) * getAmmoBonus(data.attacker))
+    var back = (Math.ceil(data.attack.damage + armor * 0.7) / aftPower[0]).toFixed(4) + " ~ " + (Math.ceil(data.attack.damage + (armor * 0.7 + Math.floor(armor - 1) * 0.6)) / aftPower[0]).toFixed(4)
     result += '<td id="afterpower' + idx + '">' + aftPower[0] + ' ~ ' + aftPower[1] + '</td><td id="theoretical' + idx + '">' + dmgWidth + '</td><td id="border' + idx + '">x</td><td>' + back + '</td></tr>'
     result += '</table>'
     return result
