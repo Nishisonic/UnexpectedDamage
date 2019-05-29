@@ -245,8 +245,13 @@ function genBattleHtml(dataLists) {
         }).join('') +
         // 夜戦
         dataLists[2].map(function (data) {
-            var power = getNightBattlePower(data.date, data.kind, data.friendCombinedKind, data.isEnemyCombined,
-                data.attackNum, data.formation, data.touchPlane, data.attack, data.attacker, data.defender, data.attackerHp, data.shouldUseSkilled, data.origins)
+            if (data.isRadarShooting) {
+                var power = getRadarShootingPower(data.date, data.kind, data.friendCombinedKind, data.isEnemyCombined,
+                    data.attackNum, data.formation, data.attack, data.attacker, data.defender, data.attackerHp, data.shouldUseSkilled, data.origins)
+            } else {
+                var power = getNightBattlePower(data.date, data.kind, data.friendCombinedKind, data.isEnemyCombined,
+                    data.attackNum, data.formation, data.touchPlane, data.attack, data.attacker, data.defender, data.attackerHp, data.shouldUseSkilled, data.origins)
+            }
             var result = '<div style="border:#000000 solid 1px; padding:5px; margin:5px; background-color:#e8d9f3;">'
             result += genHeaderHtml(data, power)
             result += isSubMarine(data.defender) ? genAntiSubMarineHtml(data, power) : genNightBattleHtml(data, power)

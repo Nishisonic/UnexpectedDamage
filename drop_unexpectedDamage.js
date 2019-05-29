@@ -411,6 +411,7 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
     var nightFormation = null
     var nightTouchPlane = null
     var friendlyBattle = null
+    var radarShooting = null
     // 航空戦フェーズ
     phaseList.forEach(function (phase) {
         // 航空戦全生成
@@ -419,7 +420,7 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
             phase.airInjection,                                                     // 噴式強襲航空戦
             phase.air,                                                              // 航空戦1
             phase.air2,                                                             // 航空戦2
-            { atacks: (phase.supportType === '航空支援' ? phase.support : null) },   // 航空支援
+            { atacks: (phase.supportType === '航空支援' ? phase.support : null) },  // 航空支援
         ].concat(Java.from(phase.airBase))                                          // 基地航空隊
             // null除外
             .filter(function (battle) { return battle != null && battle.atacks != null })
@@ -591,6 +592,8 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
         }
         // 夜戦
         nightBattle = nightBattle ? nightBattle : parseNight(phase, json.api_hougeki)
+        // レーダー射撃
+        radarShooting = radarShooting ? radarShooting : parseDay(phase, json.api_hougeki1)
     }
     return new Battle(mapCell, dayKind, nightKind, friendCombinedKind, isEnemyCombined, dayFormation, nightFormation, nightTouchPlane, airDamagedFriendHp, airDamagedEnemyHp, supportDamagedFriendHp, supportDamagedEnemyHp, nightBattle1, nightBattle2, preAntiSubmarineAttack, preTorpedoAttack, dayBattle1, dayBattle2, dayBattle3, torpedoAttack, nightBattle, friendlyBattle)
 }
@@ -803,6 +806,11 @@ var detectOrDefault = function (date, battle, friends, enemies, friendHp, enemyH
             Array.prototype.push.apply(dayBattle, detectDayBattle(date, battle.mapCell, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.dayBattle2, friends, enemies, friendHp, enemyHp))                                    // ├砲撃戦2巡目
             Array.prototype.push.apply(torpedoAttack, detectTorpedoAttack(date, battle.mapCell, battle.dayKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.dayFormation, battle.torpedoAttack, friends, enemies, friendHp, enemyHp))                         // └雷撃戦
             break
+        case BattlePhaseKind.LD_SHOOTING:                                                                                                                                                                                                                                   //  ・レーダー射撃戦(通常vs通常,6対6)
+        case BattlePhaseKind.COMBINED_LD_SHOOTING:                                                                                                                                                                                                                          //  ・レーダー射撃戦(通常vs連合,12対6)
+            airBattle()                                                                                                                                                                                                                                                     // ├航空戦
+            Array.prototype.push.apply(nightBattle, detectRadarShooting(date, battle.mapCell, battle.nightKind, battle.friendCombinedKind, battle.isEnemyCombined, battle.nightFormation, battle.radarShooting, friends, enemies, friendHp, enemyHp))                       // └レーダー射撃
+            break
         default:
             break
     }
@@ -909,8 +917,9 @@ var damageControl = function (shipHp, ship) {
  * @param {[Number,Number]} touchPlane 夜間触接
  * @param {Boolean} shouldUseSkilled 熟練度を使用すべきか(default=true)
  * @param {FleetDto} origins 攻撃側艦隊
+ * @param {Boolean} isRadarShooting レーダー射撃戦か(default=false)
  */
-var DetectDto = function (date, mapCell, phase, attack, power, attacker, defender, attackerHp, defenderHp, kind, friendCombinedKind, isEnemyCombined, formation, touchPlane, shouldUseSkilled, origins) {
+var DetectDto = function (date, mapCell, phase, attack, power, attacker, defender, attackerHp, defenderHp, kind, friendCombinedKind, isEnemyCombined, formation, touchPlane, shouldUseSkilled, origins, isRadarShooting) {
     this.date = date
     this.mapCell = mapCell
     this.phase = phase
@@ -927,6 +936,7 @@ var DetectDto = function (date, mapCell, phase, attack, power, attacker, defende
     this.touchPlane = touchPlane
     this.shouldUseSkilled = shouldUseSkilled
     this.origins = origins
+    this.isRadarShooting = !!isRadarShooting
 }
 
 /**
@@ -969,7 +979,7 @@ var detectDayBattle = function (date, mapCell, kind, friendCombinedKind, isEnemy
                     var minSunkDmg = Math.floor(hp.defender.now * 0.5)
                     var maxSunkDmg = Math.floor(hp.defender.now * 0.8 - 0.3)
                     if (!(minDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxDmg || minPropDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxPropDmg || !attack.friendAttack && minSunkDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxSunkDmg || isHp1ReplacementShip(ship.defender, attack.defender === 0))) {
-                        result.push(new DetectDto(date, mapCell, 0, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], shouldUseSkilled === undefined ? true : shouldUseSkilled, attack.friendAttack ? friends : enemies))
+                        result.push(new DetectDto(date, mapCell, 0, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], shouldUseSkilled === undefined ? true : shouldUseSkilled, attack.friendAttack ? friends : enemies, false))
                     }
                 }
                 processingShipHpDamage(ship.defender, hp.defender, attack.damage, attack.lastAttack) // ダメージ処理
@@ -1021,7 +1031,7 @@ var detectTorpedoAttack = function (date, mapCell, kind, friendCombinedKind, isE
             var minSunkDmg = Math.floor(hp.defender.now * 0.5)
             var maxSunkDmg = Math.floor(hp.defender.now * 0.8 - 0.3)
             if (!(minDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxDmg || minPropDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxPropDmg || !attack.friendAttack && minSunkDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxSunkDmg || isHp1ReplacementShip(ship.defender, attack.defender === 0))) {
-                result.push(new DetectDto(date, mapCell, 1, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], false, null))
+                result.push(new DetectDto(date, mapCell, 1, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], false, null, false))
             }
             processingShipHpDamage(ship.defender, hp.defender, attack.damage, false) // ダメージ仮処理
         })
@@ -1044,7 +1054,7 @@ var detectTorpedoAttack = function (date, mapCell, kind, friendCombinedKind, isE
             var minSunkDmg = Math.floor(hp.defender.now * 0.5)
             var maxSunkDmg = Math.floor(hp.defender.now * 0.8 - 0.3)
             if (!(minDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxDmg || minPropDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxPropDmg || !attack.friendAttack && minSunkDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxSunkDmg || isHp1ReplacementShip(ship.defender, attack.defender === 0))) {
-                result.push(new DetectDto(date, mapCell, 1, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], false, null))
+                result.push(new DetectDto(date, mapCell, 1, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], false, null, false))
             }
             processingShipHpDamage(ship.defender, hp.defender, attack.damage, false) // ダメージ仮処理
         })
@@ -1116,7 +1126,57 @@ var detectNightBattle = function (date, mapCell, kind, friendCombinedKind, isEne
                     var minSunkDmg = Math.floor(hp.defender.now * 0.5)
                     var maxSunkDmg = Math.floor(hp.defender.now * 0.8 - 0.3)
                     if (!(minDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxDmg || minPropDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxPropDmg || !attack.friendAttack && minSunkDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxSunkDmg || isHp1ReplacementShip(ship.defender, attack.defender === 0))) {
-                        result.push(new DetectDto(date, mapCell, 2, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, touchPlane, shouldUseSkilled === undefined ? true : shouldUseSkilled, attack.friendAttack ? friends : enemies))
+                        result.push(new DetectDto(date, mapCell, 2, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, touchPlane, shouldUseSkilled === undefined ? true : shouldUseSkilled, attack.friendAttack ? friends : enemies, false))
+                    }
+                }
+                processingShipHpDamage(ship.defender, hp.defender, attack.damage, attack.lastAttack) // ダメージ処理
+            })
+        })
+    }
+    return result
+}
+
+/**
+ * レーダー検知
+ * @param {java.util.Date} date 戦闘日時
+ * @param {logbook.dto.MapCellDto} mapCell マップ
+ * @param {logbook.dto.BattlePhaseKind} kind 戦闘の種類
+ * @param {0|1|2|3} friendCombinedKind 自軍側連合種別(0=なし,1=機動,2=水上,3=輸送)
+ * @param {Boolean} isEnemyCombined 敵軍は連合艦隊か
+ * @param {[number,number,number]} formation 昼戦[自軍陣形,敵軍陣形,交戦形態]
+ * @param {[[AttackDto]]} attackList 攻撃リスト
+ * @param {FleetDto} friends 自艦隊データ
+ * @param {FleetDto} enemies 敵艦隊データ
+ * @param {FleetHpDto} friendHp 自艦隊Hp
+ * @param {FleetHpDto} enemyHp 敵艦隊Hp
+ * @param {Boolean} shouldUseSkilled 熟練度を使用すべきか(default=true)
+ * @return {[DetectDto]} 異常データ
+ */
+var detectRadarShooting = function (date, mapCell, kind, friendCombinedKind, isEnemyCombined, formation, attackList, friends, enemies, friendHp, enemyHp, shouldUseSkilled) {
+    var result = []
+    if (attackList != null) {
+        attackList.forEach(function (attacks) {
+            attacks.filter(function (attack) {
+                // ダメージ=0を判定しても無駄なので除外
+                return Math.floor(attack.damage) > 0
+            }).forEach(function (attack) {
+                var ship = getAtkDef(attack, friends, enemies)
+                var attackNum = (attack.friendAttack ? friendHp : enemyHp)[attack.mainAttack ? "main" : "escort"].length
+                var hp = getAtkDefHp(attack, friendHp, enemyHp)
+                // 味方潜水への攻撃は検出対象から除外(敵対潜値が不明のため)
+                if (!(!attack.friendAttack && isSubMarine(getAtkDef(attack, friends, enemies).defender))) {
+                    var power = getRadarShootingPower(date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, attack, ship.attacker, ship.defender, hp.attacker, shouldUseSkilled === undefined ? true : shouldUseSkilled, attack.friendAttack ? friends : enemies).getAfterCapPower()
+                    var armor = Math.max(ship.defender.soukou + getArmorBonus(mapCell, ship.attacker, ship.defender), 1)
+                    var minDef = armor * 0.7
+                    var maxDef = armor * 0.7 + Math.floor(armor - 1) * 0.6
+                    var minDmg = Math.floor((power[0] - maxDef) * getAmmoBonus(ship.attacker))
+                    var maxDmg = Math.floor((power[1] - minDef) * getAmmoBonus(ship.attacker))
+                    var minPropDmg = Math.floor(hp.defender.now * 0.06)
+                    var maxPropDmg = Math.floor(hp.defender.now * 0.14 - 0.08)
+                    var minSunkDmg = Math.floor(hp.defender.now * 0.5)
+                    var maxSunkDmg = Math.floor(hp.defender.now * 0.8 - 0.3)
+                    if (!(minDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxDmg || minPropDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxPropDmg || !attack.friendAttack && minSunkDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxSunkDmg || isHp1ReplacementShip(ship.defender, attack.defender === 0))) {
+                        result.push(new DetectDto(date, mapCell, 2, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], shouldUseSkilled === undefined ? true : shouldUseSkilled, attack.friendAttack ? friends : enemies, true))
                     }
                 }
                 processingShipHpDamage(ship.defender, hp.defender, attack.damage, attack.lastAttack) // ダメージ処理
