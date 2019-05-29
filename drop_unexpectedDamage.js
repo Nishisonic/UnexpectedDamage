@@ -1,6 +1,6 @@
 /**
  * 異常ダメージ検知
- * @version 1.4.7
+ * @version 1.4.8
  * @author Nishisonic
  */
 
@@ -465,7 +465,10 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
                                 case 100: // Nelson Touch
                                     return didx * 2
                                 case 101: // 一斉射かッ…胸が熱いな！
+                                case 102: // 長門、いい？ いくわよ！ 主砲一斉射ッ！
                                     return Math.floor(didx / 2)
+                                case 103: // Colorado 特殊攻撃
+                                    return didx
                                 default:
                                     return json.api_at_list[idx]
                             }
@@ -474,9 +477,9 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
                         var damage = Math.floor(json.api_damage[idx][didx])
                         var critical = json.api_cl_list[idx][didx]
                         if (friendAttack) {
-                            result[idx][didx] = new AttackDto(phase.kind, friendAttack, attacker < friendNum, attacker % Math.max(6, friendNum), defender < enemyNum, defender % Math.max(6, enemyNum), lastAttack, damage, critical, attackType, showItem)
+                            result[idx][didx] = new AttackDto(phase.kind, friendAttack, attacker < friendNum, attacker % Math.max(6, friendNum), defender < enemyNum, defender % Math.max(6, enemyNum), lastAttack, damage, critical, attackType, showItem, didx + 1)
                         } else {
-                            result[idx][didx] = new AttackDto(phase.kind, friendAttack, attacker < enemyNum, attacker % Math.max(6, enemyNum), defender < friendNum, defender % Math.max(6, friendNum), lastAttack, damage, critical, attackType, showItem)
+                            result[idx][didx] = new AttackDto(phase.kind, friendAttack, attacker < enemyNum, attacker % Math.max(6, enemyNum), defender < friendNum, defender % Math.max(6, friendNum), lastAttack, damage, critical, attackType, showItem, didx + 1)
                         }
                     }
                 }
@@ -493,13 +496,13 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
             Java.from(atackList.get(true)).forEach(function (atack, i) {
                 result.friend[i] = []
                 Java.from(atack.ot).forEach(function (x, j) {
-                    result.friend[i][j] = new AttackDto(phase.kind, true, atack.origin[j] < friendNum, atack.origin[j] % Math.max(6, friendNum), atack.target[x] < enemyNum, atack.target[x] % Math.max(6, enemyNum), false, atack.ydam[j], atack.critical != null ? atack.critical[j] : 0, null, null)
+                    result.friend[i][j] = new AttackDto(phase.kind, true, atack.origin[j] < friendNum, atack.origin[j] % Math.max(6, friendNum), atack.target[x] < enemyNum, atack.target[x] % Math.max(6, enemyNum), false, atack.ydam[j], atack.critical != null ? atack.critical[j] : 0, null, null, 1)
                 })
             })
             Java.from(atackList.get(false)).forEach(function (atack, i) {
                 result.enemy[i] = []
                 Java.from(atack.ot).forEach(function (x, j) {
-                    result.enemy[i][j] = new AttackDto(phase.kind, false, atack.origin[j] < enemyNum, atack.origin[j] % Math.max(6, enemyNum), atack.target[x] < friendNum, atack.target[x] % Math.max(6, friendNum), false, atack.ydam[j], atack.critical != null ? atack.critical[j] : 0, null, null)
+                    result.enemy[i][j] = new AttackDto(phase.kind, false, atack.origin[j] < enemyNum, atack.origin[j] % Math.max(6, enemyNum), atack.target[x] < friendNum, atack.target[x] % Math.max(6, friendNum), false, atack.ydam[j], atack.critical != null ? atack.critical[j] : 0, null, null, 1)
                 })
             })
             return result
@@ -523,7 +526,10 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
                                 case 100: // Nelson Touch
                                     return didx * 2
                                 case 101: // 一斉射かッ…胸が熱いな！
+                                case 102: // 長門、いい？ いくわよ！ 主砲一斉射ッ！
                                     return Math.floor(didx / 2)
+                                case 103: // Colorado 特殊攻撃
+                                    return didx
                                 default:
                                     return json.api_at_list[idx]
                             }
@@ -532,9 +538,9 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
                         var damage = Math.floor(json.api_damage[idx][didx])
                         var critical = json.api_cl_list[idx][didx]
                         if (friendAttack) {
-                            result[idx][didx] = new AttackDto(phase.kind, friendAttack, attacker < friendNum, attacker % Math.max(6, friendNum), defender < enemyNum, defender % Math.max(6, enemyNum), lastAttack, damage, critical, attackType, showItem)
+                            result[idx][didx] = new AttackDto(phase.kind, friendAttack, attacker < friendNum, attacker % Math.max(6, friendNum), defender < enemyNum, defender % Math.max(6, enemyNum), lastAttack, damage, critical, attackType, showItem, didx + 1)
                         } else {
-                            result[idx][didx] = new AttackDto(phase.kind, friendAttack, attacker < enemyNum, attacker % Math.max(6, enemyNum), defender < friendNum, defender % Math.max(6, friendNum), lastAttack, damage, critical, attackType, showItem)
+                            result[idx][didx] = new AttackDto(phase.kind, friendAttack, attacker < enemyNum, attacker % Math.max(6, enemyNum), defender < friendNum, defender % Math.max(6, friendNum), lastAttack, damage, critical, attackType, showItem, didx + 1)
                         }
                     }
                 }
@@ -602,8 +608,9 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
  * @param {Number} critical クリティカル
  * @param {Number} attackType 特殊攻撃フラグ
  * @param {[Number|String]} showItem 表示装備
+ * @param {Number} attackNum 攻撃回数
  */
-var AttackDto = function (kind, friendAttack, mainAttack, attacker, mainDefense, defender, lastAttack, damage, critical, attackType, showItem) {
+var AttackDto = function (kind, friendAttack, mainAttack, attacker, mainDefense, defender, lastAttack, damage, critical, attackType, showItem, attackNum) {
     this.kind = kind
     this.friendAttack = friendAttack
     this.mainAttack = mainAttack
@@ -615,6 +622,7 @@ var AttackDto = function (kind, friendAttack, mainAttack, attacker, mainDefense,
     this.critical = critical
     this.attackType = attackType
     this.showItem = showItem
+    this.attackNum = attackNum
 }
 
 /**

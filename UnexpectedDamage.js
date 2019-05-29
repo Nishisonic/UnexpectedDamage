@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.47
+var VERSION = 1.48
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update2.txt"
 /** ファイルの場所 */
@@ -779,9 +779,9 @@ DayBattlePower.prototype.getSpottingBonus = function () {
         case 100: return Number(this.formation[2]) === 4 ? 2.5 : 2.0 // Nelson Touch(≠弾着攻撃)
         case 101: // 一斉射かッ…胸が熱いな！
             var secondShipId = this.origins[this.attack.mainAttack ? "main" : "escort"][1].shipId
-            var base = !this.attack.lastAttack ? 1.4 : 1.2
-            var secondShipBonus = function(date, secondShipId, lastAttack){
-                if (!lastAttack) {
+            var base = this.attack.attackNum < 3 ? 1.4 : 1.2
+            var secondShipBonus = function(date, secondShipId, lastAttack, attackNum){
+                if (attackNum < 3) {
                     switch (secondShipId) {
                         case 573: return 1.2  // 陸奥改二
                         case 276: return 1.15 // 陸奥改
@@ -795,7 +795,7 @@ DayBattlePower.prototype.getSpottingBonus = function () {
                     }
                 }
                 return 1.0
-            }(this.date, secondShipId, this.attack.lastAttack)
+            }(this.date, secondShipId, this.attack.lastAttack, this.attack.attackNum)
             var itemBonus = function(date, items) {
                 if (ADD_ITEM_BONUS_DATE.after(date)) return 1
                 var surfaceRadarBonus = items.some(function(item) {
@@ -809,9 +809,9 @@ DayBattlePower.prototype.getSpottingBonus = function () {
             return base * secondShipBonus * itemBonus
         case 102: // 長門、いい？ いくわよ！ 主砲一斉射ッ！
             var secondShipId = this.origins[this.attack.mainAttack ? "main" : "escort"][1].shipId
-            var base = !this.attack.lastAttack ? 1.4 : 1.2
-            var secondShipBonus = function(secondShipId, lastAttack){
-                if (!lastAttack) {
+            var base = this.attack.attackNum < 3 ? 1.4 : 1.2
+            var secondShipBonus = function(secondShipId, lastAttack, attackNum){
+                if (attackNum < 3) {
                     switch (secondShipId) {
                         case 541: return 1.2 // 長門改二
                     }
@@ -821,7 +821,7 @@ DayBattlePower.prototype.getSpottingBonus = function () {
                     }
                 }
                 return 1.0
-            }(secondShipId, this.attack.lastAttack)
+            }(secondShipId, this.attack.lastAttack, this.attack.attackNum)
             var itemBonus = function(items) {
                 var surfaceRadarBonus = items.some(function(item) {
                     return item.type3 === 11 && item.param.saku >= 5
@@ -832,6 +832,44 @@ DayBattlePower.prototype.getSpottingBonus = function () {
                 return surfaceRadarBonus * apShellBonus
             }(!this.attack.lastAttack ? this.items : getItems(this.origins[this.attack.mainAttack ? "main" : "escort"][1]))
             return base * secondShipBonus * itemBonus
+        case 103: // Colorado 特殊攻撃
+            var secondShipId = this.origins[this.attack.mainAttack ? "main" : "escort"][1].shipId
+            var thirdShipId = this.origins[this.attack.mainAttack ? "main" : "escort"][2].shipId
+            var base = this.attack.attackNum === 1 ? 1.3 : 1.15
+            var companionShipBonus = function (secondShipId, thirdShipId, attackNum) {
+                var isBig7 = function(shipId){
+                    switch (shipId) {
+                        case 80:  // 長門
+                        case 275: // 長門改
+                        case 541: // 長門改二
+                        case 81:  // 陸奥
+                        case 276: // 陸奥改
+                        case 573: // 陸奥改二
+                        case 571: // Nelson
+                        case 576: // Nelson改
+                            return true
+                    }
+                    return false
+                }
+
+                switch (attackNum) {
+                    case 2:
+                        return isBig7(secondShipId) ? 1.1 : 1
+                    case 3:
+                        return isBig7(thirdShipId) ? 1.15 * (isBig7(secondShipId) ? 1.1 : 1) : 1
+                }
+                return 1
+            }(secondShipId, thirdShipId)
+            var itemBonus = function(items) {
+                var surfaceRadarBonus = items.some(function(item) {
+                    return item.type3 === 11 && item.param.saku >= 5
+                }) ? 1.15 : 1
+                var apShellBonus = items.some(function(item) {
+                    return item.type3 === 13
+                }) ? 1.35 : 1
+                return surfaceRadarBonus * apShellBonus
+            }(!this.attack.lastAttack ? this.items : getItems(this.origins[this.attack.mainAttack ? "main" : "escort"][1]))
+            return base * companionShipBonus * itemBonus
         case 200: return 1.35 // 瑞雲立体攻撃
         case 201: return 1.3 // 海空立体攻撃
         default: return 1.0  // それ以外
@@ -1223,17 +1261,59 @@ NightBattlePower.prototype.getBasePower = function () {
                 467: 462,
                 // 赤城改
                 277: {
+                    // 流星
+                    18: {param: 1, count: 1, date: getJstDate(2019, 5, 20, 12, 0, 0)},
+                    // 流星改
+                    52: {param: 1, count: 1, date: getJstDate(2019, 5, 20, 12, 0, 0)},
                     // 九七式艦攻(村田隊)
                     143: {param: 3, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
                     // 天山(村田隊)
                     144: {param: 3, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
+                    // 烈風改二
+                    336: {param: 1, count: 1},
+                },
+                // 赤城改二
+                594: {
+                    // 流星
+                    18: {param: 1, count: 1},
+                    // 流星改
+                    52: {param: 1, count: 1},
+                    // 九七式艦攻(村田隊)
+                    143: {param: 3, count: 1},
+                    // 天山(村田隊)
+                    144: {param: 3, count: 1},
+                    // 天山(村田隊)
+                    144: {param: 3, count: 1},
+                    // 烈風改二
+                    336: {param: 1, count: 1},
+                },
+                // 赤城改二戊
+                599: {
+                    // 流星
+                    18: {param: 2, count: 1},
+                    // 流星改
+                    52: {param: 2, count: 1},
+                    // 九七式艦攻(村田隊)
+                    143: {param: 3, count: 1},
+                    // 天山(村田隊)
+                    144: {param: 3, count: 1},
+                    // 天山(村田隊)
+                    144: {param: 3, count: 1},
+                    // 烈風改二
+                    336: {param: 1, count: 1},
                 },
                 // 加賀改
                 278: {
+                    // 流星
+                    18: {param: 1, count: 1, date: getJstDate(2019, 5, 20, 12, 0, 0)},
+                    // 流星改
+                    52: {param: 1, count: 1, date: getJstDate(2019, 5, 20, 12, 0, 0)},
                     // 九七式艦攻(村田隊)
                     143: {param: 2, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
                     // 天山(村田隊)
                     144: {param: 2, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
+                    // 烈風改二
+                    336: {param: 1, count: 1},
                 },
                 // 龍驤改二
                 157: {
@@ -1241,6 +1321,13 @@ NightBattlePower.prototype.getBasePower = function () {
                     143: {param: 1, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
                     // 天山(村田隊)
                     144: {param: 1, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
+                },
+                // 大鳳改
+                156: {
+                    // 流星
+                    18: {param: 1, count: 1, date: getJstDate(2019, 5, 20, 12, 0, 0)},
+                    // 流星改
+                    52: {param: 1, count: 1, date: getJstDate(2019, 5, 20, 12, 0, 0)},
                 },
                 stype : {
                     // 軽空母
@@ -1514,9 +1601,9 @@ NightBattlePower.prototype.getCutinBonus = function () {
             return Number(this.formation[2]) === 4 ? 2.5 : 2.0
         case 101: // 一斉射かッ…胸が熱いな！
             var secondShipId = this.origins[this.attack.mainAttack ? "main" : "escort"][1].shipId
-            var base = !this.attack.lastAttack ? 1.4 : 1.2
-            var secondShipBonus = function(date, secondShipId, lastAttack){
-                if (!lastAttack) {
+            var base = this.attack.attackNum < 3 ? 1.4 : 1.2
+            var secondShipBonus = function(date, secondShipId, lastAttack, attackNum){
+                if (attackNum < 3) {
                     switch (secondShipId) {
                         case 573: return 1.2  // 陸奥改二
                         case 276: return 1.15 // 陸奥改
@@ -1530,7 +1617,7 @@ NightBattlePower.prototype.getCutinBonus = function () {
                     }
                 }
                 return 1.0
-            }(this.date, secondShipId, this.attack.lastAttack)
+            }(this.date, secondShipId, this.attack.lastAttack, this.attack.attackNum)
             var itemBonus = function(date, items) {
                 if (ADD_ITEM_BONUS_DATE.after(date)) return 1
                 var surfaceRadarBonus = items.some(function(item) {
@@ -1544,9 +1631,9 @@ NightBattlePower.prototype.getCutinBonus = function () {
             return base * secondShipBonus * itemBonus
         case 102: // 長門、いい？ いくわよ！ 主砲一斉射ッ！
             var secondShipId = this.origins[this.attack.mainAttack ? "main" : "escort"][1].shipId
-            var base = !this.attack.lastAttack ? 1.4 : 1.2
-            var secondShipBonus = function(secondShipId, lastAttack){
-                if (!lastAttack) {
+            var base = this.attack.attackNum < 3 ? 1.4 : 1.2
+            var secondShipBonus = function(secondShipId, lastAttack, attackNum){
+                if (attackNum < 3) {
                     switch (secondShipId) {
                         case 541: return 1.2 // 長門改二
                     }
@@ -1556,7 +1643,7 @@ NightBattlePower.prototype.getCutinBonus = function () {
                     }
                 }
                 return 1.0
-            }(secondShipId, this.attack.lastAttack)
+            }(secondShipId, this.attack.lastAttack, this.attack.attackNum)
             var itemBonus = function(items) {
                 var surfaceRadarBonus = items.some(function(item) {
                     return item.type3 === 11 && item.param.saku >= 5
@@ -1567,6 +1654,44 @@ NightBattlePower.prototype.getCutinBonus = function () {
                 return surfaceRadarBonus * apShellBonus
             }(!this.attack.lastAttack ? this.items : getItems(this.origins[this.attack.mainAttack ? "main" : "escort"][1]))
             return base * secondShipBonus * itemBonus
+        case 103: // Colorado 特殊攻撃
+            var secondShipId = this.origins[this.attack.mainAttack ? "main" : "escort"][1].shipId
+            var thirdShipId = this.origins[this.attack.mainAttack ? "main" : "escort"][2].shipId
+            var base = this.attack.attackNum === 1 ? 1.3 : 1.15
+            var companionShipBonus = function (secondShipId, thirdShipId, attackNum) {
+                var isBig7 = function(shipId){
+                    switch (shipId) {
+                        case 80:  // 長門
+                        case 275: // 長門改
+                        case 541: // 長門改二
+                        case 81:  // 陸奥
+                        case 276: // 陸奥改
+                        case 573: // 陸奥改二
+                        case 571: // Nelson
+                        case 576: // Nelson改
+                            return true
+                    }
+                    return false
+                }
+
+                switch (attackNum) {
+                    case 2:
+                        return isBig7(secondShipId) ? 1.1 : 1
+                    case 3:
+                        return isBig7(thirdShipId) ? 1.15 * (isBig7(secondShipId) ? 1.1 : 1) : 1
+                }
+                return 1
+            }(secondShipId, thirdShipId)
+            var itemBonus = function(items) {
+                var surfaceRadarBonus = items.some(function(item) {
+                    return item.type3 === 11 && item.param.saku >= 5
+                }) ? 1.15 : 1
+                var apShellBonus = items.some(function(item) {
+                    return item.type3 === 13
+                }) ? 1.35 : 1
+                return surfaceRadarBonus * apShellBonus
+            }(!this.attack.lastAttack ? this.items : getItems(this.origins[this.attack.mainAttack ? "main" : "escort"][1]))
+            return base * companionShipBonus * itemBonus
         case 200: return 1.35 // 瑞雲立体攻撃
         case 201: return 1.3 // 海空立体攻撃
         default: return 1.0
