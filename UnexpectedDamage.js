@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.48
+var VERSION = 1.49
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update2.txt"
 /** ファイルの場所 */
@@ -674,6 +674,7 @@ DayBattlePower.prototype.getImprovementBonus = function () {
                         return 0.2 * item.level
                     case 12:  // 15.5cm三連装副砲
                     case 234: // 15.5cm三連装副砲改
+                    case 247: // 15.2cm三連装砲
                         return 0.3 * item.level
                 }
             }
@@ -812,7 +813,7 @@ DayBattlePower.prototype.getSpottingBonus = function () {
         case 101: // 一斉射かッ…胸が熱いな！
             var secondShipId = this.origins[this.attack.mainAttack ? "main" : "escort"][1].shipId
             var base = this.attack.attackNum < 3 ? 1.4 : 1.2
-            var secondShipBonus = function(date, secondShipId, lastAttack, attackNum){
+            var secondShipBonus = function(date, secondShipId, attackNum){
                 if (attackNum < 3) {
                     switch (secondShipId) {
                         case 573: return 1.2  // 陸奥改二
@@ -827,7 +828,7 @@ DayBattlePower.prototype.getSpottingBonus = function () {
                     }
                 }
                 return 1.0
-            }(this.date, secondShipId, this.attack.lastAttack, this.attack.attackNum)
+            }(this.date, secondShipId, this.attack.attackNum)
             var itemBonus = function(date, items) {
                 if (ADD_ITEM_BONUS_DATE.after(date)) return 1
                 var surfaceRadarBonus = items.some(function(item) {
@@ -842,7 +843,7 @@ DayBattlePower.prototype.getSpottingBonus = function () {
         case 102: // 長門、いい？ いくわよ！ 主砲一斉射ッ！
             var secondShipId = this.origins[this.attack.mainAttack ? "main" : "escort"][1].shipId
             var base = this.attack.attackNum < 3 ? 1.4 : 1.2
-            var secondShipBonus = function(secondShipId, lastAttack, attackNum){
+            var secondShipBonus = function(secondShipId, attackNum){
                 if (attackNum < 3) {
                     switch (secondShipId) {
                         case 541: return 1.2 // 長門改二
@@ -853,7 +854,7 @@ DayBattlePower.prototype.getSpottingBonus = function () {
                     }
                 }
                 return 1.0
-            }(secondShipId, this.attack.lastAttack, this.attack.attackNum)
+            }(secondShipId, this.attack.attackNum)
             var itemBonus = function(items) {
                 var surfaceRadarBonus = items.some(function(item) {
                     return item.type3 === 11 && item.param.saku >= 5
@@ -1270,6 +1271,10 @@ NightBattlePower.prototype.getBasePower = function () {
                     143: {param: 2, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
                     // 天山(村田隊)
                     144: {param: 4, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
+                    // 流星改(一航戦)
+                    342: {param: 1, count: 1},
+                    // 流星改(一航戦/熟練)
+                    343: {param: 1, count: 1},
                 },
                 // 翔鶴改二甲
                 466: 461,
@@ -1288,6 +1293,10 @@ NightBattlePower.prototype.getBasePower = function () {
                     143: {param: 1, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
                     // 天山(村田隊)
                     144: {param: 2, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
+                    // 流星改(一航戦)
+                    342: {param: 1, count: 1},
+                    // 流星改(一航戦/熟練)
+                    343: {param: 1, count: 1},
                 },
                 // 瑞鶴改二甲
                 467: 462,
@@ -1303,6 +1312,14 @@ NightBattlePower.prototype.getBasePower = function () {
                     144: {param: 3, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
                     // 烈風改二
                     336: {param: 1, count: 1},
+                    // 烈風改二戊型
+                    338: 1,
+                    // 烈風改二戊型(一航戦/熟練)
+                    339: {param: 1, count: 1},
+                    // 流星改(一航戦)
+                    342: {param: 1, count: 1},
+                    // 流星改(一航戦/熟練)
+                    343: {param: 2, count: 1},
                 },
                 // 赤城改二
                 594: {
@@ -1318,6 +1335,14 @@ NightBattlePower.prototype.getBasePower = function () {
                     144: {param: 3, count: 1},
                     // 烈風改二
                     336: {param: 1, count: 1},
+                    // 烈風改二戊型
+                    338: 1,
+                    // 烈風改二戊型(一航戦/熟練)
+                    339: {param: 1, count: 1},
+                    // 流星改(一航戦)
+                    342: {param: 2, count: 1},
+                    // 流星改(一航戦/熟練)
+                    343: {param: 3, count: 1},
                 },
                 // 赤城改二戊
                 599: {
@@ -1333,6 +1358,14 @@ NightBattlePower.prototype.getBasePower = function () {
                     144: {param: 3, count: 1},
                     // 烈風改二
                     336: {param: 1, count: 1},
+                    // 烈風改二戊型
+                    338: 4,
+                    // 烈風改二戊型(一航戦/熟練)
+                    339: {param: 6, count: 1},
+                    // 流星改(一航戦)
+                    342: {param: 3, count: 1},
+                    // 流星改(一航戦/熟練)
+                    343: {param: 5, count: 1},
                 },
                 // 加賀改
                 278: {
@@ -1346,6 +1379,14 @@ NightBattlePower.prototype.getBasePower = function () {
                     144: {param: 2, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
                     // 烈風改二
                     336: {param: 1, count: 1},
+                    // 烈風改二戊型
+                    338: 1,
+                    // 烈風改二戊型(一航戦/熟練)
+                    339: {param: 1, count: 1},
+                    // 流星改(一航戦)
+                    342: {param: 1, count: 1},
+                    // 流星改(一航戦/熟練)
+                    343: {param: 2, count: 1},
                 },
                 // 龍驤改二
                 157: {
@@ -1462,6 +1503,7 @@ NightBattlePower.prototype.getBasePower = function () {
                         case 242: // Swordfish
                         case 243: // Swordfish Mk.II(熟練)
                         case 244: // Swordfish Mk.III(熟練)
+                        case 320: // 彗星一二型(三一号光電管爆弾搭載機)
                             // 火力+雷装+0.3*(火力+雷装+爆装+対潜)*sqrt(機数)*sqrt(★)
                             return item.param.karyoku + item.param.raisou + 0.3 * (item.param.karyoku + item.param.raisou + item.param.baku + item.param.taisen) * Math.sqrt(getOnSlot(this.attacker, this.date)[i]) + Math.sqrt(item.level)
                     }
@@ -1634,7 +1676,7 @@ NightBattlePower.prototype.getCutinBonus = function () {
         case 101: // 一斉射かッ…胸が熱いな！
             var secondShipId = this.origins[this.attack.mainAttack ? "main" : "escort"][1].shipId
             var base = this.attack.attackNum < 3 ? 1.4 : 1.2
-            var secondShipBonus = function(date, secondShipId, lastAttack, attackNum){
+            var secondShipBonus = function(date, secondShipId, attackNum){
                 if (attackNum < 3) {
                     switch (secondShipId) {
                         case 573: return 1.2  // 陸奥改二
@@ -1649,7 +1691,7 @@ NightBattlePower.prototype.getCutinBonus = function () {
                     }
                 }
                 return 1.0
-            }(this.date, secondShipId, this.attack.lastAttack, this.attack.attackNum)
+            }(this.date, secondShipId, this.attack.attackNum)
             var itemBonus = function(date, items) {
                 if (ADD_ITEM_BONUS_DATE.after(date)) return 1
                 var surfaceRadarBonus = items.some(function(item) {
@@ -1664,7 +1706,7 @@ NightBattlePower.prototype.getCutinBonus = function () {
         case 102: // 長門、いい？ いくわよ！ 主砲一斉射ッ！
             var secondShipId = this.origins[this.attack.mainAttack ? "main" : "escort"][1].shipId
             var base = this.attack.attackNum < 3 ? 1.4 : 1.2
-            var secondShipBonus = function(secondShipId, lastAttack, attackNum){
+            var secondShipBonus = function(secondShipId, attackNum){
                 if (attackNum < 3) {
                     switch (secondShipId) {
                         case 541: return 1.2 // 長門改二
@@ -1675,7 +1717,7 @@ NightBattlePower.prototype.getCutinBonus = function () {
                     }
                 }
                 return 1.0
-            }(secondShipId, this.attack.lastAttack, this.attack.attackNum)
+            }(secondShipId, this.attack.attackNum)
             var itemBonus = function(items) {
                 var surfaceRadarBonus = items.some(function(item) {
                     return item.type3 === 11 && item.param.saku >= 5
@@ -1788,8 +1830,8 @@ function isNightCvAttack(attacker, attackerHp) {
     }).some(function (itemid) {
         // 夜間作戦航空要員 or 夜間作戦航空要員＋熟練甲板員
         return itemid === 258 || itemid === 259
-        // Saratoga Mk.II
-    }) || attacker.shipId === 545) && items.map(function (item) {
+        // Saratoga Mk.II & 赤城改二戊
+    }) || attacker.shipId === 545 || attacker.shipId === 599) && items.map(function (item) {
         return item.type3
     }).indexOf(45) >= 0 // 夜間戦闘機
         // 中破未満または装甲空母

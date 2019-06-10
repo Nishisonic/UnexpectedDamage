@@ -114,11 +114,14 @@ function create(table, data, index) {
 function end() { }
 
 function getColumnIndex(pt, item) {
-    var columns = item.getParent().getColumnCount()
-    return IntStream.range(0, columns).filter(function (index) {
-        var rect = item.getBounds(index)
-        return pt.x >= rect.x && pt.x < rect.x + rect.width
-    }).findFirst().orElse(-1)
+    if (item) {
+        var columns = item.getParent().getColumnCount()
+        return IntStream.range(0, columns).filter(function (index) {
+            var rect = item.getBounds(index)
+            return pt.x >= rect.x && pt.x < rect.x + rect.width
+        }).findFirst().orElse(-1)
+    }
+    return -1
 }
 
 function toFormation(kind) {
@@ -293,7 +296,7 @@ function genDefenseArmorHtml(data) {
     result += '<tr><th colspan="4">防御側</th></tr>'
     result += '<tr><th>装甲乱数</th><th>実装甲値</th><th>表示装甲値</th><th>特殊補正</th>'
     var armor = data.defender.soukou + getArmorBonus(data.mapCell, data.attacker, data.defender)
-    result += '<tr><td style="font-weight:bold;">' + (armor * 0.7).toFixed(1) + ' ~ ' + (armor * 0.7 + Math.floor(armor - 1) * 0.6).toFixed(1) + '</td><td>' + armor + '</td><td>' + data.defender.soukou + '</td><td>' + getArmorBonus(data.mapCell, data.attacker, data.defender) + '</td></tr>'
+    result += '<tr><td style="font-weight:bold;">' + (armor * 0.7).toFixed(1) + ' ~ ' + (armor * 0.7 + Math.floor(armor - 1) * 0.6).toFixed(1) + '</td><td>' + armor.toFixed(2) + '</td><td>' + data.defender.soukou + '</td><td>' + getArmorBonus(data.mapCell, data.attacker, data.defender).toFixed(2) + '</td></tr>'
     result += '</table>'
     return result
 }
