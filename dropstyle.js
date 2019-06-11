@@ -335,7 +335,7 @@ function genGimmickHtml(data, power, idx) {
     var armor = data.defender.soukou + getArmorBonus(data.mapCell, data.attacker, data.defender)
     var aftPower = power.getAfterCapPower()
     var dmgWidth = Math.floor((aftPower[0] - (armor * 0.7 + Math.floor(armor - 1) * 0.6)) * getAmmoBonus(data.attacker)) + " ~ " + Math.floor((aftPower[1] - armor * 0.7) * getAmmoBonus(data.attacker))
-    var back = (Math.ceil(data.attack.damage + armor * 0.7) / aftPower[0]).toFixed(4) + " ~ " + (Math.ceil(data.attack.damage + (armor * 0.7 + Math.floor(armor - 1) * 0.6)) / aftPower[0]).toFixed(4)
+    var back = (Math.ceil(data.attack.damage + armor * 0.7) / aftPower[1]).toFixed(4) + " ~ " + (Math.ceil(data.attack.damage + (armor * 0.7 + Math.floor(armor - 1) * 0.6)) / aftPower[0]).toFixed(4)
     result += '<td id="afterpower' + idx + '">' + aftPower[0] + ' ~ ' + aftPower[1] + '</td><td id="theoretical' + idx + '">' + dmgWidth + '</td><td id="border' + idx + '">x</td><td>' + back + '</td></tr>'
     result += '</table>'
     return result
