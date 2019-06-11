@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.50
+var VERSION = 1.51
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update2.txt"
 /** ファイルの場所 */
@@ -618,8 +618,25 @@ DayBattlePower.prototype.getBasePower = function () {
     // 空撃または陸上型かつ艦上爆撃機,艦上攻撃機,陸上攻撃機,噴式戦闘爆撃機,噴式攻撃機所持時?
     if (getAttackTypeAtDay(this.attack, this.attacker, this.defender) === 1 || isGround(this.attacker) && this.items.some(function (item) { return item.type2 === 7 || item.type2 === 8 || item.type2 === 47 || item.type2 === 57 || item.type2 === 58 })) {
         // 空撃
-        var rai = !isGround(this.defender) ? this.attacker.slotParam.raig : 0
+        var rai = this.attacker.slotParam.raig
         var baku = this.attacker.slotParam.baku
+        if (isGround(this.defender)) {
+            rai = 0
+            if (getJstDate(2019, 3, 27, 12, 0, 0).before(this.date)) {
+                baku = this.items.filter(function (item) {
+                    // Ju87C改
+                    // 試製南山
+                    // F4U-1D
+                    // FM-2
+                    // Ju87C改二(KMX搭載機)
+                    // Ju87C改二(KMX搭載機/熟練)
+                    // 彗星一二型(六三四空/三号爆弾搭載機)
+                    return [64, 148, 233, 277, 305, 306, 319].indexOf(item.slotitemId) >= 0
+                }).reduce(function(p, v) {
+                    return p + v.param.baku
+                }, 0)
+            }
+        }
         return Math.floor((this.attacker.karyoku + rai + Math.floor(baku * 1.3) + this.getImprovementBonus() + this.getCombinedPowerBonus()) * 1.5) + 55
     } else {
         // 砲撃
