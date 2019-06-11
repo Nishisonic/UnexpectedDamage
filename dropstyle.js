@@ -173,7 +173,7 @@ function genBattleHtml(dataLists) {
     var sdf = new SimpleDateFormat(AppConstants.DATE_FORMAT)
     var idx = 0
     var html =
-        '<html><head><style type="text/css">' +
+        '<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><style type="text/css">' +
         "body {font-family:'Lucida Grande','Hiragino Kaku Gothic ProN','ヒラギノ角ゴ ProN W3',Meiryo,メイリオ,sans-serif;}" +
         "div.box{margin-top:10px;margin-bottom:10px;font-size:small;}" +
         "body{background-color:#FAFAFA;}" +
@@ -197,7 +197,9 @@ function genBattleHtml(dataLists) {
         '<body>' +
         '<header>' +
         '<h2>' + masterData.mapCell + '（' + sdf.format(masterData.date) + '）</h2>' +
+        '<div style="float: left; margin-bottom: 15px;">' +
         '<h2>会敵情報</h2>' +
+        '<div>' +
         '<div>会敵: ' + toIntercept(Number(masterData.formation[2])) + '</div>' +
         '<table>' +
         '<tr>' +
@@ -219,10 +221,18 @@ function genBattleHtml(dataLists) {
         '<td>' + (touchPlane[1] > 0 ? Item.get(touchPlane[1]).name : "") + '</td>' +
         '</tr>' +
         '</table>' +
-        '<h2>異常ダメ検知攻撃一覧</h2>' +
-        '<hr color:"#BBB" style="margin-right:15px;"></hr>' +
+        '</div>' +
+        '</div>' +
+        (masterData.mapCell.map[0] < 22 ? '' :
+            '<div style="float: right;">' +
+            '<h2>' + masterData.mapCell.map[0] + '-' + masterData.mapCell.map[1] + '-' + masterData.mapCell.map[2] + ' 特効倍率(速報値) ※イベント限定</h2>' +
+            '<div style="overflow: scroll; width: 400px; height: 118px; border:#000000 1px solid; margin-right: 15px; font-size:small;" ' +
+            'title="雰囲気で特効倍率範囲を算出します。&#10;速報値を出すときなどにご活用ください。&#10;※対陸上または熟練度補正が働いている攻撃は除外">' + toUnexpectedRangeHtml(JSON.stringify(Java.from(masterData.mapCell.map))) + '</div></div>'
+        ) +
+        '<h2 style="clear: both; padding: 0; margin: 2px 0 0;">異常ダメ検知攻撃一覧</h2>' +
+        '<hr style="height: 1px; background-color: #BBB; border: none; margin-right:15px;"></hr>' +
         '</header>' +
-        '<div style="width:100%; height:235px;"></div>' +
+        '<div style="width:100%; height:240px;"></div>' +
         '<div style="overflow: auto; min-width:500px; border:#000000 solid 1px; width: 100%; font-size:small;">' +
         // 昼砲撃戦
         dataLists[0].map(function (data) {
@@ -294,7 +304,7 @@ function genHeaderHtml(data, power) {
 function genDefenseArmorHtml(data) {
     var result = '<table style="margin-top:5px; float:left; margin-right:5px;">'
     result += '<tr><th colspan="4">防御側</th></tr>'
-    result += '<tr><th>装甲乱数</th><th>実装甲値</th><th>表示装甲値</th><th>特殊補正</th>'
+    result += '<tr><th>装甲乱数</th><th>実装甲値</th><th>表示装甲値</th><th>特殊補正</th></tr>'
     var armor = data.defender.soukou + getArmorBonus(data.mapCell, data.attacker, data.defender)
     result += '<tr><td style="font-weight:bold;">' + (armor * 0.7).toFixed(1) + ' ~ ' + (armor * 0.7 + Math.floor(armor - 1) * 0.6).toFixed(1) + '</td><td>' + armor.toFixed(2) + '</td><td>' + data.defender.soukou + '</td><td>' + getArmorBonus(data.mapCell, data.attacker, data.defender).toFixed(2) + '</td></tr>'
     result += '</table>'
@@ -320,7 +330,7 @@ function genGimmickHtml(data, power, idx) {
     result += '}</script>'
     result += '<table style="margin-top:5px;">'
     result += '<tr><th colspan="5">ギミック簡易計算(a10)</th></tr>'
-    result += '<tr><th>倍率</th><th>ギミック後攻撃力</th><th>理論値</th><th>範囲内</th><th>逆算倍率(仮)</th>'
+    result += '<tr><th>倍率</th><th>ギミック後攻撃力</th><th>理論値</th><th>範囲内</th><th>逆算倍率(仮)</th></tr>'
     result += '<tr><td><input id="gimmick' + idx + '" type="number" value="1" style="width: 80px;" onkeyup="func' + idx + '();"></td>'
     var armor = data.defender.soukou + getArmorBonus(data.mapCell, data.attacker, data.defender)
     var aftPower = power.getAfterCapPower()
@@ -344,7 +354,7 @@ function genAntiSubMarineHtml(data, power) {
     result += '<tr><td>' + power.getBeforeCapPower().toFixed(2) + '</td><td>' + getFormationMatchBonus(data.formation).toFixed(1) + '</td><td>' + power.getFormationBonus().toFixed(1) + '</td><td>' + power.getConditionBonus().toFixed(1) + '</td><td>' + power.getSynergyBonus().toFixed(2) + '</td></tr>'
     result += '<tr><th>最終攻撃力</th><th>キャップ値</th><th>キャップ後火力</th><th>クリティカル補正</th><th>熟練度補正</th></tr>'
     var skilled = data.shouldUseSkilled ? getSkilledBonus(data.date, data.attack, data.attacker, data.defender, data.attackerHp).map(function (value) { return value.toFixed(2) }).join(' ~ ') : '1.00'
-    result += '<tr><td style="font-weight:bold;">' + power.getAfterCapPower().map(function (power) { return power.toFixed(2) }).join(' ~ ') + '</td><td>' + power.CAP_VALUE + '</td><td>' + getAfterCapValue(power.getBeforeCapPower(), power.CAP_VALUE).toFixed(2) + '</td><td>' + getCriticalBonus(data.attack).toFixed(1) + '</td><td>' + skilled + '</td>'
+    result += '<tr><td style="font-weight:bold;">' + power.getAfterCapPower().map(function (power) { return power.toFixed(2) }).join(' ~ ') + '</td><td>' + power.CAP_VALUE + '</td><td>' + getAfterCapValue(power.getBeforeCapPower(), power.CAP_VALUE).toFixed(2) + '</td><td>' + getCriticalBonus(data.attack).toFixed(1) + '</td><td>' + skilled + '</td></tr>'
     return '<table>' + result + '</table>'
 }
 
@@ -355,7 +365,7 @@ function genAntiSubMarineHtml(data, power) {
  * @return {String} HTML
  */
 function genDayBattleHtml(data, power) {
-    var result = '<tr><th rowspan="8" style="padding: 0px 3px;">攻<br>撃<br>側</th><th>基本攻撃力</th><th>改修火力</th><th>連合補正</th><th></th><th></th><th></th><th></th></th>'
+    var result = '<tr><th rowspan="8" style="padding: 0px 3px;">攻<br>撃<br>側</th><th>基本攻撃力</th><th>改修火力</th><th>連合補正</th><th></th><th></th><th></th><th></th></tr>'
     result += '<tr><td>' + power.getBasePower().toFixed(2) + '</td><td>' + power.getImprovementBonus().toFixed(2) + '</td><td>' + power.getCombinedPowerBonus() + '</td><td></td><td></td><td></td><td></td></tr>'
     result += '<tr><th>キャップ前火力</th><th>対陸上敵乗算補正</th><th>対陸上敵加算補正</th><th>交戦形態補正</th><th>攻撃側陣形補正</th><th>損傷補正</th><th>特殊砲補正</th></tr>'
     var landBonus = getLandBonus(data.attacker, data.defender)
@@ -380,7 +390,7 @@ function genTorpedoAttackHtml(data, power) {
     result += '<tr><th>キャップ前火力</th><th>交戦形態補正</th><th>攻撃側陣形補正</th><th>損傷補正</th></tr>'
     result += '<tr><td>' + power.getBeforeCapPower().toFixed(2) + '</td><td>' + getFormationMatchBonus(data.formation).toFixed(1) + '</td><td>' + power.getFormationBonus().toFixed(1) + '</td><td>' + power.getConditionBonus().toFixed(1) + '</td></tr>'
     result += '<tr><th>最終攻撃力</th><th>キャップ値</th><th>キャップ後火力</th><th>クリティカル補正</th></tr>'
-    result += '<tr><td style="font-weight:bold;">' + power.getAfterCapPower()[0] + '</td><td>' + power.CAP_VALUE + '</td><td>' + getAfterCapValue(power.getBeforeCapPower(), power.CAP_VALUE).toFixed(2) + '</td><td>' + getCriticalBonus(data.attack).toFixed(1) + '</td>'
+    result += '<tr><td style="font-weight:bold;">' + power.getAfterCapPower()[0] + '</td><td>' + power.CAP_VALUE + '</td><td>' + getAfterCapValue(power.getBeforeCapPower(), power.CAP_VALUE).toFixed(2) + '</td><td>' + getCriticalBonus(data.attack).toFixed(1) + '</td></tr>'
     return '<table>' + result + '</table>'
 }
 
@@ -391,7 +401,7 @@ function genTorpedoAttackHtml(data, power) {
  * @return {String} HTML
  */
 function genNightBattleHtml(data, power) {
-    var result = '<tr><th rowspan="8" style="padding: 0px 3px;">攻<br>撃<br>側</th><th>基本攻撃力</th><th>改修火力</th><th>触接補正</th><th></th><th></th><th></th><th></th></th>'
+    var result = '<tr><th rowspan="8" style="padding: 0px 3px;">攻<br>撃<br>側</th><th>基本攻撃力</th><th>改修火力</th><th>触接補正</th><th></th><th></th><th></th><th></th></tr>'
     result += '<tr><td>' + power.getBasePower().toFixed(2) + '</td><td>' + power.getImprovementBonus().toFixed(2) + '</td><td>' + power.getNightTouchPlaneBonus() + '</td><td></td><td></td><td></td><td></td></tr>'
     result += '<tr><th>キャップ前火力</th><th>対陸上敵乗算補正</th><th>対陸上敵加算補正</th><th>攻撃側陣形補正</th><th>夜戦特殊攻撃補正</th><th>損傷補正</th><th>特殊砲補正</th></tr>'
     var landBonus = getLandBonus(data.attacker, data.defender)
@@ -402,4 +412,19 @@ function genNightBattleHtml(data, power) {
     var skilled = data.shouldUseSkilled ? getSkilledBonus(data.date, data.attack, data.attacker, data.defender, data.attackerHp).map(function (value) { return value.toFixed(2) }).join(' ~ ') : '1.00'
     result += '<tr><td>' + getCriticalBonus(data.attack).toFixed(1) + '</td><td>' + skilled + '</td><td></td><td></td><td></td><td></td></tr>'
     return '<table>' + result + '</table>'
+}
+
+/**
+ * 異常ダメージのざっくりとした倍率一覧を返す
+ * @param {[Number, Number, Number]} map マップ
+ * @return {String} HTML
+ */
+function toUnexpectedRangeHtml(map) {
+    var unexpected = getData("unexpected")
+    if (unexpected[map]) {
+        return Object.keys(unexpected[map]).map(function(shipId) {
+            return Ship.get(shipId).name + " - " + unexpected[map][shipId][0].toFixed(3) + " ~ " + unexpected[map][shipId][1].toFixed(3) + " (" + unexpected[map][shipId][2] + "x)"
+        }).join("<br>")
+    }
+    return ""
 }

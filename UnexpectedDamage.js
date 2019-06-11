@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.49
+var VERSION = 1.50
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update2.txt"
 /** ファイルの場所 */
@@ -1894,7 +1894,6 @@ var getMultiplySlayerBonus = function (attacker, defender) {
             // 戦車を持っていたら2回計算
             daihatsuGroupBonus *= rikuDaihatsu ? (daihatsuGroupLv / 50 + 1) : 1
             kamishaBonus *= (kamisha >= 2 ? 1.5 : 1) * (kamisha ? 1.7 : 1.0)
-            // java.lang.System.out.println(attacker.name + " " + items.map(function(item){return item.name}).join("/") + " " + type3shellBonus + " " + apShellBonus + " " + wg42Bonus + " " + daihatsuGroupBonus + " " + kamishaBonus + " " + suijoBonus + " " + stypeBonus + " " + bomberBonus)
             return wg42Bonus * daihatsuGroupBonus * kamishaBonus
     }
     return 1.0
