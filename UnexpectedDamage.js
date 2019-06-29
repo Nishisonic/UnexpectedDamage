@@ -482,6 +482,8 @@ AntiSubmarinePower.prototype.getBasePower = function () {
 AntiSubmarinePower.prototype.getImprovementBonus = function () {
     return this.items.map(function (item) {
         switch (item.type2) {
+            case 8: // 艦上攻撃機
+                return 0.2 * item.level
             case 14: // ソナー
             case 15: // 爆雷
                 return Math.sqrt(item.level)
@@ -716,6 +718,9 @@ DayBattlePower.prototype.getImprovementBonus = function () {
                         return 0.3 * item.level
                 }
             }
+        // 艦上攻撃機
+        } else if (item.type2 === 6) {
+            return 0.2 * item.level
         }
         return _getimprovementBonus() * Math.sqrt(item.level)
     }, this).reduce(function (prev, current) {
