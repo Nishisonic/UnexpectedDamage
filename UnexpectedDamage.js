@@ -396,6 +396,18 @@ AntiSubmarinePower.prototype.getBasePower = function () {
                 326: 3, // S-51J
                 327: 4, // S-51J改
             },
+            // 龍鳳改
+            318: {
+                344: 1, // 九七式艦攻改 試製三号戊型(空六号電探改装備機)
+                345: 1, // 九七式艦攻改(熟練) 試製三号戊型(空六号電探改装備機)
+            },
+            // 瑞鳳改二
+            555: {
+                344: 2, // 九七式艦攻改 試製三号戊型(空六号電探改装備機)
+                345: 2, // 九七式艦攻改(熟練) 試製三号戊型(空六号電探改装備機)
+            },
+            560: 555, // 瑞鳳改二乙
+            282: 318, // 祥鳳改
             ctype: {
                 // 球磨型
                 4: {
@@ -1262,8 +1274,24 @@ NightBattlePower.prototype.getBasePower = function () {
                 },
                 // 熊野航改二
                 509: 508,
+                // 瑞鳳改二
+                555: {
+                    // 九七式艦攻改 試製三号戊型(空六号電探改装備機)
+                    344: 2,
+                    // 九七式艦攻改(熟練) 試製三号戊型(空六号電探改装備機)
+                    345: 3,
+                },
                 // 瑞鳳改二乙
-                560: 508,
+                560: {
+                    // 二式艦上偵察機
+                    61: [0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3],
+                    // 彗星一二型(三一号光電管爆弾搭載機)
+                    320: {param: 4, count: 1},
+                    // 九七式艦攻改 試製三号戊型(空六号電探改装備機)
+                    344: 2,
+                    // 九七式艦攻改(熟練) 試製三号戊型(空六号電探改装備機)
+                    345: 3,
+                },
                 // 蒼龍
                 90: {
                     // 九七式艦攻(友永隊)
@@ -1298,9 +1326,9 @@ NightBattlePower.prototype.getBasePower = function () {
                     // 天山(村田隊)
                     144: {param: 4, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
                     // 流星改(一航戦)
-                    342: {param: 1, count: 1},
+                    342: 1,
                     // 流星改(一航戦/熟練)
-                    343: {param: 1, count: 1},
+                    343: 1,
                 },
                 // 翔鶴改二甲
                 466: 461,
@@ -1320,18 +1348,18 @@ NightBattlePower.prototype.getBasePower = function () {
                     // 天山(村田隊)
                     144: {param: 2, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
                     // 流星改(一航戦)
-                    342: {param: 1, count: 1},
+                    342: 1,
                     // 流星改(一航戦/熟練)
-                    343: {param: 1, count: 1},
+                    343: 1,
                 },
                 // 瑞鶴改二甲
                 467: 462,
                 // 赤城改
                 277: {
                     // 流星
-                    18: {param: 1, count: 1, date: getJstDate(2019, 5, 20, 12, 0, 0)},
+                    18: {param: 1, date: getJstDate(2019, 5, 20, 12, 0, 0)},
                     // 流星改
-                    52: {param: 1, count: 1, date: getJstDate(2019, 5, 20, 12, 0, 0)},
+                    52: {param: 1, date: getJstDate(2019, 5, 20, 12, 0, 0)},
                     // 九七式艦攻(村田隊)
                     143: {param: 3, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
                     // 天山(村田隊)
@@ -1343,16 +1371,16 @@ NightBattlePower.prototype.getBasePower = function () {
                     // 烈風改二戊型(一航戦/熟練)
                     339: {param: 1, count: 1},
                     // 流星改(一航戦)
-                    342: {param: 1, count: 1},
+                    342: 1,
                     // 流星改(一航戦/熟練)
-                    343: {param: 2, count: 1},
+                    343: 2,
                 },
                 // 赤城改二
                 594: {
                     // 流星
-                    18: {param: 1, count: 1},
+                    18: 1,
                     // 流星改
-                    52: {param: 1, count: 1},
+                    52: 1,
                     // 九七式艦攻(村田隊)
                     143: {param: 3, count: 1},
                     // 天山(村田隊)
@@ -1366,16 +1394,16 @@ NightBattlePower.prototype.getBasePower = function () {
                     // 烈風改二戊型(一航戦/熟練)
                     339: {param: 1, count: 1},
                     // 流星改(一航戦)
-                    342: {param: 2, count: 1},
+                    342: 2,
                     // 流星改(一航戦/熟練)
-                    343: {param: 3, count: 1},
+                    343: 3,
                 },
                 // 赤城改二戊
                 599: {
                     // 流星
-                    18: {param: 2, count: 1},
+                    18: 2,
                     // 流星改
-                    52: {param: 2, count: 1},
+                    52: 2,
                     // 九七式艦攻(村田隊)
                     143: {param: 3, count: 1},
                     // 天山(村田隊)
@@ -1389,16 +1417,20 @@ NightBattlePower.prototype.getBasePower = function () {
                     // 烈風改二戊型(一航戦/熟練)
                     339: {param: 6, count: 1},
                     // 流星改(一航戦)
-                    342: {param: 3, count: 1},
+                    342: 3,
                     // 流星改(一航戦/熟練)
-                    343: {param: 5, count: 1},
+                    343: 5,
+                    // 九七式艦攻改 試製三号戊型(空六号電探改装備機)
+                    344: 3,
+                    // 九七式艦攻改(熟練) 試製三号戊型(空六号電探改装備機)
+                    345: 3,
                 },
                 // 加賀改
                 278: {
                     // 流星
-                    18: {param: 1, count: 1, date: getJstDate(2019, 5, 20, 12, 0, 0)},
+                    18: {param: 1, date: getJstDate(2019, 5, 20, 12, 0, 0)},
                     // 流星改
-                    52: {param: 1, count: 1, date: getJstDate(2019, 5, 20, 12, 0, 0)},
+                    52: {param: 1, date: getJstDate(2019, 5, 20, 12, 0, 0)},
                     // 九七式艦攻(村田隊)
                     143: {param: 2, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
                     // 天山(村田隊)
@@ -1410,9 +1442,9 @@ NightBattlePower.prototype.getBasePower = function () {
                     // 烈風改二戊型(一航戦/熟練)
                     339: {param: 1, count: 1},
                     // 流星改(一航戦)
-                    342: {param: 1, count: 1},
+                    342: 1,
                     // 流星改(一航戦/熟練)
-                    343: {param: 2, count: 1},
+                    343: 2,
                 },
                 // 龍驤改二
                 157: {
@@ -1424,9 +1456,23 @@ NightBattlePower.prototype.getBasePower = function () {
                 // 大鳳改
                 156: {
                     // 流星
-                    18: {param: 1, count: 1, date: getJstDate(2019, 5, 20, 12, 0, 0)},
+                    18: {param: 1, date: getJstDate(2019, 5, 20, 12, 0, 0)},
                     // 流星改
-                    52: {param: 1, count: 1, date: getJstDate(2019, 5, 20, 12, 0, 0)},
+                    52: {param: 1, date: getJstDate(2019, 5, 20, 12, 0, 0)},
+                },
+                // 龍鳳改
+                318: {
+                    // 九七式艦攻改 試製三号戊型(空六号電探改装備機)
+                    344: 4,
+                    // 九七式艦攻改(熟練) 試製三号戊型(空六号電探改装備機)
+                    345: 5,
+                },
+                // 祥鳳改
+                282: {
+                    // 九七式艦攻改 試製三号戊型(空六号電探改装備機)
+                    344: 2,
+                    // 九七式艦攻改(熟練) 試製三号戊型(空六号電探改装備機)
+                    345: 3,
                 },
                 stype : {
                     // 軽空母
