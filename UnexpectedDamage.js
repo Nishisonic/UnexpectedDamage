@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.51
+var VERSION = 1.52
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update2.txt"
 /** ファイルの場所 */
@@ -248,6 +248,15 @@ var isSubMarine = function (ship) {
  */
 var isGround = function (ship) {
     return ship.param.soku <= 0
+}
+
+/**
+ * PT小鬼群かどうか
+ * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} ship 艦
+ * @return {boolean} PT小鬼群か
+ */
+var isPT = function (ship) {
+    return [1637, 1638, 1639, 1640].indexOf(ship.shipId) >= 0
 }
 
 /**

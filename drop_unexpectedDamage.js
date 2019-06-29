@@ -1,6 +1,6 @@
 /**
  * 異常ダメージ検知
- * @version 1.5.1
+ * @version 1.5.2
  * @author Nishisonic
  */
 
@@ -988,8 +988,8 @@ var detectDayBattle = function (date, mapCell, kind, friendCombinedKind, isEnemy
                         if (mapCell.map[0] >= 22 && attack.friendAttack) {
                             // 熟練度
                             var skilled = getSkilledBonus(date, attack, ship.attacker, ship.defender, hp.attacker)
-                            // 割合ダメージ等ではない&(敵が陸上型または熟練度補正攻撃ではない)
-                            if (!covered && !(isGround(ship.defender) || skilled[0] > 1)) {
+                            // 割合ダメージ等ではない&(敵が陸上型またはPT小鬼群または熟練度補正攻撃ではない)
+                            if (!covered && !(isGround(ship.defender) || isPT(ship.defender) || skilled[0] > 1)) {
                                 var back = [Math.ceil(attack.damage + armor * 0.7) / power[0], Math.ceil(attack.damage + (armor * 0.7 + Math.floor(armor - 1) * 0.6)) / power[0]]
                                 var maps = JSON.stringify(Java.from(mapCell.map))
                                 if (!unexpected[maps]) {
@@ -1059,8 +1059,8 @@ var detectTorpedoAttack = function (date, mapCell, kind, friendCombinedKind, isE
             var covered = minPropDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxPropDmg || !attack.friendAttack && minSunkDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxSunkDmg || isHp1ReplacementShip(ship.defender, attack.defender === 0)
             if (!(minDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxDmg || covered)) {
                 if (mapCell.map[0] >= 22) {
-                    // 割合ダメージ等ではない
-                    if (!covered) {
+                    // 割合ダメージ等ではない&(敵がPT小鬼群ではない)
+                    if (!covered && !isPT(ship.defender)) {
                         var back = [Math.ceil(attack.damage + armor * 0.7) / power[0], Math.ceil(attack.damage + (armor * 0.7 + Math.floor(armor - 1) * 0.6)) / power[0]]
                         var maps = JSON.stringify(Java.from(mapCell.map))
                         if (!unexpected[maps]) {
@@ -1176,8 +1176,8 @@ var detectNightBattle = function (date, mapCell, kind, friendCombinedKind, isEne
                         if (mapCell.map[0] >= 22 && attack.friendAttack) {
                             // 熟練度
                             var skilled = getSkilledBonus(date, attack, ship.attacker, ship.defender, hp.attacker)
-                            // 割合ダメージ等ではない&(敵が陸上型または熟練度補正攻撃ではない)
-                            if (!covered && !(isGround(ship.defender) || skilled[0] > 1)) {
+                            // 割合ダメージ等ではない&(敵が陸上型またはPT小鬼群または熟練度補正攻撃ではない)
+                            if (!covered && !(isGround(ship.defender) || isPT(ship.defender) || skilled[0] > 1)) {
                                 var back = [Math.ceil(attack.damage + armor * 0.7) / power[0], Math.ceil(attack.damage + (armor * 0.7 + Math.floor(armor - 1) * 0.6)) / power[0]]
                                 var maps = JSON.stringify(Java.from(mapCell.map))
                                 if (!unexpected[maps]) {
@@ -1248,8 +1248,8 @@ var detectRadarShooting = function (date, mapCell, kind, friendCombinedKind, isE
                         // if (mapCell.map[0] >= 22 && attack.friendAttack) {
                         //     // 熟練度
                         //     var skilled = getSkilledBonus(date, attack, ship.attacker, ship.defender, hp.attacker)
-                        //     // 割合ダメージ等ではない&(敵が陸上型または熟練度補正攻撃ではない)
-                        //     if (!covered && !(isGround(ship.defender) || skilled[0] > 1)) {
+                        //     // 割合ダメージ等ではない&(敵が陸上型またはPT小鬼群または熟練度補正攻撃ではない)
+                        //     if (!covered && !(isGround(ship.defender) || isPT(ship.defender) || skilled[0] > 1)) {
                         //         var back = [Math.ceil(attack.damage + armor * 0.7) / power[0], Math.ceil(attack.damage + (armor * 0.7 + Math.floor(armor - 1) * 0.6)) / power[0]]
                         //         var maps = JSON.stringify(Java.from(mapCell.map))
                         //         if (!unexpected[maps]) {
