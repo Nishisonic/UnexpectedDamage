@@ -1907,9 +1907,8 @@ function isNightCvAttack(attacker, attackerHp) {
     }) || attacker.shipId === 545 || attacker.shipId === 599) && items.some(function (item) {
         // 夜間戦闘機 or 夜間攻撃機
         return item.type3 === 45 || item.type3 === 46
-    })
         // 中破未満または装甲空母
-        && (!attackerHp.isHalfDamage() || attacker.stype === 18)
+    }) && (!attackerHp.isHalfDamage() || attacker.stype === 18)
 }
 
 /**
