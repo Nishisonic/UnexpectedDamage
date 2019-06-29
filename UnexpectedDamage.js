@@ -1903,7 +1903,7 @@ function isNightCvAttack(attacker, attackerHp) {
     }).some(function (itemid) {
         // 夜間作戦航空要員 or 夜間作戦航空要員＋熟練甲板員
         return itemid === 258 || itemid === 259
-        // Saratoga Mk.II & 赤城改二戊
+        // Saratoga Mk.II or 赤城改二戊
     }) || attacker.shipId === 545 || attacker.shipId === 599) && items.some(function (item) {
         // 夜間戦闘機 or 夜間攻撃機
         return item.type3 === 45 || item.type3 === 46
