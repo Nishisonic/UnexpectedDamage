@@ -1505,7 +1505,7 @@ NightBattlePower.prototype.getBasePower = function () {
                 }
                 if (isNaN(bonus[item.slotitemId])) {
                     counts[item.slotitemId] = (counts[item.slotitemId] | 0) + 1
-                    if (!bonus[item.slotitemId].count && bonus[item.slotitemId].count > counts[item.slotitemId]) return 0
+                    if (bonus[item.slotitemId].count && bonus[item.slotitemId].count < counts[item.slotitemId]) return 0
                     if (Array.isArray(bonus[item.slotitemId].param)) {
                         return bonus[item.slotitemId].param[item.level]
                     }
