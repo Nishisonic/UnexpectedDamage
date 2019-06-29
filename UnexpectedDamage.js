@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.53
+var VERSION = 1.54
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update2.txt"
 /** ファイルの場所 */
@@ -462,7 +462,7 @@ AntiSubmarinePower.prototype.getBasePower = function () {
             case 11: // 水上爆撃機
             case 14: // ソナー
             case 15: // 爆雷
-            case 25: // オートジャイロ
+            case 25: // 回転翼機
             case 26: // 対潜哨戒機
             case 40: // 大型ソナー
                 return item.param.taisen
@@ -488,11 +488,7 @@ AntiSubmarinePower.prototype.getImprovementBonus = function () {
             case 15: // 爆雷
                 return Math.sqrt(item.level)
             case 25: // 回転翼機
-                // S-51J or S-51J改
-                if (item.slotitemId === 326 || item.slotitemId === 327) {
-                    return 0.3 * item.level
-                }
-                return 0.2 * item.level
+                return (item.param.taisen > 10 ? 0.3 : 0.2) * item.level
             default:
                 return 0
         }
