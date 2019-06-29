@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.52
+var VERSION = 1.53
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update2.txt"
 /** ファイルの場所 */
@@ -488,7 +488,11 @@ AntiSubmarinePower.prototype.getImprovementBonus = function () {
             case 15: // 爆雷
                 return Math.sqrt(item.level)
             case 25: // 回転翼機
-                return 0.3 * item.level
+                // S-51J or S-51J改
+                if (item.slotitemId === 326 || item.slotitemId === 327) {
+                    return 0.3 * item.level
+                }
+                return 0.2 * item.level
             default:
                 return 0
         }
