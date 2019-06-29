@@ -1740,10 +1740,9 @@ NightBattlePower.prototype.getCutinBonus = function () {
             var kind2 = items.filter(function (item) { return item.type3 === 46 }).length
             // その他(SF,岩井,彗星(31号))
             var kind3 = items.map(function (item) { return item.slotitemId }).filter(function (id) { return [154,242,243,244,320].indexOf(id) >= 0 }).length
-            var kind = kind1 * 100 + kind2 * 10 + kind3
-            if (kind === 210) return 1.25
-            if ([110, 101, 11].indexOf(kind) >= 0) return 1.2
-            if ([300, 111, 201, 102].indexOf(kind) >= 0) return 1.18
+            if (kind1 === 2 && kind2 === 1) return 1.25
+            if ((kind1 + kind2 + kind3) === 2) return 1.2
+            if ((kind1 + kind2 + kind3) === 3) return 1.18
             return 1.0
         case 7:             // 駆逐カットイン(主砲/魚雷/電探)
             return 1.3 * dTypeGunBonus
