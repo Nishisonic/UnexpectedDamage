@@ -1598,6 +1598,7 @@ NightBattlePower.prototype.getBasePower = function () {
                     }
                     return 0
                 }).reduce(function (p, c) { return p + c }, 0)
+                + this.getNightTouchPlaneBonus()
         }
         return this.attacker.karyoku + (useRaisou ? this.attacker.raisou : 0) + this.getImprovementBonus() + this.getNightTouchPlaneBonus()
     }
