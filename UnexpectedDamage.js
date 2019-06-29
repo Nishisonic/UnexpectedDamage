@@ -1904,9 +1904,10 @@ function isNightCvAttack(attacker, attackerHp) {
         // 夜間作戦航空要員 or 夜間作戦航空要員＋熟練甲板員
         return itemid === 258 || itemid === 259
         // Saratoga Mk.II & 赤城改二戊
-    }) || attacker.shipId === 545 || attacker.shipId === 599) && items.map(function (item) {
-        return item.type3
-    }).indexOf(45) >= 0 // 夜間戦闘機
+    }) || attacker.shipId === 545 || attacker.shipId === 599) && items.some(function (item) {
+        // 夜間戦闘機 or 夜間攻撃機
+        return item.type3 === 45 || item.type3 === 46
+    })
         // 中破未満または装甲空母
         && (!attackerHp.isHalfDamage() || attacker.stype === 18)
 }
