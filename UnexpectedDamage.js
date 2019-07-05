@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.54
+var VERSION = 1.55
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update2.txt"
 /** ファイルの場所 */
@@ -719,7 +719,7 @@ DayBattlePower.prototype.getImprovementBonus = function () {
                 }
             }
         // 艦上攻撃機
-        } else if (item.type2 === 6) {
+        } else if (item.type2 === 8) {
             return 0.2 * item.level
         }
         return _getimprovementBonus() * Math.sqrt(item.level)
