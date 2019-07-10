@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.55
+var VERSION = 1.56
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update2.txt"
 /** ファイルの場所 */
@@ -1568,12 +1568,13 @@ NightBattlePower.prototype.getBasePower = function () {
             }, 0)
         }(this.date, this.attacker, this.items)
         var karyoku = this.attacker.karyoku - this.attacker.slotParam.karyoku - equipmentBonus
-        var nightPlaneBonus = this.items.map(function (item, i) {
-            if (item !== null && getOnSlot(this.attacker, this.date)[i] > 0) {
+        var nightPlaneBonus = Java.from(this.attacker.item2.toArray()).map(function (item, i) {
+            var slot = getOnSlot(this.attacker, this.date)[i]
+            if (item !== null && slot > 0) {
                 // 夜戦、夜攻
                 if (item.type3 === 45 || item.type3 === 46) {
                     // 火力+雷装+3*機数+0.45*(火力+雷装+爆装+対潜)*sqrt(機数)*sqrt(★)
-                    return item.param.karyoku + (useRaisou ? item.param.raisou : 0) + 3 * getOnSlot(this.attacker, this.date)[i] + 0.45 * (item.param.karyoku + item.param.raisou + item.param.baku + item.param.taisen) * Math.sqrt(getOnSlot(this.attacker, this.date)[i]) + Math.sqrt(item.level)
+                    return item.param.karyoku + (useRaisou ? item.param.raisou : item.param.baku) + 3 * slot + 0.45 * (item.param.karyoku + item.param.raisou + item.param.baku + item.param.taisen) * Math.sqrt(slot) + Math.sqrt(item.level)
                 } else {
                     switch (item.slotitemId) {
                         case 154: // 零戦62型(爆戦/岩井隊)
@@ -1582,7 +1583,7 @@ NightBattlePower.prototype.getBasePower = function () {
                         case 244: // Swordfish Mk.III(熟練)
                         case 320: // 彗星一二型(三一号光電管爆弾搭載機)
                             // 火力+雷装+0.3*(火力+雷装+爆装+対潜)*sqrt(機数)*sqrt(★)
-                            return item.param.karyoku + item.param.raisou + 0.3 * (item.param.karyoku + item.param.raisou + item.param.baku + item.param.taisen) * Math.sqrt(getOnSlot(this.attacker, this.date)[i]) + Math.sqrt(item.level)
+                            return item.param.karyoku + (useRaisou ? item.param.raisou : item.param.baku) + 0.3 * (item.param.karyoku + item.param.raisou + item.param.baku + item.param.taisen) * Math.sqrt(slot) + Math.sqrt(item.level)
                     }
                 }
             }
