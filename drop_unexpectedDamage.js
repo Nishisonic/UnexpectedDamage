@@ -1,6 +1,6 @@
 /**
  * 異常ダメージ検知
- * @version 1.5.6
+ * @version 1.5.7
  * @author Nishisonic
  */
 
@@ -176,7 +176,7 @@ var isInvestiagate = function (battle) {
         // 渦潮(弾薬減)マップ除外
         && !(MAELSTROM_MAP_LIST.some(function (map) { return map[0] === battle.mapCellDto.map[0] && map[1] === battle.mapCellDto.map[1] }))
         // 過去のイベント分は除外
-        && !(battle.mapCellDto.map[0] >= 22 && battle.mapCellDto.map[0] <= 43)
+        && !(battle.mapCellDto.map[0] >= 22 && battle.mapCellDto.map[0] <= 44)
     // 何らかのフィルタを条件する際はここに追加
 }
 
@@ -828,13 +828,13 @@ var detectOrDefault = function (date, battle, friends, enemies, friendHp, enemyH
      * @param {DetectDto} data2 データ2
      */
     function errorDescending(data1, data2) {
-        var armor1 = Math.max(data1.defender.soukou + getArmorBonus(data1.mapCell, data1.attacker, data1.defender), 1)
+        var armor1 = Math.max(data1.defender.soukou + getArmorBonus(data1.date, data1.mapCell, data1.attacker, data1.defender), 1)
         var minDef1 = armor1 * 0.7
         var maxDef1 = armor1 * 0.7 + Math.floor(armor1 - 1) * 0.6
         var minDmg1 = Math.floor((data1.power[0] - maxDef1) * getAmmoBonus(data1.attacker))
         var maxDmg1 = Math.floor((data1.power[1] - minDef1) * getAmmoBonus(data1.attacker))
         var diff1 = Math.abs(data1.attack.damage - (data1.attack.damage < minDmg1 ? minDmg1 : maxDmg1))
-        var armor2 = Math.max(data2.defender.soukou + getArmorBonus(data2.mapCell, data2.attacker, data2.defender), 1)
+        var armor2 = Math.max(data2.defender.soukou + getArmorBonus(data2.date, data2.mapCell, data2.attacker, data2.defender), 1)
         var minDef2 = armor2 * 0.7
         var maxDef2 = armor2 * 0.7 + Math.floor(armor2 - 1) * 0.6
         var minDmg2 = Math.floor((data2.power[0] - maxDef2) * getAmmoBonus(data2.attacker))
@@ -868,7 +868,7 @@ var detectOrDefault = function (date, battle, friends, enemies, friendHp, enemyH
  */
 function toDispString(data) {
     if (data !== undefined) {
-        var armor = Math.max(data.defender.soukou + getArmorBonus(data.mapCell, data.attacker, data.defender), 1)
+        var armor = Math.max(data.defender.soukou + getArmorBonus(data.date, data.mapCell, data.attacker, data.defender), 1)
         var minDef = armor * 0.7
         var maxDef = armor * 0.7 + Math.floor(armor - 1) * 0.6
         var minDmg = Math.floor((data.power[0] - maxDef) * getAmmoBonus(data.attacker))
@@ -974,7 +974,7 @@ var detectDayBattle = function (date, mapCell, kind, friendCombinedKind, isEnemy
                 // 味方潜水への攻撃は検出対象から除外(敵対潜値が不明のため)
                 if (!(!attack.friendAttack && isSubMarine(ship.defender))) {
                     var power = getDayBattlePower(date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, attack, ship.attacker, ship.defender, hp.attacker, shouldUseSkilled === undefined ? true : shouldUseSkilled, attack.friendAttack ? friends : enemies).getAfterCapPower()
-                    var armor = Math.max(ship.defender.soukou + getArmorBonus(mapCell, ship.attacker, ship.defender), 1)
+                    var armor = Math.max(ship.defender.soukou + getArmorBonus(date, mapCell, ship.attacker, ship.defender), 1)
                     var minDef = armor * 0.7
                     var maxDef = armor * 0.7 + Math.floor(armor - 1) * 0.6
                     var minDmg = Math.floor((power[0] - maxDef) * getAmmoBonus(ship.attacker))
@@ -1047,7 +1047,7 @@ var detectTorpedoAttack = function (date, mapCell, kind, friendCombinedKind, isE
             var attackNum = (attack.friendAttack ? friendHp : enemyHp)[attack.mainAttack ? "main" : "escort"].length
             var hp = getAtkDefHp(attack, fFriendHp, fEnemyHp)
             var power = getTorpedoPower(date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, attack, ship.attacker, ship.defender, hp.attacker).getAfterCapPower()
-            var armor = Math.max(ship.defender.soukou + getArmorBonus(mapCell, ship.attacker, ship.defender), 1)
+            var armor = Math.max(ship.defender.soukou + getArmorBonus(date, mapCell, ship.attacker, ship.defender), 1)
             var minDef = armor * 0.7
             var maxDef = armor * 0.7 + Math.floor(armor - 1) * 0.6
             var minDmg = Math.floor((power[0] - maxDef) * getAmmoBonus(ship.attacker))
@@ -1088,7 +1088,7 @@ var detectTorpedoAttack = function (date, mapCell, kind, friendCombinedKind, isE
             var attackNum = (attack.friendAttack ? friendHp : enemyHp)[attack.mainAttack ? "main" : "escort"].length
             var hp = getAtkDefHp(attack, eFriendHp, eEnemyHp)
             var power = getTorpedoPower(date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, attack, ship.attacker, ship.defender, hp.attacker).getAfterCapPower()
-            var armor = Math.max(ship.defender.soukou + getArmorBonus(mapCell, ship.attacker, ship.defender), 1)
+            var armor = Math.max(ship.defender.soukou + getArmorBonus(date, mapCell, ship.attacker, ship.defender), 1)
             var minDef = armor * 0.7
             var maxDef = armor * 0.7 + Math.floor(armor - 1) * 0.6
             var minDmg = Math.floor((power[0] - maxDef) * getAmmoBonus(ship.attacker))
@@ -1162,7 +1162,7 @@ var detectNightBattle = function (date, mapCell, kind, friendCombinedKind, isEne
                 // 味方潜水への攻撃は検出対象から除外(敵対潜値が不明のため)
                 if (!(!attack.friendAttack && isSubMarine(ship.defender))) {
                     var power = getNightBattlePower(date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, touchPlane, attack, ship.attacker, ship.defender, hp.attacker, shouldUseSkilled === undefined ? true : shouldUseSkilled, attack.friendAttack ? friends : enemies).getAfterCapPower()
-                    var armor = Math.max(ship.defender.soukou + getArmorBonus(mapCell, ship.attacker, ship.defender), 1)
+                    var armor = Math.max(ship.defender.soukou + getArmorBonus(date, mapCell, ship.attacker, ship.defender), 1)
                     var minDef = armor * 0.7
                     var maxDef = armor * 0.7 + Math.floor(armor - 1) * 0.6
                     var minDmg = Math.floor((power[0] - maxDef) * getAmmoBonus(ship.attacker))
@@ -1233,7 +1233,7 @@ var detectRadarShooting = function (date, mapCell, kind, friendCombinedKind, isE
                 // 味方潜水への攻撃は検出対象から除外(敵対潜値が不明のため)
                 if (!(!attack.friendAttack && isSubMarine(ship.defender))) {
                     var power = getRadarShootingPower(date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, attack, ship.attacker, ship.defender, hp.attacker, shouldUseSkilled === undefined ? true : shouldUseSkilled, attack.friendAttack ? friends : enemies).getAfterCapPower()
-                    var armor = Math.max(ship.defender.soukou + getArmorBonus(mapCell, ship.attacker, ship.defender), 1)
+                    var armor = Math.max(ship.defender.soukou + getArmorBonus(date, mapCell, ship.attacker, ship.defender), 1)
                     var minDef = armor * 0.7
                     var maxDef = armor * 0.7 + Math.floor(armor - 1) * 0.6
                     var minDmg = Math.floor((power[0] - maxDef) * getAmmoBonus(ship.attacker))

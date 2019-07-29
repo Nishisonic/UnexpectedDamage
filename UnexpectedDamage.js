@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.56
+var VERSION = 1.57
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update2.txt"
 /** ファイルの場所 */
@@ -531,8 +531,10 @@ AntiSubmarinePower.prototype.getSynergyBonus = function () {
         && this.items.some(function (item) { return item.type3 === 17 })) ? 1.15 : 1
     // 新型シナジー
     var synergy2 = 1
+    var MYSTERY_FIXED_DATE = getJstDate(2019, 8, 8, 12, 0, 0) // 暫定
+    var depthCharge = MYSTERY_FIXED_DATE.after(this.date) ? [226, 227, 228] : [226, 227]
     if (this.items.some(function (item) { return item.slotitemId === 44 || item.slotitemId === 45 })
-        && this.items.some(function (item) { return item.slotitemId === 226 || item.slotitemId === 227 })) {
+        && this.items.some(function (item) { return depthCharge.indexOf(item.slotitemId) >= 0 })) {
         if (this.items.some(function (item) { return item.type2 === 14 })) {
             // 小型ソナー/爆雷投射機/爆雷シナジー
             synergy2 = 1.25
@@ -1573,7 +1575,7 @@ NightBattlePower.prototype.getBasePower = function () {
             if (item !== null && slot > 0) {
                 // 夜戦、夜攻
                 if (item.type3 === 45 || item.type3 === 46) {
-                    // 火力+雷装+3*機数+0.45*(火力+雷装+爆装+対潜)*sqrt(機数)*sqrt(★)
+                    // 火力+雷装+3*機数+0.45*(火力+雷装+爆装+対潜)*sqrt(機数)+sqrt(★)
                     return item.param.karyoku + (useRaisou ? item.param.raisou : item.param.baku) + 3 * slot + 0.45 * (item.param.karyoku + item.param.raisou + item.param.baku + item.param.taisen) * Math.sqrt(slot) + Math.sqrt(item.level)
                 } else {
                     switch (item.slotitemId) {
@@ -1582,7 +1584,7 @@ NightBattlePower.prototype.getBasePower = function () {
                         case 243: // Swordfish Mk.II(熟練)
                         case 244: // Swordfish Mk.III(熟練)
                         case 320: // 彗星一二型(三一号光電管爆弾搭載機)
-                            // 火力+雷装+0.3*(火力+雷装+爆装+対潜)*sqrt(機数)*sqrt(★)
+                            // 火力+雷装+0.3*(火力+雷装+爆装+対潜)*sqrt(機数)+sqrt(★)
                             return item.param.karyoku + (useRaisou ? item.param.raisou : item.param.baku) + 0.3 * (item.param.karyoku + item.param.raisou + item.param.baku + item.param.taisen) * Math.sqrt(slot) + Math.sqrt(item.level)
                     }
                 }
@@ -2194,7 +2196,7 @@ var getSkilledBonus = function (date, attack, attacker, defender, attackerHp) {
         { INTERNAL: [55, 69], DEPENDENCE_BONUS: [4, 4] },     // \    [0.11-0.12]
         { INTERNAL: [70, 84], DEPENDENCE_BONUS: [5, 7] },     // \\   [0.13-0.16]
         { INTERNAL: [85, 99], DEPENDENCE_BONUS: [7, 7] },     // \\\  [0.16-0.16]
-        { INTERNAL: [100, 120], DEPENDENCE_BONUS: [8, 10] }, // >>   [0.20-0.20]
+        { INTERNAL: [100, 120], DEPENDENCE_BONUS: [8, 10] },  // >>   [0.20-0.20]
     ]
     var isSkilledObject = function (item) {
         switch (item.type2) {
@@ -2287,12 +2289,23 @@ var getOriginalGunPowerBonus = function (ship) {
 
 /**
  * 装甲補正を返します
+ * @param {java.util.Date} date 戦闘日時
  * @param {logbook.dto.MapCellDto} mapCell マップ
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} defender 防御艦
  * @return {Number} 装甲補正
  */
-var getArmorBonus = function (mapCell, attacker, defender) {
+var getArmorBonus = function (date, mapCell, attacker, defender) {
+    // 装甲1に強制変換
+    var MYSTERY_FIXED_DATE = getJstDate(2019, 8, 8, 12, 0, 0) // 暫定
+    if (isSubMarine(defender) && MYSTERY_FIXED_DATE.after(date)) {
+        // 九六式艦戦改
+        var has96FighterKai = getItems(attacker).some(function (item) { return item.slotitemId === 228 })
+        if (has96FighterKai) {
+            return Number.NEGATIVE_INFINITY
+        }
+    }
+
     var mediumBulge = getItems(defender).filter(function (item) { return item.type2 === 27 }).map(function (item) { return 0.2 * item.level }).reduce(function (p, c) { return p + c }, 0)
     var largeBulge = getItems(defender).filter(function (item) { return item.type2 === 28 }).map(function (item) { return 0.2 * item.level }).reduce(function (p, c) { return p + c }, 0)
     var depthCharge = isSubMarine(defender) ? getItems(attacker).map(function (item) {
