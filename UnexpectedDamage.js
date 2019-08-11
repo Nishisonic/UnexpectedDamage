@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.57
+var VERSION = 1.58
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update2.txt"
 /** ファイルの場所 */
@@ -271,6 +271,20 @@ var getItems = function (ship) {
     return items.filter(function (item) { return item !== null })
 }
 
+/**
+ * 指定した装備の所持している個数を返します
+ * @param {[logbook.dto.ItemDto]} items 装備
+ * @param {Number} id 装備ID
+ * @return {Number} 個数
+ */
+var getItemNum = function (items, id) {
+    return items.map(function (item) {
+        return item.slotitemId
+    }).filter(function (itemid) {
+        return Array.isArray(id) ? id.indexOf(itemid) >= 0 : id === itemid
+    }).length
+}
+
 //#region 対潜関連
 
 /**
@@ -321,24 +335,49 @@ AntiSubmarinePower.prototype.getBasePower = function () {
     if (this.isRadarShooting) {
         return Math.sqrt(this.attacker.raisou) * 2
     }
-    // フィットボーナス
-    var equipmentBonus = function (date, attacker, items) {
-        var BONUS_LIST = {
+    // 装備ボーナス
+    var BONUS_LIST = {
+        shipId : {
+            // 春日丸
+            521: {
+                // 九六式艦戦
+                19: {param: 2, date: getJstDate(2019, 8, 8, 12, 0, 0)},
+                // 九六式艦戦改
+                228: {param: 4, date: getJstDate(2019, 8, 8, 12, 0, 0)},
+            },
             // 大鷹
             526: {
-                82: {param:1, date: getJstDate(2018, 8, 30, 18, 0, 0)},  // 九七式艦攻(九三一空)
-                302: {param:1, date: getJstDate(2018, 8, 30, 18, 0, 0)}, // 九七式艦攻(九三一空/熟練)
-                305: {param:1, date: getJstDate(2018, 8, 30, 18, 0, 0)}, // Ju87C改二(KMX搭載機)
-                306: {param:1, date: getJstDate(2018, 8, 30, 18, 0, 0)}, // Ju87C改二(KMX搭載機／熟練)
+                // 九七式艦攻(九三一空)
+                82: {param:1, date: getJstDate(2018, 8, 30, 18, 0, 0)},
+                // 九七式艦攻(九三一空/熟練)
+                302: {param:1, date: getJstDate(2018, 8, 30, 18, 0, 0)},
+                // Ju87C改二(KMX搭載機)
+                305: {param:1, date: getJstDate(2018, 8, 30, 18, 0, 0)},
+                // Ju87C改二(KMX搭載機／熟練)
+                306: {param:1, date: getJstDate(2018, 8, 30, 18, 0, 0)},
+                // 九六式艦戦
+                19: {param: 2, date: getJstDate(2019, 8, 8, 12, 0, 0)},
+                // 九六式艦戦改
+                228: {param: 4, date: getJstDate(2019, 8, 8, 12, 0, 0)},
             },
-            380: 526, // 大鷹改
-            529: 526, // 大鷹改二
+            // 大鷹改
+            380: 526,
+            // 大鷹改二
+            529: 526,
             // 神鷹
             534: {
-                82: 1,  // 九七式艦攻(九三一空)
-                302: 1, // 九七式艦攻(九三一空/熟練)
-                305: 3, // Ju87C改二(KMX搭載機)
-                306: 3, // Ju87C改二(KMX搭載機／熟練)
+                // 九七式艦攻(九三一空)
+                82: 1,
+                // 九七式艦攻(九三一空/熟練)
+                302: 1,
+                // Ju87C改二(KMX搭載機)
+                305: 3,
+                // Ju87C改二(KMX搭載機／熟練)
+                306: 3,
+                // 九六式艦戦
+                19: {param: 2, date: getJstDate(2019, 8, 8, 12, 0, 0)},
+                // 九六式艦戦改
+                228: {param: 4, date: getJstDate(2019, 8, 8, 12, 0, 0)},
             },
             // 神鷹改
             381: 534,
@@ -346,115 +385,144 @@ AntiSubmarinePower.prototype.getBasePower = function () {
             536: 534,
             // 神風
             471: {
-                47: {param: 3, date: getJstDate(2019, 1, 22, 12, 0, 0)} // 三式水中探信儀
+                // 三式水中探信儀
+                47: {param: 3, date: getJstDate(2019, 1, 22, 12, 0, 0)}
             },
-            476: 471, // 神風改
-            473: 471, // 春風
-            363: 471, // 春風改
-            43: 471, // 時雨
-            243: 471, // 時雨改
-            145: 471, // 時雨改二
-            457: 471, // 山風
-            369: 471, // 山風改
-            122: 471, // 舞風
-            294: 471, // 舞風改
-            425: 471, // 朝霜
-            344: 471, // 朝霜改
+            // 神風改
+            476: 471,
+            // 春風
+            473: 471,
+            // 春風改
+            363: 471,
+            // 時雨
+            43: 471,
+            // 時雨改
+            243: 471,
+            // 時雨改二
+            145: 471,
+            // 山風
+            457: 471,
+            // 山風改
+            369: 471,
+            // 舞風
+            122: 471,
+            // 舞風改
+            294: 471,
+            // 朝霜
+            425: 471,
+            // 朝霜改
+            344: 471,
             // 潮
             16: {
-                47: {param: 2, date: getJstDate(2019, 1, 22, 12, 0, 0)} // 三式水中探信儀
+                // 三式水中探信儀
+                47: {param: 2, date: getJstDate(2019, 1, 22, 12, 0, 0)}
             },
-            233: 16, // 潮改
-            407: 16, // 潮改二
-            36: 16, // 雷
-            236: 16, // 雷改
-            414: 16, // 山雲
-            328: 16, // 山雲改
-            167: 16, // 磯風
-            320: 16, // 磯風改
-            557: 16, // 磯風乙改
-            170: 16, // 浜風
-            312: 16, // 浜風改
-            558: 16, // 浜風乙改
-            527: 16, // 岸波
-            686: 16, // 岸波改
+            // 潮改
+            233: 16,
+            // 潮改二
+            407: 16,
+            // 雷
+            36: 16,
+            // 雷改
+            236: 16,
+            // 山雲
+            414: 16,
+            // 山雲改
+            328: 16,
+            // 磯風
+            167: 16,
+            // 磯風改
+            320: 16,
+            // 磯風乙改
+            557: 16,
+            // 浜風
+            170: 16,
+            // 浜風改
+            312: 16,
+            // 浜風乙改
+            558: 16,
+            // 岸波
+            527: 16,
+            // 岸波改
+            686: 16,
             // 伊勢改二
             553: {
-                322: 1, // 瑞雲改二(六三四空)
-                323: 2, // 瑞雲改二(六三四空/熟練)
-                324: 1, // オ号観測機改
-                325: 2, // オ号観測機改二
-                326: 2, // S-51J
-                327: 3, // S-51J改
+                // 瑞雲改二(六三四空)
+                322: 1,
+                // 瑞雲改二(六三四空/熟練)
+                323: 2,
+                // オ号観測機改
+                324: 1,
+                // オ号観測機改二
+                325: 1,
+                // S-51J
+                326: 2,
+                // S-51J改
+                327: 3,
             },
             // 日向改二
             554: {
-                322: 1, // 瑞雲改二(六三四空)
-                323: 2, // 瑞雲改二(六三四空/熟練)
-                324: 1, // オ号観測機改
-                325: 2, // オ号観測機改二
-                326: 3, // S-51J
-                327: 4, // S-51J改
+                // 瑞雲改二(六三四空)
+                322: 1,
+                // 瑞雲改二(六三四空/熟練)
+                323: 2,
+                // オ号観測機改
+                324: 2,
+                // オ号観測機改二
+                325: 2,
+                // S-51J
+                326: 3,
+                // S-51J改
+                327: 4,
             },
             // 龍鳳改
             318: {
-                344: 1, // 九七式艦攻改 試製三号戊型(空六号電探改装備機)
-                345: 1, // 九七式艦攻改(熟練) 試製三号戊型(空六号電探改装備機)
+                // 九七式艦攻改 試製三号戊型(空六号電探改装備機)
+                344: 1,
+                // 九七式艦攻改(熟練) 試製三号戊型(空六号電探改装備機)
+                345: 1,
             },
             // 瑞鳳改二
             555: {
-                344: 2, // 九七式艦攻改 試製三号戊型(空六号電探改装備機)
-                345: 2, // 九七式艦攻改(熟練) 試製三号戊型(空六号電探改装備機)
+                // 九七式艦攻改 試製三号戊型(空六号電探改装備機)
+                344: 2,
+                // 九七式艦攻改(熟練) 試製三号戊型(空六号電探改装備機)
+                345: 2,
             },
-            560: 555, // 瑞鳳改二乙
-            282: 318, // 祥鳳改
-            ctype: {
-                // 球磨型
-                4: {
-                    304: 1, // S9 Osprey
-                },
-                // 川内型
-                16: 4,
-                // 長良型
-                20: 4,
-                // 阿賀野型
-                41: 4,
-                // Gotland級
-                89: {
-                    304: 2, // S9 Osprey
-                },
+            // 瑞鳳改二乙
+            560: 555,
+            // 祥鳳改
+            282: 318,
+            // 鳳翔
+            89: {
+                // 九六式艦戦
+                19: {param: 1, date: getJstDate(2019, 8, 8, 12, 0, 0)},
+                // 九六式艦戦改
+                228: {param: 2, date: getJstDate(2019, 8, 8, 12, 0, 0)},
             },
-        }
-        if (BONUS_LIST[attacker.shipId]) {
-            var bonus = isNaN(BONUS_LIST[attacker.shipId]) ? BONUS_LIST[attacker.shipId] : BONUS_LIST[BONUS_LIST[attacker.shipId]]
-            return items.filter(function (item) {
-                return bonus[item.slotitemId]
-            }).filter(function (item) {
-                return isNaN(bonus[item.slotitemId]) ? bonus[item.slotitemId].date.before(date) : true
-            }).map(function (item) {
-                return isNaN(bonus[item.slotitemId]) ? bonus[item.slotitemId].param : bonus[item.slotitemId]
-            }).reduce(function (p, param) {
-                return p + param
-            }, 0)
-        }
-        else {
-            var ctype = Ship.get(attacker.shipId).json.getJsonNumber("api_ctype").intValue()
-            if (BONUS_LIST.ctype[ctype]) {
-                var bonus = isNaN(BONUS_LIST.ctype[ctype]) ? BONUS_LIST.ctype[ctype] : BONUS_LIST.ctype[BONUS_LIST.ctype[ctype]]
-                return items.filter(function (item) {
-                    return bonus[item.slotitemId]
-                }).filter(function (item) {
-                    return isNaN(bonus[item.slotitemId]) ? bonus[item.slotitemId].date.before(date) : true
-                }).map(function (item) {
-                    return isNaN(bonus[item.slotitemId]) ? bonus[item.slotitemId].param : bonus[item.slotitemId]
-                }).reduce(function (p, param) {
-                    return p + param
-                }, 0)
-            }
-        }
-        return 0
-    }(this.date, this.attacker, this.items)
-    var taisenShip = this.attacker.taisen - this.attacker.slotParam.taisen - equipmentBonus
+            // 鳳翔改
+            285: 89,
+        },
+        ctype : {
+            // 球磨型
+            4: {
+                // S9 Osprey
+                304: 1,
+            },
+            // 川内型
+            16: 4,
+            // 長良型
+            20: 4,
+            // 阿賀野型
+            41: 4,
+            // Gotland級
+            89: {
+                // S9 Osprey
+                304: 2,
+            },
+        },
+    }
+    var taisenShip = this.attacker.taisen - this.attacker.slotParam.taisen - getEquipmentBonus(this.date, this.attacker, BONUS_LIST)
     var taisenItem = this.items.map(function (item) {
         switch (item.type2) {
             case 7:  // 艦上爆撃機
@@ -531,7 +599,7 @@ AntiSubmarinePower.prototype.getSynergyBonus = function () {
         && this.items.some(function (item) { return item.type3 === 17 })) ? 1.15 : 1
     // 新型シナジー
     var synergy2 = 1
-    var MYSTERY_FIXED_DATE = getJstDate(2019, 8, 8, 12, 0, 0) // 暫定
+    var MYSTERY_FIXED_DATE = getJstDate(2019, 8, 8, 12, 0, 0)
     var depthCharge = MYSTERY_FIXED_DATE.after(this.date) ? [226, 227, 228] : [226, 227]
     if (this.items.some(function (item) { return item.slotitemId === 44 || item.slotitemId === 45 })
         && this.items.some(function (item) { return depthCharge.indexOf(item.slotitemId) >= 0 })) {
@@ -690,7 +758,7 @@ DayBattlePower.prototype.getImprovementBonus = function () {
                 case 42: return 1       // 大型探照灯
                 case 21: return 1       // 機銃
                 case 15:                // 爆雷(投射機)
-                    return item.slotitemId === 44 || item.slotitemId === 45 ? 0.75 : 0
+                    return [44, 45, 346].indexOf(item.slotitemId) >= 0 ? 0.75 : 0
                 case 14: return 0.75    // ソナー
                 case 40: return 0.75    // 大型ソナー
                 case 24: return 1       // 上陸用舟艇
@@ -1228,9 +1296,9 @@ NightBattlePower.prototype.getBasePower = function () {
     var useRaisou = !isGround(this.defender) || isNorthernmostLandingPrincess(this.defender) || this.items.length === 0
     // 夜襲
     if (isNightCvAttack(this.attacker, this.attackerHp)) {
-        // フィットボーナス
-        var equipmentBonus = function (date, attacker, items) {
-            var BONUS_LIST = {
+        // 装備ボーナス
+        var BONUS_LIST = {
+            shipId : {
                 // Aquila改
                 365: {
                     // Re.2001 OR改
@@ -1243,7 +1311,7 @@ NightBattlePower.prototype.getBasePower = function () {
                 // 飛龍改二
                 196: {
                     // 二式艦上偵察機
-                    61: [0, 3, 3, 3, 4, 4, 4, 4, 5, 5, 6],
+                    61: {param: [0, 3, 3, 3, 4, 4, 4, 4, 5, 5, 6], count: 1, group: 1},
                     // 九七式艦攻(友永隊)
                     93: {param: 3, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
                     // 天山一二型(友永隊)
@@ -1258,7 +1326,7 @@ NightBattlePower.prototype.getBasePower = function () {
                 // 蒼龍改二
                 197: {
                     // 二式艦上偵察機
-                    61: [0, 3, 3, 3, 4, 4, 4, 4, 5, 5, 6],
+                    61: {param: [0, 3, 3, 3, 4, 4, 4, 4, 5, 5, 6], count: 1, group: 1},
                     // 九七式艦攻(友永隊)
                     93: {param: 1, count: 1, date: getJstDate(2019, 4, 30, 21, 0, 0)},
                     // 天山一二型(友永隊)
@@ -1275,7 +1343,7 @@ NightBattlePower.prototype.getBasePower = function () {
                 // 鈴谷航改二
                 508: {
                     // 二式艦上偵察機
-                    61: [0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3],
+                    61: {param:[0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3], count: 1, group: 1},
                     // 彗星一二型(三一号光電管爆弾搭載機)
                     320: {param: 4, count: 1},
                 },
@@ -1291,7 +1359,7 @@ NightBattlePower.prototype.getBasePower = function () {
                 // 瑞鳳改二乙
                 560: {
                     // 二式艦上偵察機
-                    61: [0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3],
+                    61: {param:[0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3], count: 1, group: 1},
                     // 彗星一二型(三一号光電管爆弾搭載機)
                     320: {param: 4, count: 1},
                     // 九七式艦攻改 試製三号戊型(空六号電探改装備機)
@@ -1481,95 +1549,25 @@ NightBattlePower.prototype.getBasePower = function () {
                     // 九七式艦攻改(熟練) 試製三号戊型(空六号電探改装備機)
                     345: 3,
                 },
-                stype : {
-                    // 軽空母
-                    7: {
-                        // 二式艦上偵察機
-                        61: [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2],
-                    },
-                    // 正規空母
-                    11: 7,
-                    // 装甲空母
-                    18: {
-                        // 二式艦上偵察機
-                        61: [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2],
-                        // 試製景雲(艦偵型)
-                        151: [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2],
-                    },
-                }
+            },
+            stype : {
+                // 軽空母
+                7: {
+                    // 二式艦上偵察機
+                    61: {param: [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2], count: 1, group: 1},
+                },
+                // 正規空母
+                11: 7,
+                // 装甲空母
+                18: {
+                    // 二式艦上偵察機
+                    61: {param: [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2], count: 1, group: 1},
+                    // 試製景雲(艦偵型)
+                    151: {param: [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2], count: 1, group: 1},
+                },
             }
-
-            /**
-             * 連想配列か
-             * @param {Any} o アイテム
-             * @return {Boolean} 連想配列か
-             */
-            var isObject = function (o) {
-                return (o instanceof Object && !(o instanceof Array))
-            }
-
-            // polyfill
-            if (typeof Object.assign != 'function') {
-                // Must be writable: true, enumerable: false, configurable: true
-                Object.defineProperty(Object, "assign", {
-                    value: function assign(target, varArgs) { // .length of function is 2
-                        if (target == null) { // TypeError if undefined or null
-                            throw new TypeError('Cannot convert undefined or null to object')
-                        }
-
-                        var to = Object(target)
-
-                        for (var index = 1; index < arguments.length; index++) {
-                            var nextSource = arguments[index]
-
-                            if (nextSource != null) { // Skip over if undefined or null
-                                for (var nextKey in nextSource) {
-                                    // Avoid bugs when hasOwnProperty is shadowed
-                                    if (Object.prototype.hasOwnProperty.call(nextSource, nextKey)) {
-                                        to[nextKey] = nextSource[nextKey]
-                                    }
-                                }
-                            }
-                        }
-                        return to
-                    },
-                    writable: true,
-                    configurable: true
-                })
-            }
-
-            var bonus = {}
-            if(BONUS_LIST.stype[attacker.stype]) {
-                var tmp = isNaN(BONUS_LIST.stype[attacker.stype]) ? BONUS_LIST.stype[attacker.stype] : BONUS_LIST.stype[BONUS_LIST.stype[attacker.stype]]
-                Object.assign(bonus, tmp)
-            }
-            if (BONUS_LIST[attacker.shipId]) {
-                var tmp = isNaN(BONUS_LIST[attacker.shipId]) ? BONUS_LIST[attacker.shipId] : BONUS_LIST[BONUS_LIST[attacker.shipId]]
-                Object.assign(bonus, tmp)
-            }
-            var counts = {}
-            return items.filter(function (item) {
-                return bonus[item.slotitemId]
-            }).filter(function (item) {
-                return isObject(bonus[item.slotitemId]) && bonus[item.slotitemId].date ? bonus[item.slotitemId].date.before(date) : true
-            }).map(function (item) {
-                if (Array.isArray(bonus[item.slotitemId])) {
-                    return bonus[item.slotitemId][item.level]
-                }
-                if (isNaN(bonus[item.slotitemId])) {
-                    counts[item.slotitemId] = (counts[item.slotitemId] | 0) + 1
-                    if (bonus[item.slotitemId].count && bonus[item.slotitemId].count < counts[item.slotitemId]) return 0
-                    if (Array.isArray(bonus[item.slotitemId].param)) {
-                        return bonus[item.slotitemId].param[item.level]
-                    }
-                    return bonus[item.slotitemId].param
-                }
-                return bonus[item.slotitemId]
-            }).reduce(function (p, param) {
-                return p + param
-            }, 0)
-        }(this.date, this.attacker, this.items)
-        var karyoku = this.attacker.karyoku - this.attacker.slotParam.karyoku - equipmentBonus
+        }
+        var karyoku = this.attacker.karyoku - this.attacker.slotParam.karyoku - getEquipmentBonus(this.date, this.attacker, BONUS_LIST)
         var nightPlaneBonus = Java.from(this.attacker.item2.toArray()).map(function (item, i) {
             var slot = getOnSlot(this.attacker, this.date)[i]
             if (item !== null && slot > 0) {
@@ -1935,14 +1933,6 @@ var getAmmoBonus = function (ship) {
  */
 var getMultiplySlayerBonus = function (attacker, defender) {
     var items = getItems(attacker)
-    var getItemNum = function (id) {
-        return items.map(function (item) {
-            return item.slotitemId
-        }).filter(function (itemid) {
-            return Array.isArray(id) ? id.indexOf(itemid) >= 0 : id === itemid
-        }).length
-    }
-
     switch (defender.shipId) {
         case 1637:
         case 1638:
@@ -1955,15 +1945,15 @@ var getMultiplySlayerBonus = function (attacker, defender) {
         case 1656:
         case 1657:
         case 1658: // 集積地棲姫-壊
-            var daihatsu = getItemNum(68)
-            var tokuDaihatsu = getItemNum(193)
-            var rikuDaihatsu = getItemNum(166)
-            var shikonDaihatsu = getItemNum(230)
+            var daihatsu = getItemNum(items, 68)
+            var tokuDaihatsu = getItemNum(items, 193)
+            var rikuDaihatsu = getItemNum(items, 166)
+            var shikonDaihatsu = getItemNum(items, 230)
             var daihatsuGroup = items.filter(function (item) { return item.type2 === 24 }).length
             var daihatsuGroupLv = daihatsuGroup > 0 ? items.filter(function (item) { return item.type2 === 24 }).map(function (item) { return item.level }).reduce(function (p, c) { return p + c }, 0) / daihatsuGroup : 0
-            var kamisha = getItemNum(167)
+            var kamisha = getItemNum(items, 167)
             var kamishaLv = kamisha > 0 ? items.filter(function (item) { return item.slotitemId === 167 }).map(function (item) { return item.level }).reduce(function (p, c) { return p + c }, 0) / kamisha : 0
-            var wg42 = getItemNum(126)
+            var wg42 = getItemNum(items, 126)
 
             var daihatsuGroupBonus = daihatsuGroupLv / 50 + 1
             var kamishaBonus = kamishaLv / 30 + 1
@@ -2006,30 +1996,29 @@ var isNorthernmostLandingPrincess = function (ship) {
 var getLandBonus = function (attacker, defender) {
     if (!isGround(defender)) return {multi: 1.0, add: 0, b12: 0}
     var items = getItems(attacker)
-    var getItemNum = function (id) {
-        return items.map(function (item) {
-            return item.slotitemId
-        }).filter(function (itemid) {
-            return Array.isArray(id) ? id.indexOf(itemid) >= 0 : id === itemid
-        }).length
-    }
     var type3shell = items.filter(function (item) { return item.type2 === 18 }).length
-    var daihatsu = getItemNum(68)
-    var tokuDaihatsu = getItemNum(193)
-    var rikuDaihatsu = getItemNum(166)
-    var shikonDaihatsu = getItemNum(230)
+    var daihatsu = getItemNum(items, 68)
+    var tokuDaihatsu = getItemNum(items, 193)
+    var rikuDaihatsu = getItemNum(items, 166)
+    var shikonDaihatsu = getItemNum(items, 230)
     var daihatsuGroup = items.filter(function (item) { return item.type2 === 24 }).length
     var daihatsuGroupLv = daihatsuGroup > 0 ? items.filter(function (item) { return item.type2 === 24 }).map(function (item) { return item.level }).reduce(function (p, c) { return p + c }, 0) / daihatsuGroup : 0
-    var kamisha = getItemNum(167)
+    var kamisha = getItemNum(items, 167)
     var kamishaLv = kamisha > 0 ? items.filter(function (item) { return item.slotitemId === 167 }).map(function (item) { return item.level }).reduce(function (p, c) { return p + c }, 0) / kamisha : 0
     var suijo = items.filter(function (item) { return item.type2 === 11 || item.type2 === 45 }).length
     var apShell = items.filter(function (item) { return item.type2 === 19 }).length
-    var wg42 = getItemNum(126)
+    var wg42 = getItemNum(items, 126)
+    var type2Mortar = getItemNum(items, 346)
+    var type2MortarEx = getItemNum(items, 347)
+    var type4Rocket = getItemNum(items, 348)
     var bomber = items.filter(function (item) { return item.type2 === 7 }).length
 
     var type3shellBonus = 1
     var apShellBonus = 1
     var wg42Bonus = 1
+    var type4RocketBonus = 1
+    var type2MortarBonus = 1
+    var type2MortarExBonus = 1
     var daihatsuGroupBonus = daihatsuGroupLv / 50 + 1
     var kamishaBonus = kamishaLv / 30 + 1
     var suijoBonus = 1
@@ -2103,6 +2092,9 @@ var getLandBonus = function (attacker, defender) {
         default: // ソフトスキン
             type3shellBonus = type3shell ? 2.5 : 1.0
             wg42Bonus = (wg42 >= 2 ? 1.4 : 1) * (wg42 ? 1.3 : 1)
+            type4RocketBonus = type4Rocket ? 1.25 : 1
+            type2MortarBonus = type2Mortar ? 1.2 : 1
+            // type2MortarExBonus = type2MortarEx ? 1 : 1
             daihatsuGroupBonus *= daihatsuGroup ? 1.4 : 1.0
             daihatsuGroupBonus *= tokuDaihatsu ? 1.15 : 1.0
             daihatsuGroupBonus *= (rikuDaihatsu >= 2 ? 1.3 : 1) * (rikuDaihatsu ? 1.5 : 1.0)
@@ -2118,14 +2110,14 @@ var getLandBonus = function (attacker, defender) {
             break
     }
     return {
-        multi: type3shellBonus * apShellBonus * wg42Bonus * daihatsuGroupBonus * kamishaBonus * suijoBonus * stypeBonus * bomberBonus,
+        multi: type3shellBonus * apShellBonus * wg42Bonus * type4RocketBonus * type2MortarBonus * type2MortarExBonus * daihatsuGroupBonus * kamishaBonus * suijoBonus * stypeBonus * bomberBonus,
         add: additionBonus,
         b12: b12,
     }
 }
 
 /**
- * WG42加算特効を返します
+ * WG42加算特効を返します(※7月戦果報酬でWGだけではなくなった)
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} defender 防御艦
  * @return {Number} 特効
@@ -2133,14 +2125,14 @@ var getLandBonus = function (attacker, defender) {
 var getWg42Bonus = function (attacker, defender) {
     if (!isGround(defender) || isNorthernmostLandingPrincess(defender)) return 0
     var items = getItems(attacker)
-    var count = items.filter(function (item) { return item.slotitemId === 126 }).length
-    switch (count) {
-        case 1: return 75
-        case 2: return 110
-        case 3: return 140
-        case 4: return 160
-        default: return 0
-    }
+    var wg42 = getItemNum(items, 126)
+    var type2Mortar = getItemNum(items, 346)
+    var type2MortarEx = getItemNum(items, 347)
+    var type4Rocket = getItemNum(items, 348)
+    return ([0, 75, 110, 140, 160, 160])[wg42]
+        + (type2Mortar ? 30 : 0)
+        // + (type2MortarEx ? 30 : 0)
+        + (type4Rocket ? 55 : 0)
 }
 
 /**
@@ -2297,7 +2289,7 @@ var getOriginalGunPowerBonus = function (ship) {
  */
 var getArmorBonus = function (date, mapCell, attacker, defender) {
     // 装甲1に強制変換
-    var MYSTERY_FIXED_DATE = getJstDate(2019, 8, 8, 12, 0, 0) // 暫定
+    var MYSTERY_FIXED_DATE = getJstDate(2019, 8, 8, 12, 0, 0)
     if (isSubMarine(defender) && MYSTERY_FIXED_DATE.after(date)) {
         // 九六式艦戦改
         var has96FighterKai = getItems(attacker).some(function (item) { return item.slotitemId === 228 })
@@ -2464,6 +2456,86 @@ function calcCombinedKind(battle) {
     return -1
 }
 
+/**
+ * 装備ボーナスの値を返す
+ * @param {java.util.Date} date 戦闘日時
+ * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
+ * @param {{}} BONUS_LIST 装備ボーナスのリスト
+ */
+function getEquipmentBonus(date, attacker, BONUS_LIST) {
+    var kinds = ["stype", "ctype", "shipId"]
+    var bonus = kinds.filter(function(kind) {
+        var param = kind === "ctype" ? (JSON.parse(Ship.get(attacker.shipId).json).api_ctype | 0) : attacker[kind]
+        return BONUS_LIST[kind] && BONUS_LIST[kind][param]
+    }).map(function(kind) {
+        var param = kind === "ctype" ? (JSON.parse(Ship.get(attacker.shipId).json).api_ctype | 0) : attacker[kind]
+        return isNaN(BONUS_LIST[kind][param]) ? BONUS_LIST[kind][param] : BONUS_LIST[kind][BONUS_LIST[kind][param]]
+    }).reduce(function(p, v) {
+        return objectAssign(p, v)
+    }, {})
+
+    var counts = {}
+    var stock = {}
+    return getItems(attacker).filter(function (item) {
+        return bonus[item.slotitemId]
+    }).filter(function (item) {
+        var data = bonus[item.slotitemId]
+        return (data instanceof Object && !(data instanceof Array)) && data.date ? data.date.before(date) : true
+    }).sort(function(a, b) {
+        return a.level < b.level ? 1 : -1
+    }).map(function (item) {
+        if (Array.isArray(bonus[item.slotitemId])) {
+            return bonus[item.slotitemId][item.level]
+        }
+        if (isNaN(bonus[item.slotitemId])) {
+            counts[item.slotitemId] = (counts[item.slotitemId] | 0) + 1
+            if (bonus[item.slotitemId].count && bonus[item.slotitemId].count < counts[item.slotitemId]) return 0
+            var group = bonus[item.slotitemId].group
+            if (group) {
+                var tmp = (stock[group] | 0)
+                if (Array.isArray(bonus[item.slotitemId].param)) {
+                    if (!stock[group] || stock[group] < bonus[item.slotitemId].param[item.level]) {
+                        stock[group] = bonus[item.slotitemId].param[item.level]
+                        return stock[group] - tmp
+                    }
+                } else {
+                    if (!stock[group] || stock[group] < bonus[item.slotitemId].param) {
+                        stock[group] = bonus[item.slotitemId].param
+                        return stock[group] - tmp
+                    }
+                }
+                return 0
+            }
+            if (Array.isArray(bonus[item.slotitemId].param)) {
+                return bonus[item.slotitemId].param[item.level]
+            }
+            return bonus[item.slotitemId].param
+        }
+        return bonus[item.slotitemId]
+    }).reduce(function (p, param) {
+        return p + param
+    }, 0)
+}
+
 //#endregion
+
+//#endregion
+
+//#region polyfill
+
+/**
+ * Object.assign()代替
+ */
+function objectAssign() {
+    var resObj = {}
+    for(var i = 0; i < arguments.length; i++) {
+         var obj = arguments[i]
+         var keys = Object.keys(obj)
+         for(var j = 0; j < keys.length; j++) {
+             resObj[keys[j]] = obj[keys[j]]
+         }
+    }
+    return resObj
+}
 
 //#endregion
