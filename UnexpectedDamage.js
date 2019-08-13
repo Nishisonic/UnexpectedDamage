@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.58
+var VERSION = 1.59
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update2.txt"
 /** ファイルの場所 */
@@ -2092,8 +2092,8 @@ var getLandBonus = function (attacker, defender) {
         default: // ソフトスキン
             type3shellBonus = type3shell ? 2.5 : 1.0
             wg42Bonus = (wg42 >= 2 ? 1.4 : 1) * (wg42 ? 1.3 : 1)
-            type4RocketBonus = type4Rocket ? 1.25 : 1
-            type2MortarBonus = type2Mortar ? 1.2 : 1
+            type4RocketBonus = (type4Rocket >= 2 ? 1.5 : 1) * (type4Rocket ? 1.25 : 1)
+            type2MortarBonus = (type2Mortar >= 2 ? 1.3 : 1) * (type2Mortar ? 1.2 : 1)
             // type2MortarExBonus = type2MortarEx ? 1 : 1
             daihatsuGroupBonus *= daihatsuGroup ? 1.4 : 1.0
             daihatsuGroupBonus *= tokuDaihatsu ? 1.15 : 1.0
@@ -2130,9 +2130,9 @@ var getWg42Bonus = function (attacker, defender) {
     var type2MortarEx = getItemNum(items, 347)
     var type4Rocket = getItemNum(items, 348)
     return ([0, 75, 110, 140, 160, 160])[wg42]
-        + (type2Mortar ? 30 : 0)
+        + ([0, 30, 55, 75, 75, 75])[type2Mortar]
         // + (type2MortarEx ? 30 : 0)
-        + (type4Rocket ? 55 : 0)
+        + ([0, 55, 115, 115, 115, 115])[type4Rocket]
 }
 
 /**
