@@ -804,7 +804,7 @@ DayBattlePower.prototype.getImprovementBonus = function () {
  */
 DayBattlePower.prototype.getBeforeCapPower = function () {
     var landBonus = getLandBonus(this.attacker, this.defender)
-    return ((this.getBasePower() + landBonus.b12) * landBonus.multi + getWg42Bonus(this.attacker, this.defender) + landBonus.add) * getFormationMatchBonus(this.formation) * this.getFormationBonus() * this.getConditionBonus() + getOriginalGunPowerBonus(this.attacker)
+    return ((this.getBasePower() + landBonus.b12) * landBonus.a13 + landBonus.b13) * getFormationMatchBonus(this.formation) * this.getFormationBonus() * this.getConditionBonus() + getOriginalGunPowerBonus(this.attacker)
 }
 
 /**
@@ -1678,7 +1678,7 @@ NightBattlePower.prototype.getFormationBonus = function () {
  */
 NightBattlePower.prototype.getBeforeCapPower = function () {
     var landBonus = getLandBonus(this.attacker, this.defender)
-    return ((this.getBasePower() + landBonus.b12) * landBonus.multi + getWg42Bonus(this.attacker, this.defender) + landBonus.add) * this.getFormationBonus() * this.getCutinBonus() * this.getConditionBonus() + getOriginalGunPowerBonus(this.attacker)
+    return ((this.getBasePower() + landBonus.b12) * landBonus.a13 + landBonus.b13) * this.getFormationBonus() * this.getCutinBonus() * this.getConditionBonus() + getOriginalGunPowerBonus(this.attacker)
 }
 
 /**
@@ -1954,17 +1954,28 @@ var getMultiplySlayerBonus = function (attacker, defender) {
             var kamisha = getItemNum(items, 167)
             var kamishaLv = kamisha > 0 ? items.filter(function (item) { return item.slotitemId === 167 }).map(function (item) { return item.level }).reduce(function (p, c) { return p + c }, 0) / kamisha : 0
             var wg42 = getItemNum(items, 126)
+            var type2Mortar = getItemNum(items, 346)
+            var type2MortarEx = getItemNum(items, 347)
+            var type4Rocket = getItemNum(items, 348)
 
-            var daihatsuGroupBonus = daihatsuGroupLv / 50 + 1
-            var kamishaBonus = kamishaLv / 30 + 1
-            var wg42Bonus = (wg42 >= 2 ? 1.3 : 1) * (wg42 ? 1.25 : 1)
-            daihatsuGroupBonus *= daihatsuGroup ? 1.7 : 1.0
-            daihatsuGroupBonus *= tokuDaihatsu ? 1.2 : 1.0
-            daihatsuGroupBonus *= (rikuDaihatsu >= 2 ? 1.6 : 1) * (rikuDaihatsu ? 1.3 : 1.0)
-            // 戦車を持っていたら2回計算
-            daihatsuGroupBonus *= rikuDaihatsu ? (daihatsuGroupLv / 50 + 1) : 1
-            kamishaBonus *= (kamisha >= 2 ? 1.5 : 1) * (kamisha ? 1.7 : 1.0)
-            return wg42Bonus * daihatsuGroupBonus * kamishaBonus
+            var a = Math.pow(daihatsuGroupLv / 50 + 1, rikuDaihatsu ? 2 : 1) * (kamishaLv / 30 + 1)
+            // WG42(Wurfgerät 42)
+            a *= (wg42 ? 1.25 : 1) * (wg42 >= 2 ? 1.3 : 1)
+            // 艦載型 四式20cm対地噴進砲
+            a *= type4Rocket ? 1.2 : 1
+            // 二式12cm迫撃砲改
+            a *= (type2Mortar ? 1.15 : 1) * (type2Mortar >= 2 ? 1.2 : 1)
+            // 二式12cm迫撃砲改 集中配備
+            a *= type2MortarEx ? 1.15 : 1
+            // カテゴリ:大発
+            a *= daihatsuGroup ? 1.7 : 1
+            // 特大発動艇
+            a *= tokuDaihatsu ? 1.2 : 1
+            // 大発動艇(八九式中戦車&陸戦隊)
+            a *= (rikuDaihatsu ? 1.3 : 1) * (rikuDaihatsu >= 2 ? 1.6 : 1)
+            // 特二式内火艇
+            a *= (kamisha ? 1.7 : 1.0) * (kamisha >= 2 ? 1.5 : 1)
+            return a
     }
     return 1.0
 }
@@ -1984,17 +1995,17 @@ var getAddSlayerBonus = function (attacker, defender) {
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} ship 艦
  */
 var isNorthernmostLandingPrincess = function (ship) {
-    return [1725, 1726, 1727].some(function (id) { return id === ship.shipId })
+    return [1725, 1726, 1727].indexOf(ship.shipId) >= 0
 }
 
 /**
- * 陸上特効倍率を返します
+ * 陸上特効補正を返します
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} defender 防御艦
- * @return {{multi:Number, add: Number, b12:Number}} 倍率
+ * @return {{a13:Number, b12:Number, b13: Number}} 補正値
  */
 var getLandBonus = function (attacker, defender) {
-    if (!isGround(defender)) return {multi: 1.0, add: 0, b12: 0}
+    if (!isGround(defender) || isNorthernmostLandingPrincess(defender)) return {a13: 1, b12: 0, b13: 0}
     var items = getItems(attacker)
     var type3shell = items.filter(function (item) { return item.type2 === 18 }).length
     var daihatsu = getItemNum(items, 68)
@@ -2013,19 +2024,12 @@ var getLandBonus = function (attacker, defender) {
     var type4Rocket = getItemNum(items, 348)
     var bomber = items.filter(function (item) { return item.type2 === 7 }).length
 
-    var type3shellBonus = 1
-    var apShellBonus = 1
-    var wg42Bonus = 1
-    var type4RocketBonus = 1
-    var type2MortarBonus = 1
-    var type2MortarExBonus = 1
-    var daihatsuGroupBonus = daihatsuGroupLv / 50 + 1
-    var kamishaBonus = kamishaLv / 30 + 1
-    var suijoBonus = 1
-    var stypeBonus = 1
-    var bomberBonus = 1
-    var additionBonus = 0
-    var b12 = 0 // 仮置き
+    var a13 = (daihatsuGroupLv / 50 + 1) * (kamishaLv / 30 + 1)
+    var b13 = ([0, 75, 110, 140, 160, 160])[wg42]
+        + ([0, 30, 55, 75, 75, 75])[type2Mortar]
+        + (type2MortarEx ? 60 : 0)
+        + ([0, 55, 115, 115, 115, 115])[type4Rocket]
+        + (shikonDaihatsu ? 25 : 0)
 
     switch (defender.shipId) {
         case 1668:
@@ -2033,40 +2037,58 @@ var getLandBonus = function (attacker, defender) {
         case 1670:
         case 1671:
         case 1672: // 離島棲姫
-            type3shellBonus = type3shell ? 1.75 : 1
-            wg42Bonus = (wg42 >= 2 ? 1.5 : 1) * (wg42 ? 1.4 : 1)
-            daihatsuGroupBonus *= daihatsuGroup ? 1.8 : 1.0
-            daihatsuGroupBonus *= tokuDaihatsu ? 1.15 : 1.0 // ソースが無いため仮置き
-            daihatsuGroupBonus *= (rikuDaihatsu >= 2 ? 1.4 : 1) * (rikuDaihatsu ? 1.2 : 1.0)
-            if (shikonDaihatsu) {
-                daihatsuGroupBonus *= 1.8 // ソースが無いため仮置き
-                additionBonus += 25
-            }
-            kamishaBonus *= (kamisha >= 2 ? 1.35 : 1) * (kamisha ? 2.4 : 1.0) // ソースが無いため仮置き
-            bomberBonus = bomber ? 1.4 : 1
-            if (attacker.stype === 13 || attacker.stype === 14) {
-                b12 += 30
-            }
+            // 三式弾(改)
+            a13 *= type3shell ? 1.75 : 1
+            // WG42(Wurfgerät 42)
+            a13 *= (wg42 ? 1.4 : 1) * (wg42 >= 2 ? 1.5 : 1)
+            // 艦載型 四式20cm対地噴進砲
+            // a13 *= type4Rocket ? 1 : 1
+            // 二式12cm迫撃砲改
+            // a13 *= type2Mortar ? 1 : 1
+            // 二式12cm迫撃砲改 集中配備
+            // a13 *= type2MortarEx ? 1 : 1
+            // 艦上爆撃機
+            a13 *= bomber ? 1.4 : 1
+            // カテゴリ:大発
+            a13 *= daihatsuGroup ? 1.8 : 1
+            // 特大発動艇
+            a13 *= tokuDaihatsu ? 1.15 : 1
+            // 大発動艇(八九式中戦車&陸戦隊)
+            a13 *= (rikuDaihatsu ? 1.2 : 1) * (rikuDaihatsu >= 2 ? 1.4 : 1)
+            // 特大発動艇+戦車第11連隊
+            a13 *= shikonDaihatsu ? 1.8 : 1
+            // 特二式内火艇
+            a13 *= (kamisha ? 2.4 : 1) * (kamisha >= 2 ? 1.35 : 1) // 2.4*1.35~1.45(推测为3.24)
             break
         case 1665:
         case 1666:
         case 1667: // 砲台小鬼
-            apShellBonus = apShell ? 1.85 : 1
-            wg42Bonus = (wg42 >= 2 ? 1.7 : 1) * (wg42 ? 1.6 : 1)
-            daihatsuGroupBonus *= daihatsuGroup ? 1.8 : 1.0
-            daihatsuGroupBonus *= tokuDaihatsu ? 1.15 : 1.0
-            daihatsuGroupBonus *= (rikuDaihatsu >= 2 ? 1.4 : 1) * (rikuDaihatsu ? 1.5 : 1.0)
-            if (shikonDaihatsu) {
-                daihatsuGroupBonus *= 1.8
-                additionBonus += 25
-            }
-            kamishaBonus *= (kamisha >= 2 ? 1.35 : 1) * (kamisha ? 2.4 : 1.0)
-            suijoBonus = suijo ? 1.5 : 1
-            bomberBonus = bomber ? 1.5 : 1
-            stypeBonus = (attacker.stype === 2 || attacker.stype === 3) ? 1.4 : 1.0
-            if (attacker.stype === 13 || attacker.stype === 14) {
-                b12 += 30
-            }
+            // 徹甲弾
+            a13 *= apShell ? 1.85 : 1
+            // WG42(Wurfgerät 42)
+            a13 *= (wg42 ? 1.6 : 1) *  (wg42 >= 2 ? 1.7 : 1)
+            // 艦載型 四式20cm対地噴進砲
+            // a13 *= type4Rocket ? 1 : 1
+            // 二式12cm迫撃砲改
+            a13 *= (type2Mortar ? 1.3 : 1) * (type2Mortar >= 2 ? 1.5 : 1)
+            // 二式12cm迫撃砲改 集中配備
+            // a13 *= type2MortarEx ? 1 : 1
+            // 水上戦闘機、水上爆撃機
+            a13 *= suijo ? 1.5 : 1
+            // 艦上爆撃機
+            a13 *= bomber ? 1.5 : 1
+            // カテゴリ:大発
+            a13 *= daihatsuGroup ? 1.8 : 1
+            // 特大発動艇
+            a13 *= tokuDaihatsu ? 1.15 : 1
+            // 大発動艇(八九式中戦車&陸戦隊)
+            a13 *= (rikuDaihatsu ? 1.5 : 1) * (rikuDaihatsu >= 2 ? 1.4 : 1)
+            // 特大発動艇+戦車第11連隊
+            a13 *= shikonDaihatsu ? 1.8 : 1
+            // 特二式内火艇
+            a13 *= (kamisha ? 2.4 : 1) * (kamisha >= 2 ? 1.35 : 1)
+            // 艦種補正(a12/13):駆逐艦、軽巡洋艦
+            a13 *= [2, 3].indexOf(attacker.stype) >= 0 ? 1.4 : 1
             break
         case 1699:
         case 1700:
@@ -2074,65 +2096,61 @@ var getLandBonus = function (attacker, defender) {
         case 1702:
         case 1703:
         case 1704: // 港湾夏姫-壊
-            type3shellBonus = type3shell ? 1.8 : 1
-            wg42Bonus = wg42 ? 1.4 : 1
-            if (rikuDaihatsu) {
-                daihatsuGroupBonus *= 3.7
-            } else if (tokuDaihatsu) {
-                // daihatsuGroupBonus *= 1
-            } else if (daihatsu) {
-                daihatsuGroupBonus *= 1.8
-            }
-            kamishaBonus *= kamisha ? 2.8 : 1
+            // 三式弾(改)
+            a13 *= type3shell ? 1.8 : 1
+            // WG42(Wurfgerät 42)
+            a13 *= wg42 ? 1.4 : 1
+            // 大発動艇
+            a13 *= daihatsu ? 1.8 : 1
+            // 特大発動艇
+            // a13 *= tokuDaihatsu ? 1 : 1
+            // 大発動艇(八九式中戦車&陸戦隊)
+            a13 *= rikuDaihatsu ? 3.7 : 1
+            // 特大発動艇+戦車第11連隊
+            // a13 *= shikonDaihatsu ? 1 : 1
+            // 特二式内火艇
+            a13 *= kamisha ? 2.8 : 1
             break
-        case 1725:
-        case 1726:
-        case 1727: // 北端上陸姫
-            return {multi: 1.0, add: 0}
+        case 1753:
+        case 1754: // 集積地夏姫
+            // 三式弾(改)
+            a13 *= type3shell ? 2.5 : 1
+            // 特大発動艇+戦車第11連隊
+            a13 *= shikonDaihatsu ? 2.2 : 1
+            // 特二式内火艇
+            // a13 *= kamisha ? 1 : 1
+            break
         default: // ソフトスキン
-            type3shellBonus = type3shell ? 2.5 : 1.0
-            wg42Bonus = (wg42 >= 2 ? 1.4 : 1) * (wg42 ? 1.3 : 1)
-            type4RocketBonus = (type4Rocket >= 2 ? 1.5 : 1) * (type4Rocket ? 1.25 : 1)
-            type2MortarBonus = (type2Mortar >= 2 ? 1.3 : 1) * (type2Mortar ? 1.2 : 1)
-            // type2MortarExBonus = type2MortarEx ? 1 : 1
-            daihatsuGroupBonus *= daihatsuGroup ? 1.4 : 1.0
-            daihatsuGroupBonus *= tokuDaihatsu ? 1.15 : 1.0
-            daihatsuGroupBonus *= (rikuDaihatsu >= 2 ? 1.3 : 1) * (rikuDaihatsu ? 1.5 : 1.0)
-            if (shikonDaihatsu) {
-                daihatsuGroupBonus *= 1.8
-                additionBonus += 25
-            }
-            kamishaBonus *= (kamisha >= 2 ? 1.2 : 1) * (kamisha ? 1.5 : 1.0)
-            suijoBonus = suijo ? 1.2 : 1.0
-            if (attacker.stype === 13 || attacker.stype === 14) {
-                b12 += 30
-            }
+            // 三式弾(改)
+            a13 *= type3shell ? 2.5 : 1
+            // WG42(Wurfgerät 42)
+            a13 *= (wg42 ? 1.3 : 1) * (wg42 >= 2 ? 1.4 : 1)
+            // 艦載型 四式20cm対地噴進砲
+            a13 *= (type4Rocket ? 1.25 : 1) * (type4Rocket >= 2 ? 1.5 : 1)
+            // 二式12cm迫撃砲改
+            a13 *= (type2Mortar ? 1.2 : 1) * (type2Mortar >= 2 ? 1.3 : 1)
+            // 二式12cm迫撃砲改 集中配備
+            a13 *= type2MortarEx ? 1.2 : 1
+            // 水上戦闘機、水上爆撃機
+            a13 *= suijo ? 1.2 : 1.0
+            // カテゴリ:大発
+            a13 *= daihatsuGroup ? 1.4 : 1
+            // 特大発動艇
+            a13 *= tokuDaihatsu ? 1.15 : 1
+            // 大発動艇(八九式中戦車&陸戦隊)
+            a13 *= (rikuDaihatsu ? 1.5 : 1) * (rikuDaihatsu >= 2 ? 1.3 : 1)
+            // 特大発動艇+戦車第11連隊
+            a13 *= shikonDaihatsu ? 1.8 : 1
+            // 特二式内火艇
+            a13 *= (kamisha ? 1.5 : 1.0) * (kamisha >= 2 ? 1.2 : 1)
             break
     }
     return {
-        multi: type3shellBonus * apShellBonus * wg42Bonus * type4RocketBonus * type2MortarBonus * type2MortarExBonus * daihatsuGroupBonus * kamishaBonus * suijoBonus * stypeBonus * bomberBonus,
-        add: additionBonus,
-        b12: b12,
+        a13: a13,
+        // 潜水艦
+        b12: [13, 14].indexOf(attacker.stype) >= 0 ? 30 : 0,
+        b13: b13,
     }
-}
-
-/**
- * WG42加算特効を返します(※7月戦果報酬でWGだけではなくなった)
- * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
- * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} defender 防御艦
- * @return {Number} 特効
- */
-var getWg42Bonus = function (attacker, defender) {
-    if (!isGround(defender) || isNorthernmostLandingPrincess(defender)) return 0
-    var items = getItems(attacker)
-    var wg42 = getItemNum(items, 126)
-    var type2Mortar = getItemNum(items, 346)
-    var type2MortarEx = getItemNum(items, 347)
-    var type4Rocket = getItemNum(items, 348)
-    return ([0, 75, 110, 140, 160, 160])[wg42]
-        + ([0, 30, 55, 75, 75, 75])[type2Mortar]
-        // + (type2MortarEx ? 30 : 0)
-        + ([0, 55, 115, 115, 115, 115])[type4Rocket]
 }
 
 /**
