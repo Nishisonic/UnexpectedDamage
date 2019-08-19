@@ -1956,6 +1956,7 @@ var getMultiplySlayerBonus = function (attacker, defender) {
             var wg42 = getItemNum(items, 126)
             var type2Mortar = getItemNum(items, 346)
             var type2MortarEx = getItemNum(items, 347)
+            var mortarGroup = type2Mortar + type2MortarEx
             var type4Rocket = getItemNum(items, 348)
 
             var a = Math.pow(daihatsuGroupLv / 50 + 1, rikuDaihatsu ? 2 : 1) * (kamishaLv / 30 + 1)
@@ -1963,10 +1964,8 @@ var getMultiplySlayerBonus = function (attacker, defender) {
             a *= (wg42 ? 1.25 : 1) * (wg42 >= 2 ? 1.3 : 1)
             // 艦載型 四式20cm対地噴進砲
             a *= type4Rocket ? 1.2 : 1
-            // 二式12cm迫撃砲改
-            a *= (type2Mortar ? 1.15 : 1) * (type2Mortar >= 2 ? 1.2 : 1)
-            // 二式12cm迫撃砲改 集中配備
-            a *= type2MortarEx ? 1.15 : 1
+            // カテゴリ:迫撃砲
+            a *= (mortarGroup ? 1.15 : 1) * (mortarGroup >= 2 ? 1.2 : 1)
             // カテゴリ:大発
             a *= daihatsuGroup ? 1.7 : 1
             // 特大発動艇
@@ -2021,13 +2020,14 @@ var getLandBonus = function (attacker, defender) {
     var wg42 = getItemNum(items, 126)
     var type2Mortar = getItemNum(items, 346)
     var type2MortarEx = getItemNum(items, 347)
+    var mortarGroup = type2Mortar + type2MortarEx
     var type4Rocket = getItemNum(items, 348)
     var bomber = items.filter(function (item) { return item.type2 === 7 }).length
 
     var a13 = (daihatsuGroupLv / 50 + 1) * (kamishaLv / 30 + 1)
     var b13 = ([0, 75, 110, 140, 160, 160])[wg42]
         + ([0, 30, 55, 75, 75, 75])[type2Mortar]
-        + (type2MortarEx ? 60 : 0)
+        + ([0, 60, 110, 110, 110, 110])[type2MortarEx]
         + ([0, 55, 115, 115, 115, 115])[type4Rocket]
         + (shikonDaihatsu ? 25 : 0)
 
@@ -2043,10 +2043,8 @@ var getLandBonus = function (attacker, defender) {
             a13 *= (wg42 ? 1.4 : 1) * (wg42 >= 2 ? 1.5 : 1)
             // 艦載型 四式20cm対地噴進砲
             // a13 *= type4Rocket ? 1 : 1
-            // 二式12cm迫撃砲改
-            // a13 *= type2Mortar ? 1 : 1
-            // 二式12cm迫撃砲改 集中配備
-            // a13 *= type2MortarEx ? 1 : 1
+            // カテゴリ:迫撃砲
+            a13 *= (mortarGroup ? 1.2 : 1) * (mortarGroup >= 2 ? 1 : 1)
             // 艦上爆撃機
             a13 *= bomber ? 1.4 : 1
             // カテゴリ:大発
@@ -2069,10 +2067,8 @@ var getLandBonus = function (attacker, defender) {
             a13 *= (wg42 ? 1.6 : 1) *  (wg42 >= 2 ? 1.7 : 1)
             // 艦載型 四式20cm対地噴進砲
             // a13 *= type4Rocket ? 1 : 1
-            // 二式12cm迫撃砲改
-            a13 *= (type2Mortar ? 1.3 : 1) * (type2Mortar >= 2 ? 1.5 : 1)
-            // 二式12cm迫撃砲改 集中配備
-            // a13 *= type2MortarEx ? 1 : 1
+            // カテゴリ:迫撃砲
+            a13 *= (mortarGroup ? 1.3 : 1) * (mortarGroup >= 2 ? 1.5 : 1)
             // 水上戦闘機、水上爆撃機
             a13 *= suijo ? 1.5 : 1
             // 艦上爆撃機
@@ -2127,10 +2123,8 @@ var getLandBonus = function (attacker, defender) {
             a13 *= (wg42 ? 1.3 : 1) * (wg42 >= 2 ? 1.4 : 1)
             // 艦載型 四式20cm対地噴進砲
             a13 *= (type4Rocket ? 1.25 : 1) * (type4Rocket >= 2 ? 1.5 : 1)
-            // 二式12cm迫撃砲改
-            a13 *= (type2Mortar ? 1.2 : 1) * (type2Mortar >= 2 ? 1.3 : 1)
-            // 二式12cm迫撃砲改 集中配備
-            a13 *= type2MortarEx ? 1.2 : 1
+            // カテゴリ:迫撃砲
+            a13 *= (mortarGroup ? 1.2 : 1) * (mortarGroup >= 2 ? 1.3 : 1)
             // 水上戦闘機、水上爆撃機
             a13 *= suijo ? 1.2 : 1.0
             // カテゴリ:大発
