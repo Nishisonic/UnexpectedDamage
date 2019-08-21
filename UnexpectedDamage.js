@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.59
+var VERSION = 1.60
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update2.txt"
 /** ファイルの場所 */
@@ -708,8 +708,9 @@ var DayBattlePower = function (date, kind, friendCombinedKind, isEnemyCombined, 
  * @return {Number} 昼砲撃火力(基本攻撃力)
  */
 DayBattlePower.prototype.getBasePower = function () {
+    var landBonus = getLandBonus(this.attacker, this.defender)
     // 空撃または陸上型かつ艦上爆撃機,艦上攻撃機,陸上攻撃機,噴式戦闘爆撃機,噴式攻撃機所持時?
-    if (getAttackTypeAtDay(this.attack, this.attacker, this.defender) === 1 || isGround(this.attacker) && this.items.some(function (item) { return item.type2 === 7 || item.type2 === 8 || item.type2 === 47 || item.type2 === 57 || item.type2 === 58 })) {
+    if (getAttackTypeAtDay(this.attack, this.attacker, this.defender) === 1 || isGround(this.attacker) && this.items.some(function (item) { return [7, 8, 47, 57, 58].indexOf(item.type2) >= 0 })) {
         // 空撃
         var rai = this.attacker.slotParam.raig
         var baku = this.attacker.slotParam.baku
@@ -730,10 +731,10 @@ DayBattlePower.prototype.getBasePower = function () {
                 }, 0)
             }
         }
-        return Math.floor((this.attacker.karyoku + rai + Math.floor(baku * 1.3) + this.getImprovementBonus() + this.getCombinedPowerBonus()) * 1.5) + 55
+        return 25 + Math.floor(1.5 * ((5 + this.attacker.karyoku + this.getImprovementBonus() + this.getCombinedPowerBonus()) * landBonus.a13 + landBonus.b13 + Math.floor(Math.floor(baku * 1.3) + rai) + 15))
     } else {
         // 砲撃
-        return this.attacker.karyoku + this.getImprovementBonus() + this.getCombinedPowerBonus() + 5
+        return (this.attacker.karyoku + this.getImprovementBonus() + this.getCombinedPowerBonus() + 5 + landBonus.b12) * landBonus.a13 + landBonus.b13
     }
 }
 
@@ -803,8 +804,7 @@ DayBattlePower.prototype.getImprovementBonus = function () {
  * @return {Number} 昼砲撃火力(キャップ前)
  */
 DayBattlePower.prototype.getBeforeCapPower = function () {
-    var landBonus = getLandBonus(this.attacker, this.defender)
-    return ((this.getBasePower() + landBonus.b12) * landBonus.a13 + landBonus.b13) * getFormationMatchBonus(this.formation) * this.getFormationBonus() * this.getConditionBonus() + getOriginalGunPowerBonus(this.attacker)
+    return this.getBasePower() * getFormationMatchBonus(this.formation) * this.getFormationBonus() * this.getConditionBonus() + getOriginalGunPowerBonus(this.attacker)
 }
 
 /**
@@ -1591,9 +1591,11 @@ NightBattlePower.prototype.getBasePower = function () {
         }, this).reduce(function (p, c) { return p + c }, 0)
         return karyoku + nightPlaneBonus + this.getNightTouchPlaneBonus()
     } else {
+        var landBonus = getLandBonus(this.attacker, this.defender)
+        var power = 0
         // Ark Royal、Ark Royal改
-        if (this.attacker.shipId === 393 || this.attacker.shipId === 515) {
-            return this.attacker.karyoku
+        if ([393, 515].indexOf(this.attacker.shipId) >= 0) {
+            power = this.attacker.karyoku
                 - this.attacker.slotParam.karyoku
                 + this.items.map(function (item) {
                     switch (item.slotitemId) {
@@ -1604,9 +1606,10 @@ NightBattlePower.prototype.getBasePower = function () {
                     }
                     return 0
                 }).reduce(function (p, c) { return p + c }, 0)
-                + this.getNightTouchPlaneBonus()
+        } else {
+            power = this.attacker.karyoku + (useRaisou ? this.attacker.raisou : 0) + this.getImprovementBonus()
         }
-        return this.attacker.karyoku + (useRaisou ? this.attacker.raisou : 0) + this.getImprovementBonus() + this.getNightTouchPlaneBonus()
+        return (power + this.getNightTouchPlaneBonus() + landBonus.b12) * landBonus.a13 + landBonus.b13
     }
 }
 
@@ -1677,8 +1680,7 @@ NightBattlePower.prototype.getFormationBonus = function () {
  * @return {Number} 夜戦火力(キャップ前)
  */
 NightBattlePower.prototype.getBeforeCapPower = function () {
-    var landBonus = getLandBonus(this.attacker, this.defender)
-    return ((this.getBasePower() + landBonus.b12) * landBonus.a13 + landBonus.b13) * this.getFormationBonus() * this.getCutinBonus() * this.getConditionBonus() + getOriginalGunPowerBonus(this.attacker)
+    return this.getBasePower() * this.getFormationBonus() * this.getCutinBonus() * this.getConditionBonus() + getOriginalGunPowerBonus(this.attacker)
 }
 
 /**
@@ -1723,11 +1725,11 @@ NightBattlePower.prototype.getCutinBonus = function () {
         case 1: return 1.2  // 連撃
         case 2: return 1.3  // カットイン(主砲/魚雷)
         case 3:
-            if (Java.from(this.attack.showItem).filter(function (id) { return Number(id) === 213 || Number(id) === 214 }).length >= 1
-                && Java.from(this.attack.showItem).filter(function (id) { return Number(id) === 210 || Number(id) === 211 }).length >= 1) {
+            if (Java.from(this.attack.showItem).filter(function (id) { return [213, 214].indexOf(Number(id)) >= 0 }).length
+                && Java.from(this.attack.showItem).filter(function (id) { return [210, 211].indexOf(Number(id)) >= 0 }).length) {
                 return 1.75  // カットイン(後魚/潜電)
             }
-            if (Java.from(this.attack.showItem).filter(function (id) { return Number(id) === 213 || Number(id) === 214 }).length >= 2) {
+            if (Java.from(this.attack.showItem).filter(function (id) { return [213, 214].indexOf(Number(id)) >= 0 }).length >= 2) {
                 return 1.6  // カットイン(後魚/後魚)
             }
             return 1.5      // カットイン(魚雷/魚雷)
@@ -1907,11 +1909,11 @@ function isNightCvAttack(attacker, attackerHp) {
         return item.slotitemId
     }).some(function (itemid) {
         // 夜間作戦航空要員 or 夜間作戦航空要員＋熟練甲板員
-        return itemid === 258 || itemid === 259
+        return [258, 259].indexOf(itemid) >= 0
         // Saratoga Mk.II or 赤城改二戊
-    }) || attacker.shipId === 545 || attacker.shipId === 599) && items.some(function (item) {
+    }) || [545, 599].indexOf(attacker.shipId) >= 0) && items.some(function (item) {
         // 夜間戦闘機 or 夜間攻撃機
-        return item.type3 === 45 || item.type3 === 46
+        return [45, 46].indexOf(item.type3) >= 0
         // 中破未満または装甲空母
     }) && (!attackerHp.isHalfDamage() || attacker.stype === 18)
 }
@@ -2041,10 +2043,10 @@ var getLandBonus = function (attacker, defender) {
             a13 *= type3shell ? 1.75 : 1
             // WG42(Wurfgerät 42)
             a13 *= (wg42 ? 1.4 : 1) * (wg42 >= 2 ? 1.5 : 1)
-            // 艦載型 四式20cm対地噴進砲
-            // a13 *= type4Rocket ? 1 : 1
+            // 艦載型 四式20cm対地噴進砲 (x1.3 * 1.65 or x1.35 * 1.6)
+            a13 *= (type4Rocket ? 1.35 : 1) * (type4Rocket >= 2 ? 1.6 : 1)
             // カテゴリ:迫撃砲
-            a13 *= (mortarGroup ? 1.2 : 1) * (mortarGroup >= 2 ? 1 : 1)
+            a13 *= (mortarGroup ? 1.2 : 1) * (mortarGroup >= 2 ? 1.4 : 1)
             // 艦上爆撃機
             a13 *= bomber ? 1.4 : 1
             // カテゴリ:大発
@@ -2055,8 +2057,8 @@ var getLandBonus = function (attacker, defender) {
             a13 *= (rikuDaihatsu ? 1.2 : 1) * (rikuDaihatsu >= 2 ? 1.4 : 1)
             // 特大発動艇+戦車第11連隊
             a13 *= shikonDaihatsu ? 1.8 : 1
-            // 特二式内火艇
-            a13 *= (kamisha ? 2.4 : 1) * (kamisha >= 2 ? 1.35 : 1) // 2.4*1.35~1.45(推测为3.24)
+            // 特二式内火艇 (x2.4 * 1.35~1.45(推测为3.24))
+            a13 *= (kamisha ? 2.4 : 1) * (kamisha >= 2 ? 1.35 : 1)
             break
         case 1665:
         case 1666:
@@ -2065,8 +2067,8 @@ var getLandBonus = function (attacker, defender) {
             a13 *= apShell ? 1.85 : 1
             // WG42(Wurfgerät 42)
             a13 *= (wg42 ? 1.6 : 1) *  (wg42 >= 2 ? 1.7 : 1)
-            // 艦載型 四式20cm対地噴進砲
-            // a13 *= type4Rocket ? 1 : 1
+            // 艦載型 四式20cm対地噴進砲 (2積:1.8~1.85)
+            a13 *= (type4Rocket ? 1.5 : 1) * (type4Rocket >= 2 ? 1.85 : 1)
             // カテゴリ:迫撃砲
             a13 *= (mortarGroup ? 1.3 : 1) * (mortarGroup >= 2 ? 1.5 : 1)
             // 水上戦闘機、水上爆撃機
