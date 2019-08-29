@@ -13,9 +13,9 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.60
+var VERSION = 1.61
 /** バージョン確認URL */
-var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update2.txt"
+var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update.txt"
 /** ファイルの場所 */
 var FILE_URL = [
     "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/drop_unexpectedDamage.js",
@@ -163,12 +163,12 @@ var getAttackTypeAtDay = function (attack, attacker, defender) {
         }
     }
 
-    if (attacker.stype === 7 || attacker.stype === 11 || attacker.stype === 18) {
+    if ([7, 11, 18].indexOf(attacker.stype) >= 0) {
         return 1
     }
 
     if (isSubMarine(defender)) {
-        if (attacker.stype === 6 || attacker.stype === 10 || attacker.stype === 16 || attacker.stype === 17) {
+        if ([6, 10, 16, 17].indexOf(attacker.stype) >= 0) {
             return 1
         } else {
             return 2
@@ -201,8 +201,8 @@ var getAttackTypeAtNight = function (attack, attacker, defender) {
         }
     }
 
-    if (attacker.stype === 7 || attacker.stype === 11 || attacker.stype === 18) {
-        if (attacker.shipId === 353 || attacker.shipId === 432 || attacker.shipId === 433) {
+    if ([7, 11, 18].indexOf(attacker.stype) >= 0) {
+        if ([353, 432, 433].indexOf(attacker.shipId) >= 0) {
             return 0
         } else if (attacker.name === "リコリス棲姫") {
             return 0
@@ -218,7 +218,7 @@ var getAttackTypeAtNight = function (attack, attacker, defender) {
     }
 
     if (isSubMarine(defender)) {
-        if (attacker.stype === 6 || attacker.stype === 10 || attacker.stype === 16 || attacker.stype === 17) {
+        if ([6, 10, 16, 17].indexOf(attacker.stype) >= 0) {
             return 1
         } else {
             return 2
@@ -1098,6 +1098,7 @@ DayBattlePower.prototype.getCombinedPowerBonus = function () {
 /**
  * 雷撃関連処理
  * @param {java.util.Date} date 戦闘日時
+ * @param {logbook.dto.BattlePhaseKind} kind 戦闘の種類
  * @param {0|1|2|3} friendCombinedKind 自軍側連合種別(0=なし,1=機動,2=水上,3=輸送)
  * @param {Boolean} isEnemyCombined 敵軍は連合艦隊か
  * @param {Number} attackNum 攻撃側艦数(警戒陣用)
@@ -1109,6 +1110,7 @@ DayBattlePower.prototype.getCombinedPowerBonus = function () {
  */
 var TorpedoPower = function (date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, attack, attacker, defender, attackerHp) {
     this.date = date
+    this.kind = kind
     this.friendCombinedKind = friendCombinedKind
     this.isEnemyCombined = isEnemyCombined
     this.attackNum = attackNum
@@ -1965,7 +1967,7 @@ var getMultiplySlayerBonus = function (attacker, defender) {
             // WG42(Wurfgerät 42)
             a *= (wg42 ? 1.25 : 1) * (wg42 >= 2 ? 1.3 : 1)
             // 艦載型 四式20cm対地噴進砲
-            a *= type4Rocket ? 1.2 : 1
+            a *= (type4Rocket ? 1.2 : 1) * (type4Rocket >= 2 ? 1.4 : 1)
             // カテゴリ:迫撃砲
             a *= (mortarGroup ? 1.15 : 1) * (mortarGroup >= 2 ? 1.2 : 1)
             // カテゴリ:大発
@@ -2017,7 +2019,7 @@ var getLandBonus = function (attacker, defender) {
     var daihatsuGroupLv = daihatsuGroup > 0 ? items.filter(function (item) { return item.type2 === 24 }).map(function (item) { return item.level }).reduce(function (p, c) { return p + c }, 0) / daihatsuGroup : 0
     var kamisha = getItemNum(items, 167)
     var kamishaLv = kamisha > 0 ? items.filter(function (item) { return item.slotitemId === 167 }).map(function (item) { return item.level }).reduce(function (p, c) { return p + c }, 0) / kamisha : 0
-    var suijo = items.filter(function (item) { return item.type2 === 11 || item.type2 === 45 }).length
+    var suijo = items.filter(function (item) { return [11, 45].indexOf(item.type2) >= 0 }).length
     var apShell = items.filter(function (item) { return item.type2 === 19 }).length
     var wg42 = getItemNum(items, 126)
     var type2Mortar = getItemNum(items, 346)
@@ -2028,7 +2030,7 @@ var getLandBonus = function (attacker, defender) {
 
     var a13 = (daihatsuGroupLv / 50 + 1) * (kamishaLv / 30 + 1)
     var b13 = ([0, 75, 110, 140, 160, 160])[wg42]
-        + ([0, 30, 55, 75, 75, 75])[type2Mortar]
+        + ([0, 30, 55, 75, 90, 90])[type2Mortar]
         + ([0, 60, 110, 110, 110, 110])[type2MortarEx]
         + ([0, 55, 115, 115, 115, 115])[type4Rocket]
         + (shikonDaihatsu ? 25 : 0)
@@ -2043,8 +2045,8 @@ var getLandBonus = function (attacker, defender) {
             a13 *= type3shell ? 1.75 : 1
             // WG42(Wurfgerät 42)
             a13 *= (wg42 ? 1.4 : 1) * (wg42 >= 2 ? 1.5 : 1)
-            // 艦載型 四式20cm対地噴進砲 (x1.3 * 1.65 or x1.35 * 1.6)
-            a13 *= (type4Rocket ? 1.35 : 1) * (type4Rocket >= 2 ? 1.6 : 1)
+            // 艦載型 四式20cm対地噴進砲
+            a13 *= (type4Rocket ? 1.3 : 1) * (type4Rocket >= 2 ? 1.65 : 1)
             // カテゴリ:迫撃砲
             a13 *= (mortarGroup ? 1.2 : 1) * (mortarGroup >= 2 ? 1.4 : 1)
             // 艦上爆撃機
@@ -2066,9 +2068,9 @@ var getLandBonus = function (attacker, defender) {
             // 徹甲弾
             a13 *= apShell ? 1.85 : 1
             // WG42(Wurfgerät 42)
-            a13 *= (wg42 ? 1.6 : 1) *  (wg42 >= 2 ? 1.7 : 1)
-            // 艦載型 四式20cm対地噴進砲 (2積:1.8~1.85)
-            a13 *= (type4Rocket ? 1.5 : 1) * (type4Rocket >= 2 ? 1.85 : 1)
+            a13 *= (wg42 ? 1.6 : 1) * (wg42 >= 2 ? 1.7 : 1)
+            // 艦載型 四式20cm対地噴進砲
+            a13 *= (type4Rocket ? 1.5 : 1) * (type4Rocket >= 2 ? 1.8 : 1)
             // カテゴリ:迫撃砲
             a13 *= (mortarGroup ? 1.3 : 1) * (mortarGroup >= 2 ? 1.5 : 1)
             // 水上戦闘機、水上爆撃機
@@ -2279,7 +2281,7 @@ var getOriginalGunPowerBonus = function (ship) {
         case 3:  // 軽巡
         case 4:  // 雷巡
         case 21: // 練巡
-            bonus += Math.sqrt(ids.filter(function (id) { return id === 65 || id === 119 || id === 139 }).length) * 2 + Math.sqrt(ids.filter(function (id) { return id === 4 || id === 11 }).length)
+            bonus += Math.sqrt(ids.filter(function (id) { return [65, 119, 139].indexOf(id) >= 0 }).length) * 2 + Math.sqrt(ids.filter(function (id) { return [4, 11].indexOf(id) >= 0 }).length)
     }
     // 伊重巡フィット砲補正
     switch (ship.shipId) {
