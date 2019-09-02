@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.61
+var VERSION = 1.62
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update.txt"
 /** ファイルの場所 */
@@ -1923,10 +1923,48 @@ function isNightCvAttack(attacker, attackerHp) {
 /**
  * 弾薬量補正を返す
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} ship 攻撃艦
+ * @param {FleetDto} origins 攻撃側艦隊
+ * @param {logbook.dto.MapCellDto} mapCell マップ
  * @return {Number} 倍率
  */
-var getAmmoBonus = function (ship) {
-    return ship instanceof ShipDto ? Math.min(Math.floor(ship.bull / ship.bullMax * 100) / 50, 1) : 1.0
+var getAmmoBonus = function (ship, origins, mapCell) {
+    if (ship instanceof ShipDto) {
+        var bull = ship.bull
+        // 洋上補給処理
+        if (mapCell.isBoss()) {
+            var replenishment = Object.keys(origins).map(function(pos) {
+                return origins[pos]
+            }).filter(function(ships) {
+                return ships
+            }).map(function(ships) {
+                return Java.from(ships.toArray()).filter(function(ship) {
+                    return ship instanceof ShipDto
+                }).map(function(ship) {
+                    return getItems(ship)
+                }).map(function(items) {
+                    return items.filter(function(item) {
+                        return item.slotitemId === 146
+                    }).length
+                }).reduce(function(p, v) {
+                    return p + v
+                }, 0)
+            }).reduce(function(p, v) {
+                return p + v
+            }, 0)
+
+            if (replenishment > 0) {
+                if (origins["escort"]) {
+                    // 連合艦隊
+                    bull += Math.floor((Math.min(replenishment, 3) * 12.5 + 2.5) * ship.bullMax / 100)
+                } else {
+                    // 通常艦隊
+                    bull += Math.floor((Math.min(replenishment, 3) * 11 + 14) * ship.bullMax / 100)
+                }
+            }
+        }
+        return Math.min(Math.floor(bull / ship.bullMax * 100) / 50, 1)
+    }
+    return 1.0
 }
 
 /**

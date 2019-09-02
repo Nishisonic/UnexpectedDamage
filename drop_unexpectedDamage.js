@@ -1,6 +1,6 @@
 /**
  * 異常ダメージ検知
- * @version 1.6.1
+ * @version 1.6.2
  * @author Nishikuma
  */
 
@@ -38,6 +38,7 @@ var PHASE_STRING = {
 
 //#region メモ部分
 // ・洋上補給には拡張版は対応していない
+//    ・v1.6.2で擬似的に対応
 // ・渦潮には拡張版は対応していない
 //#endregion
 
@@ -162,9 +163,6 @@ function appendLog(dayBattle, torpedoAttack, nightBattle) {
 var isInvestiagate = function (battle) {
     var END_1ST_MAP_DATE = getJstDate(2018, 8, 15, 13, 0, 0)
     var MAELSTROM_MAP_LIST = [
-        [4, 3],
-        [4, 4],
-        [3, 4],
         [6, 2],
         [7, 1],
     ]
@@ -831,14 +829,14 @@ var detectOrDefault = function (date, battle, friends, enemies, friendHp, enemyH
         var armor1 = Math.max(data1.defender.soukou + getArmorBonus(data1.date, data1.mapCell, data1.attacker, data1.defender), 1)
         var minDef1 = armor1 * 0.7
         var maxDef1 = armor1 * 0.7 + Math.floor(armor1 - 1) * 0.6
-        var minDmg1 = Math.floor((data1.power[0] - maxDef1) * getAmmoBonus(data1.attacker))
-        var maxDmg1 = Math.floor((data1.power[1] - minDef1) * getAmmoBonus(data1.attacker))
+        var minDmg1 = Math.floor((data1.power[0] - maxDef1) * getAmmoBonus(data1.attacker, data1.origins, data1.mapCell))
+        var maxDmg1 = Math.floor((data1.power[1] - minDef1) * getAmmoBonus(data1.attacker, data1.origins, data1.mapCell))
         var diff1 = Math.abs(data1.attack.damage - (data1.attack.damage < minDmg1 ? minDmg1 : maxDmg1))
         var armor2 = Math.max(data2.defender.soukou + getArmorBonus(data2.date, data2.mapCell, data2.attacker, data2.defender), 1)
         var minDef2 = armor2 * 0.7
         var maxDef2 = armor2 * 0.7 + Math.floor(armor2 - 1) * 0.6
-        var minDmg2 = Math.floor((data2.power[0] - maxDef2) * getAmmoBonus(data2.attacker))
-        var maxDmg2 = Math.floor((data2.power[1] - minDef2) * getAmmoBonus(data2.attacker))
+        var minDmg2 = Math.floor((data2.power[0] - maxDef2) * getAmmoBonus(data2.attacker, data2.origins, data2.mapCell))
+        var maxDmg2 = Math.floor((data2.power[1] - minDef2) * getAmmoBonus(data2.attacker, data2.origins, data2.mapCell))
         var diff2 = Math.abs(data2.attack.damage - (data2.damage < minDmg2 ? minDmg2 : maxDmg2))
         return diff2 - diff1
     }
@@ -871,8 +869,8 @@ function toDispString(data) {
         var armor = Math.max(data.defender.soukou + getArmorBonus(data.date, data.mapCell, data.attacker, data.defender), 1)
         var minDef = armor * 0.7
         var maxDef = armor * 0.7 + Math.floor(armor - 1) * 0.6
-        var minDmg = Math.floor((data.power[0] - maxDef) * getAmmoBonus(data.attacker))
-        var maxDmg = Math.floor((data.power[1] - minDef) * getAmmoBonus(data.attacker))
+        var minDmg = Math.floor((data.power[0] - maxDef) * getAmmoBonus(data.attacker, data.origins, data.mapCell))
+        var maxDmg = Math.floor((data.power[1] - minDef) * getAmmoBonus(data.attacker, data.origins, data.mapCell))
         var diff = (data.attack.damage < minDmg ? "" : "+") + (data.attack.damage - (data.attack.damage < minDmg ? minDmg : maxDmg))
         return String((data.attack.attacker + 1) + ":" + data.attacker.friendlyName.replace(/\(.*\)$/, "") + "[HP:" + data.attackerHp.now + "/" + data.attackerHp.max + "]→" + (data.attack.defender + 1) + ":" + data.defender.friendlyName.replace(/\(.*\)$/, "") + "[HP:" + data.defenderHp.now + "→" + (data.defenderHp.now - data.attack.damage) + "/" + data.defenderHp.max + "] dmg:" + Math.floor(data.attack.damage) + " 理論値->" + minDmg + "～" + maxDmg + " 想定:" + diff)
     }
@@ -977,8 +975,8 @@ var detectDayBattle = function (date, mapCell, kind, friendCombinedKind, isEnemy
                     var armor = Math.max(ship.defender.soukou + getArmorBonus(date, mapCell, ship.attacker, ship.defender), 1)
                     var minDef = armor * 0.7
                     var maxDef = armor * 0.7 + Math.floor(armor - 1) * 0.6
-                    var minDmg = Math.floor((power[0] - maxDef) * getAmmoBonus(ship.attacker))
-                    var maxDmg = Math.floor((power[1] - minDef) * getAmmoBonus(ship.attacker))
+                    var minDmg = Math.floor((power[0] - maxDef) * getAmmoBonus(ship.attacker, attack.friendAttack ? friends : enemies, mapCell))
+                    var maxDmg = Math.floor((power[1] - minDef) * getAmmoBonus(ship.attacker, attack.friendAttack ? friends : enemies, mapCell))
                     var minPropDmg = Math.floor(hp.defender.now * 0.06)
                     var maxPropDmg = Math.floor(hp.defender.now * 0.14 - 0.08)
                     var minSunkDmg = Math.floor(hp.defender.now * 0.5)
@@ -1050,8 +1048,8 @@ var detectTorpedoAttack = function (date, mapCell, kind, friendCombinedKind, isE
             var armor = Math.max(ship.defender.soukou + getArmorBonus(date, mapCell, ship.attacker, ship.defender), 1)
             var minDef = armor * 0.7
             var maxDef = armor * 0.7 + Math.floor(armor - 1) * 0.6
-            var minDmg = Math.floor((power[0] - maxDef) * getAmmoBonus(ship.attacker))
-            var maxDmg = Math.floor((power[1] - minDef) * getAmmoBonus(ship.attacker))
+            var minDmg = Math.floor((power[0] - maxDef) * getAmmoBonus(ship.attacker, attack.friendAttack ? friends : enemies, mapCell))
+            var maxDmg = Math.floor((power[1] - minDef) * getAmmoBonus(ship.attacker, attack.friendAttack ? friends : enemies, mapCell))
             var minPropDmg = Math.floor(hp.defender.now * 0.06)
             var maxPropDmg = Math.floor(hp.defender.now * 0.14 - 0.08)
             var minSunkDmg = Math.floor(hp.defender.now * 0.5)
@@ -1075,7 +1073,7 @@ var detectTorpedoAttack = function (date, mapCell, kind, friendCombinedKind, isE
                         }
                     }
                 }
-                result.push(new DetectDto(date, mapCell, 1, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], false, null, false))
+                result.push(new DetectDto(date, mapCell, 1, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], false, friends, false))
             }
             processingShipHpDamage(ship.defender, hp.defender, attack.damage, false) // ダメージ仮処理
         })
@@ -1091,15 +1089,15 @@ var detectTorpedoAttack = function (date, mapCell, kind, friendCombinedKind, isE
             var armor = Math.max(ship.defender.soukou + getArmorBonus(date, mapCell, ship.attacker, ship.defender), 1)
             var minDef = armor * 0.7
             var maxDef = armor * 0.7 + Math.floor(armor - 1) * 0.6
-            var minDmg = Math.floor((power[0] - maxDef) * getAmmoBonus(ship.attacker))
-            var maxDmg = Math.floor((power[1] - minDef) * getAmmoBonus(ship.attacker))
+            var minDmg = Math.floor((power[0] - maxDef) * getAmmoBonus(ship.attacker, attack.friendAttack ? friends : enemies, mapCell))
+            var maxDmg = Math.floor((power[1] - minDef) * getAmmoBonus(ship.attacker, attack.friendAttack ? friends : enemies, mapCell))
             var minPropDmg = Math.floor(hp.defender.now * 0.06)
             var maxPropDmg = Math.floor(hp.defender.now * 0.14 - 0.08)
             var minSunkDmg = Math.floor(hp.defender.now * 0.5)
             var maxSunkDmg = Math.floor(hp.defender.now * 0.8 - 0.3)
             var covered = minPropDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxPropDmg || !attack.friendAttack && minSunkDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxSunkDmg || isHp1ReplacementShip(ship.defender, attack.defender === 0)
             if (!(minDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxDmg || covered)) {
-                result.push(new DetectDto(date, mapCell, 1, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], false, null, false))
+                result.push(new DetectDto(date, mapCell, 1, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], false, enemies, false))
             }
             processingShipHpDamage(ship.defender, hp.defender, attack.damage, false) // ダメージ仮処理
         })
@@ -1165,8 +1163,8 @@ var detectNightBattle = function (date, mapCell, kind, friendCombinedKind, isEne
                     var armor = Math.max(ship.defender.soukou + getArmorBonus(date, mapCell, ship.attacker, ship.defender), 1)
                     var minDef = armor * 0.7
                     var maxDef = armor * 0.7 + Math.floor(armor - 1) * 0.6
-                    var minDmg = Math.floor((power[0] - maxDef) * getAmmoBonus(ship.attacker))
-                    var maxDmg = Math.floor((power[1] - minDef) * getAmmoBonus(ship.attacker))
+                    var minDmg = Math.floor((power[0] - maxDef) * getAmmoBonus(ship.attacker, attack.friendAttack ? friends : enemies, mapCell))
+                    var maxDmg = Math.floor((power[1] - minDef) * getAmmoBonus(ship.attacker, attack.friendAttack ? friends : enemies, mapCell))
                     var minPropDmg = Math.floor(hp.defender.now * 0.06)
                     var maxPropDmg = Math.floor(hp.defender.now * 0.14 - 0.08)
                     var minSunkDmg = Math.floor(hp.defender.now * 0.5)
@@ -1236,8 +1234,8 @@ var detectRadarShooting = function (date, mapCell, kind, friendCombinedKind, isE
                     var armor = Math.max(ship.defender.soukou + getArmorBonus(date, mapCell, ship.attacker, ship.defender), 1)
                     var minDef = armor * 0.7
                     var maxDef = armor * 0.7 + Math.floor(armor - 1) * 0.6
-                    var minDmg = Math.floor((power[0] - maxDef) * getAmmoBonus(ship.attacker))
-                    var maxDmg = Math.floor((power[1] - minDef) * getAmmoBonus(ship.attacker))
+                    var minDmg = Math.floor((power[0] - maxDef) * getAmmoBonus(ship.attacker, attack.friendAttack ? friends : enemies, mapCell))
+                    var maxDmg = Math.floor((power[1] - minDef) * getAmmoBonus(ship.attacker, attack.friendAttack ? friends : enemies, mapCell))
                     var minPropDmg = Math.floor(hp.defender.now * 0.06)
                     var maxPropDmg = Math.floor(hp.defender.now * 0.14 - 0.08)
                     var minSunkDmg = Math.floor(hp.defender.now * 0.5)
