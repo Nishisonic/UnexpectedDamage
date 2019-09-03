@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.63
+var VERSION = 1.64
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update.txt"
 /** ファイルの場所 */
@@ -1987,10 +1987,17 @@ var getMultiplySlayerBonus = function (attacker, defender) {
         case 1656:
         case 1657:
         case 1658: // 集積地棲姫-壊
+        case 1809:
+        case 1810:
+        case 1811: // 集積地棲姫 バカンスmode
+        case 1812:
+        case 1813:
+        case 1814: // 集積地棲姫 バカンスmode-壊
             var daihatsu = getItemNum(items, 68)
             var tokuDaihatsu = getItemNum(items, 193)
             var rikuDaihatsu = getItemNum(items, 166)
             var shikonDaihatsu = getItemNum(items, 230)
+            var m4a1dd = getItemNum(items, 355)
             var daihatsuGroup = items.filter(function (item) { return item.type2 === 24 }).length
             var daihatsuGroupLv = daihatsuGroup > 0 ? items.filter(function (item) { return item.type2 === 24 }).map(function (item) { return item.level }).reduce(function (p, c) { return p + c }, 0) / daihatsuGroup : 0
             var kamisha = getItemNum(items, 167)
@@ -2053,6 +2060,7 @@ var getLandBonus = function (attacker, defender) {
     var tokuDaihatsu = getItemNum(items, 193)
     var rikuDaihatsu = getItemNum(items, 166)
     var shikonDaihatsu = getItemNum(items, 230)
+    var m4a1dd = getItemNum(items, 355)
     var daihatsuGroup = items.filter(function (item) { return item.type2 === 24 }).length
     var daihatsuGroupLv = daihatsuGroup > 0 ? items.filter(function (item) { return item.type2 === 24 }).map(function (item) { return item.level }).reduce(function (p, c) { return p + c }, 0) / daihatsuGroup : 0
     var kamisha = getItemNum(items, 167)
@@ -2072,6 +2080,7 @@ var getLandBonus = function (attacker, defender) {
         + ([0, 60, 110, 110, 110, 110])[type2MortarEx]
         + ([0, 55, 115, 115, 115, 115])[type4Rocket]
         + (shikonDaihatsu ? 25 : 0)
+        + (m4a1dd ? 40 : 0) // 仮決め
 
     switch (defender.shipId) {
         case 1668:
@@ -2177,6 +2186,8 @@ var getLandBonus = function (attacker, defender) {
             a13 *= (rikuDaihatsu ? 1.5 : 1) * (rikuDaihatsu >= 2 ? 1.3 : 1)
             // 特大発動艇+戦車第11連隊
             a13 *= shikonDaihatsu ? 1.8 : 1
+            // M4A1 DD (仮決め)
+            a13 *= m4a1dd ? 1.4 : 1
             // 特二式内火艇
             a13 *= (kamisha ? 1.5 : 1.0) * (kamisha >= 2 ? 1.2 : 1)
             break
