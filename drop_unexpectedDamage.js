@@ -1,6 +1,6 @@
 /**
  * 異常ダメージ検知
- * @version 1.6.2
+ * @version 1.6.3
  * @author Nishikuma
  */
 
@@ -994,11 +994,15 @@ var detectDayBattle = function (date, mapCell, kind, friendCombinedKind, isEnemy
                                     unexpected[maps] = {}
                                 }
                                 if (!unexpected[maps][ship.attacker.shipId]) {
-                                    unexpected[maps][ship.attacker.shipId] = [back[0], back[1], 1]
+                                    unexpected[maps][ship.attacker.shipId] = {}
+                                }
+                                if (!unexpected[maps][ship.attacker.shipId][ship.defender.shipId]) {
+                                    unexpected[maps][ship.attacker.shipId][ship.defender.shipId] = [back[0], back[1], 1, [date]]
                                 } else {
-                                    unexpected[maps][ship.attacker.shipId][0] = Math.max(unexpected[maps][ship.attacker.shipId][0], back[0])
-                                    unexpected[maps][ship.attacker.shipId][1] = Math.min(unexpected[maps][ship.attacker.shipId][1], back[1])
-                                    unexpected[maps][ship.attacker.shipId][2]++
+                                    unexpected[maps][ship.attacker.shipId][ship.defender.shipId][0] = Math.max(unexpected[maps][ship.attacker.shipId][ship.defender.shipId][0], back[0])
+                                    unexpected[maps][ship.attacker.shipId][ship.defender.shipId][1] = Math.min(unexpected[maps][ship.attacker.shipId][ship.defender.shipId][1], back[1])
+                                    unexpected[maps][ship.attacker.shipId][ship.defender.shipId][2]++
+                                    unexpected[maps][ship.attacker.shipId][ship.defender.shipId][3].push(date)
                                 }
                             }
                         }
@@ -1065,11 +1069,15 @@ var detectTorpedoAttack = function (date, mapCell, kind, friendCombinedKind, isE
                             unexpected[maps] = {}
                         }
                         if (!unexpected[maps][ship.attacker.shipId]) {
-                            unexpected[maps][ship.attacker.shipId] = [back[0], back[1], 1]
+                            unexpected[maps][ship.attacker.shipId] = {}
+                        }
+                        if (!unexpected[maps][ship.attacker.shipId][ship.defender.shipId]) {
+                            unexpected[maps][ship.attacker.shipId][ship.defender.shipId] = [back[0], back[1], 1, [date]]
                         } else {
-                            unexpected[maps][ship.attacker.shipId][0] = Math.max(unexpected[maps][ship.attacker.shipId][0], back[0])
-                            unexpected[maps][ship.attacker.shipId][1] = Math.min(unexpected[maps][ship.attacker.shipId][1], back[1])
-                            unexpected[maps][ship.attacker.shipId][2]++
+                            unexpected[maps][ship.attacker.shipId][ship.defender.shipId][0] = Math.max(unexpected[maps][ship.attacker.shipId][ship.defender.shipId][0], back[0])
+                            unexpected[maps][ship.attacker.shipId][ship.defender.shipId][1] = Math.min(unexpected[maps][ship.attacker.shipId][ship.defender.shipId][1], back[1])
+                            unexpected[maps][ship.attacker.shipId][ship.defender.shipId][2]++
+                            unexpected[maps][ship.attacker.shipId][ship.defender.shipId][3].push(date)
                         }
                     }
                 }
@@ -1182,11 +1190,15 @@ var detectNightBattle = function (date, mapCell, kind, friendCombinedKind, isEne
                                     unexpected[maps] = {}
                                 }
                                 if (!unexpected[maps][ship.attacker.shipId]) {
-                                    unexpected[maps][ship.attacker.shipId] = [back[0], back[1], 1]
+                                    unexpected[maps][ship.attacker.shipId] = {}
+                                }
+                                if (!unexpected[maps][ship.attacker.shipId][ship.defender.shipId]) {
+                                    unexpected[maps][ship.attacker.shipId][ship.defender.shipId] = [back[0], back[1], 1, [date]]
                                 } else {
-                                    unexpected[maps][ship.attacker.shipId][0] = Math.max(unexpected[maps][ship.attacker.shipId][0], back[0])
-                                    unexpected[maps][ship.attacker.shipId][1] = Math.min(unexpected[maps][ship.attacker.shipId][1], back[1])
-                                    unexpected[maps][ship.attacker.shipId][2]++
+                                    unexpected[maps][ship.attacker.shipId][ship.defender.shipId][0] = Math.max(unexpected[maps][ship.attacker.shipId][ship.defender.shipId][0], back[0])
+                                    unexpected[maps][ship.attacker.shipId][ship.defender.shipId][1] = Math.min(unexpected[maps][ship.attacker.shipId][ship.defender.shipId][1], back[1])
+                                    unexpected[maps][ship.attacker.shipId][ship.defender.shipId][2]++
+                                    unexpected[maps][ship.attacker.shipId][ship.defender.shipId][3].push(date)
                                 }
                             }
                         }
@@ -1254,11 +1266,15 @@ var detectRadarShooting = function (date, mapCell, kind, friendCombinedKind, isE
                         //             unexpected[maps] = {}
                         //         }
                         //         if (!unexpected[maps][ship.attacker.shipId]) {
-                        //             unexpected[maps][ship.attacker.shipId] = [back[0], back[1], 1]
+                        //             unexpected[maps][ship.attacker.shipId] = {}
+                        //         }
+                        //         if (!unexpected[maps][ship.attacker.shipId][ship.defender.shipId]) {
+                        //             unexpected[maps][ship.attacker.shipId][ship.defender.shipId] = [back[0], back[1], 1, [date]]
                         //         } else {
-                        //             unexpected[maps][ship.attacker.shipId][0] = Math.max(unexpected[maps][ship.attacker.shipId][0], back[0])
-                        //             unexpected[maps][ship.attacker.shipId][1] = Math.min(unexpected[maps][ship.attacker.shipId][1], back[1])
-                        //             unexpected[maps][ship.attacker.shipId][2]++
+                        //             unexpected[maps][ship.attacker.shipId][ship.defender.shipId][0] = Math.max(unexpected[maps][ship.attacker.shipId][ship.defender.shipId][0], back[0])
+                        //             unexpected[maps][ship.attacker.shipId][ship.defender.shipId][1] = Math.min(unexpected[maps][ship.attacker.shipId][ship.defender.shipId][1], back[1])
+                        //             unexpected[maps][ship.attacker.shipId][ship.defender.shipId][2]++
+                        //             unexpected[maps][ship.attacker.shipId][ship.defender.shipId][3].push(date)
                         //         }
                         //     }
                         // }

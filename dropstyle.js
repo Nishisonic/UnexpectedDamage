@@ -166,11 +166,12 @@ function flatten(array) {
     }, [])
 }
 
+var sdf = new SimpleDateFormat(AppConstants.DATE_FORMAT)
+
 function genBattleHtml(dataLists) {
     // データがあるものをひとまず検索
     var masterData = flatten([dataLists[0], dataLists[1], dataLists[2]]).filter(function (d) { return d })[0]
     var touchPlane = dataLists[2].length > 0 ? dataLists[2][0].touchPlane : [-1, -1]
-    var sdf = new SimpleDateFormat(AppConstants.DATE_FORMAT)
     var idx = 0
     var html =
         '<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><style type="text/css">' +
@@ -224,15 +225,26 @@ function genBattleHtml(dataLists) {
         '</div>' +
         '</div>' +
         (masterData.mapCell.map[0] < 22 ? '' :
+            '<script type="text/javascript">' +
+                'function selectEnemyName(){' +
+                    'var enemyId = document.getElementById("enemy").value;' +
+                    'var child = document.getElementById("unexpectedBox").children;' +
+                    'for (var i = 0; i < child.length; i++) {' +
+                        'child[i].style.display = child[i].id.indexOf("_" + enemyId) >= 0 ? "block" : "none";' +
+                    '}' +
+            '}</script>' +
             '<div style="float: right;">' +
-            '<h2>' + masterData.mapCell.map[0] + '-' + masterData.mapCell.map[1] + '-' + masterData.mapCell.map[2] + ' 特効倍率(速報値) ※イベント限定</h2>' +
-            '<div style="overflow: scroll; width: 400px; height: 118px; border:#000000 1px solid; margin-right: 15px; font-size:small;" ' +
-            'title="雰囲気で特効倍率範囲を算出します。&#10;速報値を出すときなどにご活用ください。&#10;※対陸上または熟練度補正が働いている攻撃は除外">' + toUnexpectedRangeHtml(JSON.stringify(Java.from(masterData.mapCell.map))) + '</div></div>'
+            '<h2>' +
+                masterData.mapCell.map[0] + '-' + masterData.mapCell.map[1] + '-' + masterData.mapCell.map[2] + ' 特効倍率(速報値) ※イベント限定 <span style="font-size: x-small;">対陸上、PT、熟練度は除外</span><br>' +
+                '<span style="margin-right: 2px;">対象敵:</span>' + toUnexpectedEnemySelectBoxHtml(JSON.stringify(Java.from(masterData.mapCell.map))) +
+            '</h2>' +
+            '<div id="unexpectedBox" style="overflow: scroll; width: 400px; height: 118px; border:#000000 1px solid; margin-right: 15px; font-size:small;">' +
+            toUnexpectedRangeHtml(JSON.stringify(Java.from(masterData.mapCell.map))) + '</div></div>'
         ) +
         '<h2 style="clear: both; padding: 0; margin: 2px 0 0;">異常ダメ検知攻撃一覧</h2>' +
         '<hr style="height: 1px; background-color: #BBB; border: none; margin-right:15px;"></hr>' +
         '</header>' +
-        '<div style="width:100%; height:240px;"></div>' +
+        '<div style="width:100%; height:255px;"></div>' +
         '<div style="overflow: auto; min-width:500px; border:#000000 solid 1px; width: 100%; font-size:small;">' +
         // 昼砲撃戦
         dataLists[0].map(function (data) {
@@ -423,8 +435,47 @@ function toUnexpectedRangeHtml(map) {
     var unexpected = getData("unexpected")
     if (unexpected[map]) {
         return Object.keys(unexpected[map]).map(function(shipId) {
-            return Ship.get(shipId).name + " - " + unexpected[map][shipId][0].toFixed(3) + " ~ " + unexpected[map][shipId][1].toFixed(3) + " (" + unexpected[map][shipId][2] + "x)"
-        }).join("<br>")
+            var all = Object.keys(unexpected[map][shipId]).map(function(eShipId) {
+                return unexpected[map][shipId][eShipId]
+            }).reduce(function(p, v) {
+                p[0] = Math.max(p[0], v[0])
+                p[1] = Math.min(p[1], v[1])
+                p[2] += v[2]
+                Array.prototype.push.apply(p[3], v[3])
+                return p
+            }, [0, 9999, 0, []])
+            var allHtml = '<div id="dmg' + shipId + '_0">' + Ship.get(shipId).name + " - " + all[0].toFixed(3) + " ~ " + all[1].toFixed(3) + " (" + all[2] + 'x)</div>'
+
+            return allHtml + Object.keys(unexpected[map][shipId]).map(function(eShipId) {
+                return '<div id="dmg' + shipId + '_' + eShipId + '" style="display:none;">' +
+                        Ship.get(shipId).name + " - " + unexpected[map][shipId][eShipId][0].toFixed(3) + " ~ " + unexpected[map][shipId][eShipId][1].toFixed(3) + " (" + unexpected[map][shipId][eShipId][2] + 'x)' +
+                    '</div>'
+            }).join("")
+        }).join("")
+    }
+    return ""
+}
+
+/**
+ * 敵選択のコンボボックスを返す
+ * @param {[Number, Number, Number]} map マップ
+ * @return {String} HTML
+ */
+function toUnexpectedEnemySelectBoxHtml(map) {
+    var unexpected = getData("unexpected")
+    if (unexpected[map]) {
+        return '<select id="enemy" onchange="selectEnemyName()">' +
+            '<option value="0">全艦</option>' +
+            flatten(Object.keys(unexpected[map]).map(function(shipId) {
+                return Object.keys(unexpected[map][shipId])
+            })).filter(function(x, i, self) {
+                return self.indexOf(x) === i
+            }).sort(function(a, b) {
+                return a > b ? 1 : -1
+            }).map(function(shipId) {
+                return '<option value="' + shipId + '">' + Ship.get(shipId).name + ' (' + shipId + ')</option>'
+            }).join('') +
+        '</select>'
     }
     return ""
 }
