@@ -301,7 +301,8 @@ function genHeaderHtml(data, power) {
     var armor = data.defender.soukou + getArmorBonus(data.date, data.mapCell, data.attacker, data.defender)
     var aftPower = power.getAfterCapPower()
     var dmgWidth = Math.floor((aftPower[0] - (armor * 0.7 + Math.floor(armor - 1) * 0.6)) * getAmmoBonus(data.attacker, data.origins, data.mapCell)) + " ~ " + Math.floor((aftPower[1] - armor * 0.7) * getAmmoBonus(data.attacker, data.origins, data.mapCell))
-    result += '<tr><td class="' + (data.attacker.isFriend() ? 'friend' : 'enemy') + '">' + (data.attack.attacker + 1) + '.' + data.attacker.friendlyName + '</td><td>→</td><td class="' + (data.defender.isFriend() ? 'friend' : 'enemy') + '">'
+    result += '<tr><td class="' + (data.attacker.isFriend() ? 'friend' : 'enemy') + '" title="' + getItems(data.attacker).map(function(item) { return item.name + (item.level > 0 ? '+' + item.level : '') }).join('&#10;') + '">'
+        + (data.attack.attacker + 1) + '.' + data.attacker.friendlyName + '</td><td>→</td><td class="' + (data.defender.isFriend() ? 'friend' : 'enemy') + '" title="' + getItems(data.defender).map(function(item) { return item.name + (item.level > 0 ? '+' + item.level : '') }).join('&#10;') + '">'
         + (data.attack.defender + 1) + '.' + data.defender.friendlyName + '</td><td style="' + (isCritical(data.attack) ? 'font-weight:bold;' : '') + '">' + data.attack.damage + '</td><td class="' + (data.defender.isFriend() ? 'friend' : 'enemy') + '">'
         + data.defenderHp.now + '→' + (data.defenderHp.now - data.attack.damage) + '</td><td>' + dmgWidth + '</td><td>' + getAmmoBonus(data.attacker, data.origins, data.mapCell).toFixed(2) + '</td></tr>'
     result += '</table>'
@@ -330,24 +331,26 @@ function genDefenseArmorHtml(data) {
  * @return {String} HTML
  */
 function genGimmickHtml(data, power, idx) {
+    var ammoBonus = getAmmoBonus(data.attacker, data.origins, data.mapCell)
     var result = '<script type="text/javascript">'
     result += 'function func' + idx + '(){'
     result += 'var gimmick = document.getElementById("gimmick' + idx + '").value;'
-    result += 'var minA = Math.floor(' + power.getAfterCapPower()[0] + ' * gimmick);'
-    result += 'var maxA = Math.floor(' + power.getAfterCapPower()[1] + ' * gimmick);'
+    result += 'var minA = ' + power.getAfterCapPower()[0] + ' * gimmick;'
+    result += 'var maxA = ' + power.getAfterCapPower()[1] + ' * gimmick;'
     result += 'var armor = ' + (data.defender.soukou + getArmorBonus(data.date, data.mapCell, data.attacker, data.defender)) + ';'
-    result += 'document.getElementById("afterpower' + idx + '").innerHTML = minA + " ~ " + maxA;'
-    result += 'document.getElementById("theoretical' + idx + '").innerHTML = Math.floor(minA - armor * 0.7 - Math.floor(armor - 1) * 0.6) + " ~ " + Math.floor(maxA - armor * 0.7);'
-    result += 'document.getElementById("border' + idx + '").innerHTML = Math.floor(maxA - armor * 0.7) >= ' + Math.floor(data.attack.damage) + ' && ' + Math.floor(data.attack.damage) + ' >= Math.floor(minA - armor * 0.7 - Math.floor(armor - 1) * 0.6) ? "○" : "x";'
+    result += 'var ammoBonus = ' + ammoBonus + ';'
+    result += 'document.getElementById("afterpower' + idx + '").innerHTML = minA.toFixed(2) + " ~ " + maxA.toFixed(2);'
+    result += 'document.getElementById("theoretical' + idx + '").innerHTML = Math.floor((minA - (armor * 0.7 + Math.floor(armor - 1) * 0.6)) * ammoBonus) + " ~ " + Math.floor((maxA - armor * 0.7) * ammoBonus);'
+    result += 'document.getElementById("border' + idx + '").innerHTML = Math.floor((maxA - armor * 0.7) * ammoBonus) >= ' + Math.floor(data.attack.damage) + ' && ' + Math.floor(data.attack.damage) + ' >= Math.floor((minA - (armor * 0.7 + Math.floor(armor - 1) * 0.6)) * ammoBonus) ? "○" : "x";'
     result += '}</script>'
     result += '<table style="margin-top:5px;">'
-    result += '<tr><th colspan="5">ギミック簡易計算(a10)</th></tr>'
+    result += '<tr><th colspan="5">ギミック簡易計算(a11)</th></tr>'
     result += '<tr><th>倍率</th><th>ギミック後攻撃力</th><th>理論値</th><th>範囲内</th><th>逆算倍率(仮)</th></tr>'
     result += '<tr><td><input id="gimmick' + idx + '" type="number" value="1" style="width: 80px;" onkeyup="func' + idx + '();"></td>'
     var armor = data.defender.soukou + getArmorBonus(data.date, data.mapCell, data.attacker, data.defender)
     var aftPower = power.getAfterCapPower()
-    var dmgWidth = Math.floor((aftPower[0] - (armor * 0.7 + Math.floor(armor - 1) * 0.6)) * getAmmoBonus(data.attacker, data.origins, data.mapCell)) + " ~ " + Math.floor((aftPower[1] - armor * 0.7) * getAmmoBonus(data.attacker, data.origins, data.mapCell))
-    var back = (Math.ceil(data.attack.damage + armor * 0.7) / aftPower[0]).toFixed(4) + " ~ " + (Math.ceil(data.attack.damage + (armor * 0.7 + Math.floor(armor - 1) * 0.6)) / aftPower[0]).toFixed(4)
+    var dmgWidth = Math.floor((aftPower[0] - (armor * 0.7 + Math.floor(armor - 1) * 0.6)) * ammoBonus) + " ~ " + Math.floor((aftPower[1] - armor * 0.7) * ammoBonus)
+    var back = ((data.attack.damage / ammoBonus + armor * 0.7) / aftPower[1]).toFixed(4) + " ~ " + ((data.attack.damage / ammoBonus + (armor * 0.7 + Math.floor(armor - 1) * 0.6)) / aftPower[0]).toFixed(4)
     result += '<td id="afterpower' + idx + '">' + aftPower[0].toFixed(2) + ' ~ ' + aftPower[1].toFixed(2) + '</td><td id="theoretical' + idx + '">' + dmgWidth + '</td><td id="border' + idx + '">x</td><td>' + back + '</td></tr>'
     result += '</table>'
     return result
@@ -444,7 +447,7 @@ function toUnexpectedRangeHtml(map) {
                 Array.prototype.push.apply(p[3], v[3])
                 return p
             }, [0, 9999, 0, []])
-            var allHtml = '<div id="dmg' + shipId + '_0">' + Ship.get(shipId).name + " - " + all[0].toFixed(3) + " ~ " + all[1].toFixed(3) + " (" + all[2] + 'x)</div>'
+            var allHtml = '<div id="dmg' + shipId + '_0">' + Ship.get(shipId).name + " - " + all[0].toFixed(4) + " ~ " + all[1].toFixed(4) + " (" + all[2] + 'x)</div>'
 
             return allHtml + Object.keys(unexpected[map][shipId]).map(function(eShipId) {
                 return '<div id="dmg' + shipId + '_' + eShipId + '" style="display:none;">' +

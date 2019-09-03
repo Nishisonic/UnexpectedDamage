@@ -988,7 +988,8 @@ var detectDayBattle = function (date, mapCell, kind, friendCombinedKind, isEnemy
                             var skilled = getSkilledBonus(date, attack, ship.attacker, ship.defender, hp.attacker)
                             // 割合ダメージ等ではない&(敵が陸上型またはPT小鬼群または熟練度補正攻撃ではない)
                             if (!covered && !(isGround(ship.defender) || isPT(ship.defender) || skilled[0] > 1)) {
-                                var back = [Math.ceil(attack.damage + armor * 0.7) / power[0], Math.ceil(attack.damage + (armor * 0.7 + Math.floor(armor - 1) * 0.6)) / power[0]]
+                                var ammoBonus = getAmmoBonus(ship.attacker, attack.friendAttack ? friends : enemies, mapCell)
+                                var back = [(attack.damage / ammoBonus + armor * 0.7) / power[1], (attack.damage / ammoBonus + (armor * 0.7 + Math.floor(armor - 1) * 0.6)) / power[0]]
                                 var maps = JSON.stringify(Java.from(mapCell.map))
                                 if (!unexpected[maps]) {
                                     unexpected[maps] = {}
@@ -1063,7 +1064,8 @@ var detectTorpedoAttack = function (date, mapCell, kind, friendCombinedKind, isE
                 if (mapCell.map[0] >= 22) {
                     // 割合ダメージ等ではない&(敵がPT小鬼群ではない)
                     if (!covered && !isPT(ship.defender)) {
-                        var back = [Math.ceil(attack.damage + armor * 0.7) / power[0], Math.ceil(attack.damage + (armor * 0.7 + Math.floor(armor - 1) * 0.6)) / power[0]]
+                        var ammoBonus = getAmmoBonus(ship.attacker, attack.friendAttack ? friends : enemies, mapCell)
+                        var back = [(attack.damage / ammoBonus + armor * 0.7) / power[1], (attack.damage / ammoBonus + (armor * 0.7 + Math.floor(armor - 1) * 0.6)) / power[0]]
                         var maps = JSON.stringify(Java.from(mapCell.map))
                         if (!unexpected[maps]) {
                             unexpected[maps] = {}
@@ -1184,7 +1186,8 @@ var detectNightBattle = function (date, mapCell, kind, friendCombinedKind, isEne
                             var skilled = getSkilledBonus(date, attack, ship.attacker, ship.defender, hp.attacker)
                             // 割合ダメージ等ではない&(敵が陸上型またはPT小鬼群または熟練度補正攻撃ではない)
                             if (!covered && !(isGround(ship.defender) || isPT(ship.defender) || skilled[0] > 1)) {
-                                var back = [Math.ceil(attack.damage + armor * 0.7) / power[0], Math.ceil(attack.damage + (armor * 0.7 + Math.floor(armor - 1) * 0.6)) / power[0]]
+                                var ammoBonus = getAmmoBonus(ship.attacker, attack.friendAttack ? friends : enemies, mapCell)
+                                var back = [(attack.damage / ammoBonus + armor * 0.7) / power[1], (attack.damage / ammoBonus + (armor * 0.7 + Math.floor(armor - 1) * 0.6)) / power[0]]
                                 var maps = JSON.stringify(Java.from(mapCell.map))
                                 if (!unexpected[maps]) {
                                     unexpected[maps] = {}
@@ -1254,30 +1257,6 @@ var detectRadarShooting = function (date, mapCell, kind, friendCombinedKind, isE
                     var maxSunkDmg = Math.floor(hp.defender.now * 0.8 - 0.3)
                     var covered = minPropDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxPropDmg || !attack.friendAttack && minSunkDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxSunkDmg || isHp1ReplacementShip(ship.defender, attack.defender === 0)
                     if (!(minDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxDmg || covered)) {
-                        // 現状使わないため
-                        // if (mapCell.map[0] >= 22 && attack.friendAttack) {
-                        //     // 熟練度
-                        //     var skilled = getSkilledBonus(date, attack, ship.attacker, ship.defender, hp.attacker)
-                        //     // 割合ダメージ等ではない&(敵が陸上型またはPT小鬼群または熟練度補正攻撃ではない)
-                        //     if (!covered && !(isGround(ship.defender) || isPT(ship.defender) || skilled[0] > 1)) {
-                        //         var back = [Math.ceil(attack.damage + armor * 0.7) / power[0], Math.ceil(attack.damage + (armor * 0.7 + Math.floor(armor - 1) * 0.6)) / power[0]]
-                        //         var maps = JSON.stringify(Java.from(mapCell.map))
-                        //         if (!unexpected[maps]) {
-                        //             unexpected[maps] = {}
-                        //         }
-                        //         if (!unexpected[maps][ship.attacker.shipId]) {
-                        //             unexpected[maps][ship.attacker.shipId] = {}
-                        //         }
-                        //         if (!unexpected[maps][ship.attacker.shipId][ship.defender.shipId]) {
-                        //             unexpected[maps][ship.attacker.shipId][ship.defender.shipId] = [back[0], back[1], 1, [date]]
-                        //         } else {
-                        //             unexpected[maps][ship.attacker.shipId][ship.defender.shipId][0] = Math.max(unexpected[maps][ship.attacker.shipId][ship.defender.shipId][0], back[0])
-                        //             unexpected[maps][ship.attacker.shipId][ship.defender.shipId][1] = Math.min(unexpected[maps][ship.attacker.shipId][ship.defender.shipId][1], back[1])
-                        //             unexpected[maps][ship.attacker.shipId][ship.defender.shipId][2]++
-                        //             unexpected[maps][ship.attacker.shipId][ship.defender.shipId][3].push(date)
-                        //         }
-                        //     }
-                        // }
                         result.push(new DetectDto(date, mapCell, 2, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], shouldUseSkilled === undefined ? true : shouldUseSkilled, attack.friendAttack ? friends : enemies, true))
                     }
                 }
