@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.64
+var VERSION = 1.65
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update.txt"
 /** ファイルの場所 */
@@ -841,7 +841,7 @@ DayBattlePower.prototype.getFormationBonus = function () {
         case FORMATION.LINE_AHEAD: return 1.0
         case FORMATION.DOUBLE_LINE: return 0.8
         case FORMATION.DIAMOND: return 0.7
-        case FORMATION.ECHELON: return CHANGE_ECHELON_BONUS_DATE.before(this.date) ? 0.75 : 0.6
+        case FORMATION.ECHELON: return CHANGE_ECHELON_BONUS_DATE.before(this.date) && !(this.friendCombinedKind === COMBINED_FLEET.NONE && this.isEnemyCombined) ? 0.75 : 0.6
         case FORMATION.LINE_ABREAST: return 0.6
         case FORMATION.VANGUARD: return this.attack.attacker < Math.floor(this.attackNum / 2) ? 0.5 : 1.0
         case FORMATION.CRUISING_FORMATION_1: return 0.8

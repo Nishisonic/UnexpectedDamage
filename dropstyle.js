@@ -174,7 +174,11 @@ function genBattleHtml(dataLists) {
     var touchPlane = dataLists[2].length > 0 ? dataLists[2][0].touchPlane : [-1, -1]
     var idx = 0
     var html =
-        '<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><style type="text/css">' +
+        '<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">' +
+        '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">' +
+        '<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>' +
+        '<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ja.js"></script>' +
+        '<style type="text/css">' +
         "body {font-family:'Lucida Grande','Hiragino Kaku Gothic ProN','ヒラギノ角ゴ ProN W3',Meiryo,メイリオ,sans-serif;}" +
         "div.box{margin-top:10px;margin-bottom:10px;font-size:small;}" +
         "body{background-color:#FAFAFA;}" +
@@ -198,11 +202,11 @@ function genBattleHtml(dataLists) {
         '<body>' +
         '<header>' +
         '<h2>' + masterData.mapCell + '（' + sdf.format(masterData.date) + '）</h2>' +
-        '<div style="float: left; margin-bottom: 15px;">' +
+        '<div style="float: left; margin-bottom: 30px;">' +
         '<h2>会敵情報</h2>' +
         '<div>' +
         '<div>会敵: ' + toIntercept(Number(masterData.formation[2])) + '</div>' +
-        '<table>' +
+        '<table style="margin-bottom: 20px;">' +
         '<tr>' +
         '<th></th>' +
         '<th>艦隊</th>' +
@@ -226,25 +230,80 @@ function genBattleHtml(dataLists) {
         '</div>' +
         (masterData.mapCell.map[0] < 22 ? '' :
             '<script type="text/javascript">' +
+                'var dates = [];' +
+                'var unexpected = ' + JSON.stringify(getData("unexpected")[JSON.stringify(Java.from(masterData.mapCell.map))]) + ';' +
                 'function selectEnemyName(){' +
                     'var enemyId = document.getElementById("enemy").value;' +
-                    'var child = document.getElementById("unexpectedBox").children;' +
-                    'for (var i = 0; i < child.length; i++) {' +
-                        'child[i].style.display = child[i].id.indexOf("_" + enemyId) >= 0 ? "block" : "none";' +
+                    'if (Number(enemyId) === 0) {' +
+                        'var datalist = Object.keys(unexpected).map(function(index){' +
+                            'return [index.split("_")[0] + "_" + index.split("_")[1], unexpected[index]];' +
+                        '}).reduce(function(p, v) {' +
+                            'var u = v[1].filter(function(data){' +
+                                'return dates.length === 0 || dates[0] <= data.date && data.date <= dates[1];' +
+                            '}).reduce(function(p, v){' +
+                                'p.min = Math.max(p.min, v.min);' +
+                                'p.max = Math.min(p.max, v.max);' +
+                                'p.count++;' +
+                                'p.dates.push(v.date);' +
+                                'return p;' +
+                            '}, {min:0, max:9999, count:0, dates:[]});' +
+                            'if(p[v[0]]){' +
+                                'p[v[0]].min = Math.max(p[v[0]].min, u.min);' +
+                                'p[v[0]].max = Math.min(p[v[0]].max, u.max);' +
+                                'p[v[0]].count += u.count;' +
+                                'Array.prototype.push.apply(p[v[0]].dates, u.dates);' +
+                            '} else {' +
+                                'p[v[0]] = JSON.parse(JSON.stringify(u));' +
+                            '}' +
+                            'return p;' +
+                        '}, {});' +
+                        'document.getElementById("unexpectedBox").innerHTML = Object.keys(datalist).filter(function(key){' +
+                            'return datalist[key].count > 0;' +
+                        '}).map(function(key){' +
+                            'return "<div>" + key.split("_")[1] + " - " + datalist[key].min.toFixed(4) + " ~ " + datalist[key].max.toFixed(4) + " (" + datalist[key].count + "x)</div>";' +
+                        '}).join("");' +
+                    '} else {' +
+                        'document.getElementById("unexpectedBox").innerHTML = Object.keys(unexpected).filter(function(index){' +
+                            'return index.split("_")[2] === enemyId;' +
+                        '}).map(function(index){' +
+                            'var u = unexpected[index].filter(function(data){' +
+                                'return dates.length === 0 || dates[0] <= data.date && data.date <= dates[1];' +
+                            '}).reduce(function(p, v){' +
+                                'p.min = Math.max(p.min, v.min);' +
+                                'p.max = Math.min(p.max, v.max);' +
+                                'p.count++;' +
+                                'p.dates.push(v.date);' +
+                                'return p;' +
+                            '}, {min:0, max:9999, count:0, dates:[]});' +
+                            'if (u.count > 0) {' +
+                                'return "<div>" + index.split("_")[1] + " - " + u.min.toFixed(4) + " ~ " + u.max.toFixed(4) + " (" + u.count + "x)</div>";' +
+                            '}' +
+                            'return "";' +
+                        '}).join("");' +
                     '}' +
-            '}</script>' +
+                '}' +
+                'window.onload = function(){' +
+                    'selectEnemyName();' +
+                '}' +
+            '</script>' +
             '<div style="float: right;">' +
-            '<h2>' +
-                masterData.mapCell.map[0] + '-' + masterData.mapCell.map[1] + '-' + masterData.mapCell.map[2] + ' 特効倍率(速報値) ※イベント限定 <span style="font-size: x-small;">対陸上、PT、熟練度は除外</span><br>' +
-                '<span style="margin-right: 2px;">対象敵:</span>' + toUnexpectedEnemySelectBoxHtml(JSON.stringify(Java.from(masterData.mapCell.map))) +
-            '</h2>' +
-            '<div id="unexpectedBox" style="overflow: scroll; width: 400px; height: 118px; border:#000000 1px solid; margin-right: 15px; font-size:small;">' +
-            toUnexpectedRangeHtml(JSON.stringify(Java.from(masterData.mapCell.map))) + '</div></div>'
+                '<h2 style="margin-bottom: 0">' +
+                    masterData.mapCell.map[0] + '-' + masterData.mapCell.map[1] + '-' + masterData.mapCell.map[2] + ' 特効倍率(速報値) ※イベント限定 <span style="font-size: x-small;">対陸上、PT、熟練度は除外</span><br>' +
+                    '<span style="margin-right: 2px;">対象敵:</span>' + toUnexpectedEnemySelectBoxHtml(JSON.stringify(Java.from(masterData.mapCell.map))) +
+                '</h2>' +
+                '<h2 style="margin-top:3px;margin-bottom:3px;"><span style="margin-right: 2px;">期間:</span>' +
+                    '<span class="flatpickr">' +
+                        '<input type="text" placeholder="全指定" class="flatpickr" data-input style="width:280px">' +
+                        '<span style="padding-left: 5px;cursor:pointer;"><a class="input-button" title="全指定に戻す" data-clear>x</a></span>' +
+                    '</span>' +
+                '</h2>' +
+                '<div id="unexpectedBox" style="overflow: scroll; width: 400px; height: 118px; border:#000000 1px solid; margin-right: 15px; font-size:small;"></div>' +
+            '</div>'
         ) +
         '<h2 style="clear: both; padding: 0; margin: 2px 0 0;">異常ダメ検知攻撃一覧</h2>' +
         '<hr style="height: 1px; background-color: #BBB; border: none; margin-right:15px;"></hr>' +
         '</header>' +
-        '<div style="width:100%; height:255px;"></div>' +
+        '<div style="width:100%; height:275px;"></div>' +
         '<div style="overflow: auto; min-width:500px; border:#000000 solid 1px; width: 100%; font-size:small;">' +
         // 昼砲撃戦
         dataLists[0].map(function (data) {
@@ -285,6 +344,28 @@ function genBattleHtml(dataLists) {
             return result + '</div>'
         }).join('') +
         '</div>' +
+        '<script>' +
+            'flatpickr(".flatpickr", {' +
+                'enableTime:true,' +
+                'dateFormat:"Y-m-d H:i",' +
+                'mode:"range",' +
+                'time_24hr:true,' +
+                'locale:"ja",' +
+                'wrap:true,' +
+                'onChange:function(selectedDates, dateStr, instance){' +
+                    'dates = selectedDates;' +
+                    'selectEnemyName();' +
+                '},' +
+                'onClose:function(selectedDates, dateStr, instance){' +
+                    'if (selectedDates.length === 1) {' +
+                        'var d = [Math.min(selectedDates[0].getTime(), new Date().getTime()), Math.max(selectedDates[0].getTime(), new Date().getTime())];' +
+                        'instance.setDate(d);' +
+                        'dates = d;' +
+                        'selectEnemyName();' +
+                    '}' +
+                '}' +
+            '});' +
+        '</script>' +
         '</body></html>'
     return html
 }
@@ -303,7 +384,7 @@ function genHeaderHtml(data, power) {
     var dmgWidth = Math.floor((aftPower[0] - (armor * 0.7 + Math.floor(armor - 1) * 0.6)) * getAmmoBonus(data.attacker, data.origins, data.mapCell)) + " ~ " + Math.floor((aftPower[1] - armor * 0.7) * getAmmoBonus(data.attacker, data.origins, data.mapCell))
     result += '<tr><td class="' + (data.attacker.isFriend() ? 'friend' : 'enemy') + '" title="' + getItems(data.attacker).map(function(item) { return item.name + (item.level > 0 ? '+' + item.level : '') }).join('&#10;') + '">'
         + (data.attack.attacker + 1) + '.' + data.attacker.friendlyName + '</td><td>→</td><td class="' + (data.defender.isFriend() ? 'friend' : 'enemy') + '" title="' + getItems(data.defender).map(function(item) { return item.name + (item.level > 0 ? '+' + item.level : '') }).join('&#10;') + '">'
-        + (data.attack.defender + 1) + '.' + data.defender.friendlyName + '</td><td style="' + (isCritical(data.attack) ? 'font-weight:bold;' : '') + '">' + data.attack.damage + '</td><td class="' + (data.defender.isFriend() ? 'friend' : 'enemy') + '">'
+        + (data.attack.defender + 1) + '.' + data.defender.friendlyName + '</td><td' + (isCritical(data.attack) ? ' style="font-weight:bold;"' : '') + '>' + data.attack.damage + '</td><td class="' + (data.defender.isFriend() ? 'friend' : 'enemy') + '">'
         + data.defenderHp.now + '→' + (data.defenderHp.now - data.attack.damage) + '</td><td>' + dmgWidth + '</td><td>' + getAmmoBonus(data.attacker, data.origins, data.mapCell).toFixed(2) + '</td></tr>'
     result += '</table>'
     return result
@@ -366,7 +447,7 @@ function genAntiSubMarineHtml(data, power) {
     var result = '<tr><th rowspan="8" style="padding: 0px 3px;">攻<br>撃<br>側</th><th>基本攻撃力</th><th>改修火力</th><th>艦種定数</th><th></th><th></th></tr>'
     result += '<tr><td>' + power.getBasePower().toFixed(2) + '</td><td>' + power.getImprovementBonus().toFixed(2) + '</td><td>' + power.getShipTypeConstant() + '</td><td></td><td></td></tr>'
     result += '<tr><th>キャップ前火力</th><th>交戦形態補正</th><th>攻撃側陣形補正</th><th>損傷補正</th><th>シナジー補正</th></tr>'
-    result += '<tr><td>' + power.getBeforeCapPower().toFixed(2) + '</td><td>' + getFormationMatchBonus(data.formation).toFixed(1) + '</td><td>' + power.getFormationBonus().toFixed(1) + '</td><td>' + power.getConditionBonus().toFixed(1) + '</td><td>' + power.getSynergyBonus().toFixed(2) + '</td></tr>'
+    result += '<tr><td>' + power.getBeforeCapPower().toFixed(2) + '</td><td>' + getFormationMatchBonus(data.formation).toFixed(2) + '</td><td>' + power.getFormationBonus().toFixed(2) + '</td><td>' + power.getConditionBonus().toFixed(2) + '</td><td>' + power.getSynergyBonus().toFixed(2) + '</td></tr>'
     result += '<tr><th>最終攻撃力</th><th>キャップ値</th><th>キャップ後火力</th><th>クリティカル補正</th><th>熟練度補正</th></tr>'
     var skilled = data.shouldUseSkilled ? getSkilledBonus(data.date, data.attack, data.attacker, data.defender, data.attackerHp).map(function (value) { return value.toFixed(2) }).join(' ~ ') : '1.00'
     result += '<tr><td style="font-weight:bold;">' + power.getAfterCapPower().map(function (power) { return power.toFixed(2) }).join(' ~ ') + '</td><td>' + power.CAP_VALUE + '</td><td>' + getAfterCapValue(power.getBeforeCapPower(), power.CAP_VALUE).toFixed(2) + '</td><td>' + getCriticalBonus(data.attack).toFixed(1) + '</td><td>' + skilled + '</td></tr>'
@@ -384,7 +465,7 @@ function genDayBattleHtml(data, power) {
     var landBonus = getLandBonus(data.attacker, data.defender)
     result += '<tr><td>' + power.getBasePower().toFixed(2) + '</td><td>' + power.getImprovementBonus().toFixed(2) + '</td><td>' + power.getCombinedPowerBonus() + '</td><td>' + (landBonus.b12) + '</td><td>' + landBonus.a13.toFixed(2) + '</td><td>' + (landBonus.b13) + '</td></tr>'
     result += '<tr><th>キャップ前火力</th><th>交戦形態補正</th><th>攻撃側陣形補正</th><th>損傷補正</th><th>特殊砲補正</th><th></th></tr>'
-    result += '<tr><td>' + power.getBeforeCapPower().toFixed(2) + '</td><td>' + getFormationMatchBonus(data.formation).toFixed(1) + '</td><td>' + power.getFormationBonus().toFixed(1) + '</td><td>' + power.getConditionBonus().toFixed(1) + '</td><td>' + getOriginalGunPowerBonus(power.attacker).toFixed(2) + '</td><td></td></tr>'
+    result += '<tr><td>' + power.getBeforeCapPower().toFixed(2) + '</td><td>' + getFormationMatchBonus(data.formation).toFixed(2) + '</td><td>' + power.getFormationBonus().toFixed(2) + '</td><td>' + power.getConditionBonus().toFixed(2) + '</td><td>' + getOriginalGunPowerBonus(power.attacker).toFixed(2) + '</td><td></td></tr>'
     result += '<tr><th rowspan="2">最終攻撃力</th><th>キャップ値</th><th>キャップ後火力</th><th>特殊敵乗算特効</th><th>特殊敵加算特効</th><th></th></tr>'
     result += '<tr><td>' + power.CAP_VALUE + '</td><td>' + getAfterCapValue(power.getBeforeCapPower(), power.CAP_VALUE).toFixed(2) + '</td><td>' + getMultiplySlayerBonus(data.attacker, data.defender).toFixed(2) + '</td><td>' + getAddSlayerBonus(data.attacker, data.defender) + '</td><td></td></tr>'
     result += '<tr><td rowspan="2" style="font-weight:bold;">' + power.getAfterCapPower().map(function (power) { return power.toFixed(2) }).join(' ~ ') + '</td><th>弾着観測射撃補正</th><th>戦爆連合CI攻撃補正</th><th>徹甲弾補正</th><th>クリティカル補正</th><th>熟練度補正</th></tr>'
@@ -403,7 +484,7 @@ function genTorpedoAttackHtml(data, power) {
     var result = '<tr><th rowspan="8" style="padding: 0px 3px;">攻<br>撃<br>側</th><th>基本攻撃力</th><th>改修火力</th><th>連合補正</th><th></th></tr>'
     result += '<tr><td>' + power.getBasePower().toFixed(2) + '</td><td>' + power.getImprovementBonus().toFixed(2) + '</td><td>' + power.getCombinedPowerBonus() + '</td><td></td></tr>'
     result += '<tr><th>キャップ前火力</th><th>交戦形態補正</th><th>攻撃側陣形補正</th><th>損傷補正</th></tr>'
-    result += '<tr><td>' + power.getBeforeCapPower().toFixed(2) + '</td><td>' + getFormationMatchBonus(data.formation).toFixed(1) + '</td><td>' + power.getFormationBonus().toFixed(1) + '</td><td>' + power.getConditionBonus().toFixed(1) + '</td></tr>'
+    result += '<tr><td>' + power.getBeforeCapPower().toFixed(2) + '</td><td>' + getFormationMatchBonus(data.formation).toFixed(2) + '</td><td>' + power.getFormationBonus().toFixed(2) + '</td><td>' + power.getConditionBonus().toFixed(2) + '</td></tr>'
     result += '<tr><th>最終攻撃力</th><th>キャップ値</th><th>キャップ後火力</th><th>クリティカル補正</th></tr>'
     result += '<tr><td style="font-weight:bold;">' + power.getAfterCapPower()[0] + '</td><td>' + power.CAP_VALUE + '</td><td>' + getAfterCapValue(power.getBeforeCapPower(), power.CAP_VALUE).toFixed(2) + '</td><td>' + getCriticalBonus(data.attack).toFixed(1) + '</td></tr>'
     return '<table>' + result + '</table>'
@@ -420,43 +501,13 @@ function genNightBattleHtml(data, power) {
     var landBonus = getLandBonus(data.attacker, data.defender)
     result += '<tr><td>' + power.getBasePower().toFixed(2) + '</td><td>' + power.getImprovementBonus().toFixed(2) + '</td><td>' + power.getNightTouchPlaneBonus() + '</td><td>' + landBonus.b12 + '</td><td>' + landBonus.a13.toFixed(2) + '</td><td>' + landBonus.b13 + '</td></tr>'
     result += '<tr><th>キャップ前火力</th><th>攻撃側陣形補正</th><th>夜戦特殊攻撃補正</th><th>損傷補正</th><th>特殊砲補正</th><th></th></tr>'
-    result += '<tr><td>' + power.getBeforeCapPower().toFixed(2) + '</td><td>' + power.getFormationBonus().toFixed(1) + '</td><td>' + power.getCutinBonus().toFixed(2) + '</td><td>' + power.getConditionBonus().toFixed(1) + '</td><td>' + getOriginalGunPowerBonus(power.attacker).toFixed(2) + '</td><td></td></tr>'
+    result += '<tr><td>' + power.getBeforeCapPower().toFixed(2) + '</td><td>' + power.getFormationBonus().toFixed(2) + '</td><td>' + power.getCutinBonus().toFixed(2) + '</td><td>' + power.getConditionBonus().toFixed(2) + '</td><td>' + getOriginalGunPowerBonus(power.attacker).toFixed(2) + '</td><td></td></tr>'
     result += '<tr><th rowspan="2">最終攻撃力</th><th>キャップ値</th><th>キャップ後火力</th><th>特殊敵乗算特効</th><th>特殊敵加算特効</th><th></th></tr>'
     result += '<tr><td>' + power.CAP_VALUE + '</td><td>' + getAfterCapValue(power.getBeforeCapPower(), power.CAP_VALUE).toFixed(2) + '</td><td>' + getMultiplySlayerBonus(data.attacker, data.defender).toFixed(2) + '</td><td>' + getAddSlayerBonus(data.attacker, data.defender) + '</td><td></td></tr>'
     result += '<tr><td rowspan="2" style="font-weight:bold;">' + power.getAfterCapPower().map(function (power) { return power.toFixed(2) }).join('~') + '</td><th>クリティカル補正</th><th>熟練度補正</th><th></th><th></th><th></th></tr>'
     var skilled = data.shouldUseSkilled ? getSkilledBonus(data.date, data.attack, data.attacker, data.defender, data.attackerHp).map(function (value) { return value.toFixed(2) }).join(' ~ ') : '1.00'
     result += '<tr><td>' + getCriticalBonus(data.attack).toFixed(1) + '</td><td>' + skilled + '</td><td></td><td></td><td></td></tr>'
     return '<table>' + result + '</table>'
-}
-
-/**
- * 異常ダメージのざっくりとした倍率一覧を返す
- * @param {[Number, Number, Number]} map マップ
- * @return {String} HTML
- */
-function toUnexpectedRangeHtml(map) {
-    var unexpected = getData("unexpected")
-    if (unexpected[map]) {
-        return Object.keys(unexpected[map]).map(function(shipId) {
-            var all = Object.keys(unexpected[map][shipId]).map(function(eShipId) {
-                return unexpected[map][shipId][eShipId]
-            }).reduce(function(p, v) {
-                p[0] = Math.max(p[0], v[0])
-                p[1] = Math.min(p[1], v[1])
-                p[2] += v[2]
-                Array.prototype.push.apply(p[3], v[3])
-                return p
-            }, [0, 9999, 0, []])
-            var allHtml = '<div id="dmg' + shipId + '_0">' + Ship.get(shipId).name + " - " + all[0].toFixed(4) + " ~ " + all[1].toFixed(4) + " (" + all[2] + 'x)</div>'
-
-            return allHtml + Object.keys(unexpected[map][shipId]).map(function(eShipId) {
-                return '<div id="dmg' + shipId + '_' + eShipId + '" style="display:none;">' +
-                        Ship.get(shipId).name + " - " + unexpected[map][shipId][eShipId][0].toFixed(3) + " ~ " + unexpected[map][shipId][eShipId][1].toFixed(3) + " (" + unexpected[map][shipId][eShipId][2] + 'x)' +
-                    '</div>'
-            }).join("")
-        }).join("")
-    }
-    return ""
 }
 
 /**
@@ -469,16 +520,18 @@ function toUnexpectedEnemySelectBoxHtml(map) {
     if (unexpected[map]) {
         return '<select id="enemy" onchange="selectEnemyName()">' +
             '<option value="0">全艦</option>' +
-            flatten(Object.keys(unexpected[map]).map(function(shipId) {
-                return Object.keys(unexpected[map][shipId])
-            })).filter(function(x, i, self) {
-                return self.indexOf(x) === i
+            Object.keys(unexpected[map]).map(function(index) {
+                return [index.split("_")[2], index.split("_")[3]]
+            }).filter(function(x, i, self) {
+                return self.map(function(v){
+                    return v[0]
+                }).indexOf(x[0]) === i
             }).sort(function(a, b) {
-                return a > b ? 1 : -1
-            }).map(function(shipId) {
-                return '<option value="' + shipId + '">' + Ship.get(shipId).name + ' (' + shipId + ')</option>'
+                return a[0] > b[0] ? 1 : -1
+            }).map(function(ship) {
+                return '<option value="' + ship[0] + '">' + ship[1] + ' (' + ship[0] + ')</option>'
             }).join('') +
         '</select>'
     }
-    return ""
+    return "なし"
 }

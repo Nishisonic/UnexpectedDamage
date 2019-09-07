@@ -991,20 +991,15 @@ var detectDayBattle = function (date, mapCell, kind, friendCombinedKind, isEnemy
                                 var ammoBonus = getAmmoBonus(ship.attacker, attack.friendAttack ? friends : enemies, mapCell)
                                 var back = [(attack.damage / ammoBonus + armor * 0.7) / power[1], (attack.damage / ammoBonus + (armor * 0.7 + Math.floor(armor - 1) * 0.6)) / power[0]]
                                 var maps = JSON.stringify(Java.from(mapCell.map))
+                                var index = ship.attacker.shipId + "_" + ship.attacker.friendlyName.replace(/\(.*\)$/, "") + "_" + ship.defender.shipId + "_" + ship.defender.friendlyName.replace(/\(.*\)$/, "")
+
                                 if (!unexpected[maps]) {
                                     unexpected[maps] = {}
                                 }
-                                if (!unexpected[maps][ship.attacker.shipId]) {
-                                    unexpected[maps][ship.attacker.shipId] = {}
+                                if (!unexpected[maps][index]) {
+                                    unexpected[maps][index] = []
                                 }
-                                if (!unexpected[maps][ship.attacker.shipId][ship.defender.shipId]) {
-                                    unexpected[maps][ship.attacker.shipId][ship.defender.shipId] = [back[0], back[1], 1, [date]]
-                                } else {
-                                    unexpected[maps][ship.attacker.shipId][ship.defender.shipId][0] = Math.max(unexpected[maps][ship.attacker.shipId][ship.defender.shipId][0], back[0])
-                                    unexpected[maps][ship.attacker.shipId][ship.defender.shipId][1] = Math.min(unexpected[maps][ship.attacker.shipId][ship.defender.shipId][1], back[1])
-                                    unexpected[maps][ship.attacker.shipId][ship.defender.shipId][2]++
-                                    unexpected[maps][ship.attacker.shipId][ship.defender.shipId][3].push(date)
-                                }
+                                unexpected[maps][index].push({min:back[0], max:back[1], date:date.getTime()})
                             }
                         }
                         result.push(new DetectDto(date, mapCell, 0, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], shouldUseSkilled === undefined ? true : shouldUseSkilled, attack.friendAttack ? friends : enemies, false))
@@ -1067,20 +1062,15 @@ var detectTorpedoAttack = function (date, mapCell, kind, friendCombinedKind, isE
                         var ammoBonus = getAmmoBonus(ship.attacker, attack.friendAttack ? friends : enemies, mapCell)
                         var back = [(attack.damage / ammoBonus + armor * 0.7) / power[1], (attack.damage / ammoBonus + (armor * 0.7 + Math.floor(armor - 1) * 0.6)) / power[0]]
                         var maps = JSON.stringify(Java.from(mapCell.map))
+                        var index = ship.attacker.shipId + "_" + ship.attacker.friendlyName.replace(/\(.*\)$/, "") + "_" + ship.defender.shipId + "_" + ship.defender.friendlyName.replace(/\(.*\)$/, "")
+
                         if (!unexpected[maps]) {
                             unexpected[maps] = {}
                         }
-                        if (!unexpected[maps][ship.attacker.shipId]) {
-                            unexpected[maps][ship.attacker.shipId] = {}
+                        if (!unexpected[maps][index]) {
+                            unexpected[maps][index] = []
                         }
-                        if (!unexpected[maps][ship.attacker.shipId][ship.defender.shipId]) {
-                            unexpected[maps][ship.attacker.shipId][ship.defender.shipId] = [back[0], back[1], 1, [date]]
-                        } else {
-                            unexpected[maps][ship.attacker.shipId][ship.defender.shipId][0] = Math.max(unexpected[maps][ship.attacker.shipId][ship.defender.shipId][0], back[0])
-                            unexpected[maps][ship.attacker.shipId][ship.defender.shipId][1] = Math.min(unexpected[maps][ship.attacker.shipId][ship.defender.shipId][1], back[1])
-                            unexpected[maps][ship.attacker.shipId][ship.defender.shipId][2]++
-                            unexpected[maps][ship.attacker.shipId][ship.defender.shipId][3].push(date)
-                        }
+                        unexpected[maps][index].push({min:back[0], max:back[1], date:date.getTime()})
                     }
                 }
                 result.push(new DetectDto(date, mapCell, 1, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], false, friends, false))
@@ -1189,20 +1179,15 @@ var detectNightBattle = function (date, mapCell, kind, friendCombinedKind, isEne
                                 var ammoBonus = getAmmoBonus(ship.attacker, attack.friendAttack ? friends : enemies, mapCell)
                                 var back = [(attack.damage / ammoBonus + armor * 0.7) / power[1], (attack.damage / ammoBonus + (armor * 0.7 + Math.floor(armor - 1) * 0.6)) / power[0]]
                                 var maps = JSON.stringify(Java.from(mapCell.map))
+                                var index = ship.attacker.shipId + "_" + ship.attacker.friendlyName.replace(/\(.*\)$/, "") + "_" + ship.defender.shipId + "_" + ship.defender.friendlyName.replace(/\(.*\)$/, "")
+
                                 if (!unexpected[maps]) {
                                     unexpected[maps] = {}
                                 }
-                                if (!unexpected[maps][ship.attacker.shipId]) {
-                                    unexpected[maps][ship.attacker.shipId] = {}
+                                if (!unexpected[maps][index]) {
+                                    unexpected[maps][index] = []
                                 }
-                                if (!unexpected[maps][ship.attacker.shipId][ship.defender.shipId]) {
-                                    unexpected[maps][ship.attacker.shipId][ship.defender.shipId] = [back[0], back[1], 1, [date]]
-                                } else {
-                                    unexpected[maps][ship.attacker.shipId][ship.defender.shipId][0] = Math.max(unexpected[maps][ship.attacker.shipId][ship.defender.shipId][0], back[0])
-                                    unexpected[maps][ship.attacker.shipId][ship.defender.shipId][1] = Math.min(unexpected[maps][ship.attacker.shipId][ship.defender.shipId][1], back[1])
-                                    unexpected[maps][ship.attacker.shipId][ship.defender.shipId][2]++
-                                    unexpected[maps][ship.attacker.shipId][ship.defender.shipId][3].push(date)
-                                }
+                                unexpected[maps][index].push({min:back[0], max:back[1], date:date.getTime()})
                             }
                         }
                         result.push(new DetectDto(date, mapCell, 2, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, touchPlane, shouldUseSkilled === undefined ? true : shouldUseSkilled, attack.friendAttack ? friends : enemies, false))
