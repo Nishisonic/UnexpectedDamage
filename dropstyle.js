@@ -85,7 +85,7 @@ function create(table, data, index) {
                                 }
                             }))
                             browser = new Browser(shell, SWT.NONE)
-                            browser.setBounds(0, 0, 900, 670)
+                            browser.setBounds(0, 0, 900, 700)
                             shell.pack()
                             shell.open()
                         } else {
@@ -178,64 +178,70 @@ function genBattleHtml(dataLists) {
         '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">' +
         '<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>' +
         '<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ja.js"></script>' +
+        '<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>' +
+        '<script src="https://unpkg.com/multiple-select@1.4.0/dist/multiple-select.js"></script>' +
+        '<link href="https://unpkg.com/multiple-select@1.4.0/dist/multiple-select.css" rel="stylesheet">' +
         '<style type="text/css">' +
-        "body {font-family:'Lucida Grande','Hiragino Kaku Gothic ProN','ヒラギノ角ゴ ProN W3',Meiryo,メイリオ,sans-serif;}" +
-        "div.box{margin-top:10px;margin-bottom:10px;font-size:small;}" +
-        "body{background-color:#FAFAFA;}" +
-        "h1{font-size: small;}" +
-        "h2{font-size: small;}" +
-        "h3{font-size: small;}" +
-        "p {font-size: small;}" +
-        "table{border:1px #BBB solid;border-collapse:collapse;font-size:small;}" +
-        "table tr th{border:1px #BBB solid;border-collapse:collapse;background-color:#BFF;}" +
-        "table tr{border:1px #BBB solid;border-collapse:collapse;padding:5px;}" +
-        "table tr td{border:1px #BBB solid;border-collapse:collapse;padding:5px;background-color:#EEE;}" +
-        ".label-syoha{color:#FC0;}" +
-        ".label-tyuha{color:#F80;}" +
-        ".label-taiha{color:#F00;}" +
-        ".label-gotin{color:#00F;}" +
-        "td.enemy{color:#F00;}" +
-        "td.friend{color:#00F;}" +
-        ".param{font-weight:bold;}" +
-        "header{position:fixed;top:0px;left:0px;padding-left:10px;background-color:#FAFAFA;width:100%;}" +
+            "body {font-family:'Lucida Grande','Hiragino Kaku Gothic ProN','ヒラギノ角ゴ ProN W3',Meiryo,メイリオ,sans-serif;}" +
+            "div.box{margin-top:10px;margin-bottom:10px;font-size:small;}" +
+            "body{background-color:#FAFAFA;}" +
+            "h1{font-size: small;}" +
+            "h2{font-size: small;}" +
+            "h3{font-size: small;}" +
+            "p {font-size: small;}" +
+            "table{border:1px #BBB solid;border-collapse:collapse;font-size:small;}" +
+            "table tr th{border:1px #BBB solid;border-collapse:collapse;background-color:#BFF;}" +
+            "table tr{border:1px #BBB solid;border-collapse:collapse;padding:5px;}" +
+            "table tr td{border:1px #BBB solid;border-collapse:collapse;padding:5px;background-color:#EEE;}" +
+            ".label-syoha{color:#FC0;}" +
+            ".label-tyuha{color:#F80;}" +
+            ".label-taiha{color:#F00;}" +
+            ".label-gotin{color:#00F;}" +
+            "td.enemy{color:#F00;}" +
+            "td.friend{color:#00F;}" +
+            ".param{font-weight:bold;}" +
+            "header{position:fixed;top:0px;left:0px;padding-left:10px;background-color:#FAFAFA;width:100%;}" +
+            "#enemy{width:300px;}" +
         '</style></head>' +
         '<body>' +
         '<header>' +
         '<h2>' + masterData.mapCell + '（' + sdf.format(masterData.date) + '）</h2>' +
-        '<div style="float: left; margin-bottom: 30px;">' +
-        '<h2>会敵情報</h2>' +
         '<div>' +
-        '<div>会敵: ' + toIntercept(Number(masterData.formation[2])) + '</div>' +
-        '<table style="margin-bottom: 20px;">' +
-        '<tr>' +
-        '<th></th>' +
-        '<th>艦隊</th>' +
-        '<th>陣形</th>' +
-        '<th title="夜戦時に異常ダメージがあった場合のみ表示">夜間触接</th>' +
-        '</tr>' +
-        '<tr>' +
-        '<td>自</td>' +
-        '<td>' + toCombined(masterData.friendCombinedKind) + '</td>' +
-        '<td>' + toFormation(Number(masterData.formation[0])) + '</td>' +
-        '<td>' + (touchPlane[0] > 0 ? Item.get(touchPlane[0]).name : "") + '</td>' +
-        '</tr>' +
-        '<tr>' +
-        '<td>敵</td>' +
-        '<td>' + (masterData.isEnemyCombined ? '連合艦隊' : '通常艦隊') + '</td>' +
-        '<td>' + toFormation(Number(masterData.formation[1])) + '</td>' +
-        '<td>' + (touchPlane[1] > 0 ? Item.get(touchPlane[1]).name : "") + '</td>' +
-        '</tr>' +
-        '</table>' +
-        '</div>' +
-        '</div>' +
-        (masterData.mapCell.map[0] < 22 ? '' :
-            '<script type="text/javascript">' +
-                'var dates = [];' +
-                'var unexpected = ' + JSON.stringify(getData("unexpected")[JSON.stringify(Java.from(masterData.mapCell.map))]) + ';' +
-                'function selectEnemyName(){' +
-                    'var enemyId = document.getElementById("enemy").value;' +
-                    'if (Number(enemyId) === 0) {' +
-                        'var datalist = Object.keys(unexpected).map(function(index){' +
+            '<div style="float: left; margin-bottom: 45px;">' +
+                '<h2>会敵情報</h2>' +
+                '<div>' +
+                    '<div>会敵: ' + toIntercept(Number(masterData.formation[2])) + '</div>' +
+                    '<table style="margin-bottom: 20px;">' +
+                        '<tr>' +
+                            '<th></th>' +
+                            '<th>艦隊</th>' +
+                            '<th>陣形</th>' +
+                            '<th title="夜戦時に異常ダメージがあった場合のみ表示">夜間触接</th>' +
+                        '</tr>' +
+                        '<tr>' +
+                            '<td>自</td>' +
+                            '<td>' + toCombined(masterData.friendCombinedKind) + '</td>' +
+                            '<td>' + toFormation(Number(masterData.formation[0])) + '</td>' +
+                            '<td>' + (touchPlane[0] > 0 ? Item.get(touchPlane[0]).name : "") + '</td>' +
+                        '</tr>' +
+                        '<tr>' +
+                            '<td>敵</td>' +
+                            '<td>' + (masterData.isEnemyCombined ? '連合艦隊' : '通常艦隊') + '</td>' +
+                            '<td>' + toFormation(Number(masterData.formation[1])) + '</td>' +
+                            '<td>' + (touchPlane[1] > 0 ? Item.get(touchPlane[1]).name : "") + '</td>' +
+                        '</tr>' +
+                    '</table>' +
+                '</div>' +
+            '</div>' +
+            (masterData.mapCell.map[0] < 22 ? '' :
+                '<script type="text/javascript">' +
+                    'var dates = [];' +
+                    'var unexpected = ' + JSON.stringify(getData("unexpected")[JSON.stringify(Java.from(masterData.mapCell.map))]) + ';' +
+                    'function selectEnemyName(){' +
+                        'var enemyIds = $("#enemy").multipleSelect("getSelects");' +
+                        'var datalist = Object.keys(unexpected).filter(function(index){' +
+                            'return enemyIds.indexOf(index.split("_")[2]) >= 0;' +
+                        '}).map(function(index){' +
                             'return [index.split("_")[0] + "_" + index.split("_")[1], unexpected[index]];' +
                         '}).reduce(function(p, v) {' +
                             'var u = v[1].filter(function(data){' +
@@ -257,53 +263,48 @@ function genBattleHtml(dataLists) {
                             '}' +
                             'return p;' +
                         '}, {});' +
-                        'document.getElementById("unexpectedBox").innerHTML = Object.keys(datalist).filter(function(key){' +
+                        '$("#unexpectedBox").html(Object.keys(datalist).filter(function(key){' +
                             'return datalist[key].count > 0;' +
                         '}).map(function(key){' +
                             'return "<div>" + key.split("_")[1] + " - " + datalist[key].min.toFixed(4) + " ~ " + datalist[key].max.toFixed(4) + " (" + datalist[key].count + "x)</div>";' +
-                        '}).join("");' +
-                    '} else {' +
-                        'document.getElementById("unexpectedBox").innerHTML = Object.keys(unexpected).filter(function(index){' +
-                            'return index.split("_")[2] === enemyId;' +
-                        '}).map(function(index){' +
-                            'var u = unexpected[index].filter(function(data){' +
-                                'return dates.length === 0 || dates[0] <= data.date && data.date <= dates[1];' +
-                            '}).reduce(function(p, v){' +
-                                'p.min = Math.max(p.min, v.min);' +
-                                'p.max = Math.min(p.max, v.max);' +
-                                'p.count++;' +
-                                'p.dates.push(v.date);' +
-                                'return p;' +
-                            '}, {min:0, max:9999, count:0, dates:[]});' +
-                            'if (u.count > 0) {' +
-                                'return "<div>" + index.split("_")[1] + " - " + u.min.toFixed(4) + " ~ " + u.max.toFixed(4) + " (" + u.count + "x)</div>";' +
-                            '}' +
-                            'return "";' +
-                        '}).join("");' +
+                        '}).join(""));' +
                     '}' +
-                '}' +
-                'window.onload = function(){' +
-                    'selectEnemyName();' +
-                '}' +
-            '</script>' +
-            '<div style="float: right;">' +
-                '<h2 style="margin-bottom: 0">' +
-                    masterData.mapCell.map[0] + '-' + masterData.mapCell.map[1] + '-' + masterData.mapCell.map[2] + ' 特効倍率(速報値) ※イベント限定 <span style="font-size: x-small;">対陸上、PT、熟練度は除外</span><br>' +
-                    '<span style="margin-right: 2px;">対象敵:</span>' + toUnexpectedEnemySelectBoxHtml(JSON.stringify(Java.from(masterData.mapCell.map))) +
-                '</h2>' +
-                '<h2 style="margin-top:3px;margin-bottom:3px;"><span style="margin-right: 2px;">期間:</span>' +
-                    '<span class="flatpickr">' +
-                        '<input type="text" placeholder="全指定" class="flatpickr" data-input style="width:280px">' +
-                        '<span style="padding-left: 5px;cursor:pointer;"><a class="input-button" title="全指定に戻す" data-clear>x</a></span>' +
-                    '</span>' +
-                '</h2>' +
-                '<div id="unexpectedBox" style="overflow: scroll; width: 400px; height: 118px; border:#000000 1px solid; margin-right: 15px; font-size:small;"></div>' +
-            '</div>'
-        ) +
+                    '$(function(){' +
+                        '$("#enemy").multipleSelect({' +
+                            'placeholder:"選択なし",' +
+                            'minimumCountSelected: 2,' +
+                            'onClick: function(view){' +
+                                'selectEnemyName();' +
+                            '},' +
+                            'onCheckAll: function () {' +
+                                'selectEnemyName();' +
+                            '},' +
+                            'onUncheckAll: function () {' +
+                                'selectEnemyName();' +
+                            '},' +
+                        '});' +
+                        '$("#enemy").multipleSelect("checkAll");' +
+                    '})' +
+                '</script>' +
+                '<div style="float: right;">' +
+                    '<h2 style="margin-bottom: 0">' +
+                        masterData.mapCell.map[0] + '-' + masterData.mapCell.map[1] + '-' + masterData.mapCell.map[2] + ' 特効倍率(速報値) ※イベント限定 <span style="font-size: x-small;">対陸上、PT、熟練度は除外</span><br>' +
+                        '<span style="margin-right: 2px;">対象敵:</span>' + toUnexpectedEnemySelectBoxHtml(JSON.stringify(Java.from(masterData.mapCell.map))) +
+                    '</h2>' +
+                    '<h2 style="margin-top:3px;margin-bottom:3px;"><span style="margin-right: 2px;">期間:</span>' +
+                        '<span class="flatpickr">' +
+                            '<input type="text" placeholder="全指定" class="flatpickr" data-input style="width:280px">' +
+                            '<span style="padding-left: 5px;cursor:pointer;"><a class="input-button" title="全指定に戻す" data-clear>x</a></span>' +
+                        '</span>' +
+                    '</h2>' +
+                    '<div id="unexpectedBox" style="overflow: scroll; width: 400px; height: 118px; border:#000000 1px solid; margin-right: 15px; font-size:small;"></div>' +
+                '</div>'
+            ) +
+        '</div>' +
         '<h2 style="clear: both; padding: 0; margin: 2px 0 0;">異常ダメ検知攻撃一覧</h2>' +
         '<hr style="height: 1px; background-color: #BBB; border: none; margin-right:15px;"></hr>' +
         '</header>' +
-        '<div style="width:100%; height:275px;"></div>' +
+        '<div style="width:100%; height:290px;"></div>' +
         '<div style="overflow: auto; min-width:500px; border:#000000 solid 1px; width: 100%; font-size:small;">' +
         // 昼砲撃戦
         dataLists[0].map(function (data) {
@@ -415,14 +416,14 @@ function genGimmickHtml(data, power, idx) {
     var ammoBonus = getAmmoBonus(data.attacker, data.origins, data.mapCell)
     var result = '<script type="text/javascript">'
     result += 'function func' + idx + '(){'
-    result += 'var gimmick = document.getElementById("gimmick' + idx + '").value;'
+    result += 'var gimmick = $("#gimmick' + idx + '").val();'
     result += 'var minA = ' + power.getAfterCapPower()[0] + ' * gimmick;'
     result += 'var maxA = ' + power.getAfterCapPower()[1] + ' * gimmick;'
     result += 'var armor = ' + (data.defender.soukou + getArmorBonus(data.date, data.mapCell, data.attacker, data.defender)) + ';'
     result += 'var ammoBonus = ' + ammoBonus + ';'
-    result += 'document.getElementById("afterpower' + idx + '").innerHTML = minA.toFixed(2) + " ~ " + maxA.toFixed(2);'
-    result += 'document.getElementById("theoretical' + idx + '").innerHTML = Math.floor((minA - (armor * 0.7 + Math.floor(armor - 1) * 0.6)) * ammoBonus) + " ~ " + Math.floor((maxA - armor * 0.7) * ammoBonus);'
-    result += 'document.getElementById("border' + idx + '").innerHTML = Math.floor((maxA - armor * 0.7) * ammoBonus) >= ' + Math.floor(data.attack.damage) + ' && ' + Math.floor(data.attack.damage) + ' >= Math.floor((minA - (armor * 0.7 + Math.floor(armor - 1) * 0.6)) * ammoBonus) ? "○" : "x";'
+    result += '$("#afterpower' + idx + '").html(minA.toFixed(2) + " ~ " + maxA.toFixed(2));'
+    result += '$("#theoretical' + idx + '").html(Math.floor((minA - (armor * 0.7 + Math.floor(armor - 1) * 0.6)) * ammoBonus) + " ~ " + Math.floor((maxA - armor * 0.7) * ammoBonus));'
+    result += '$("#border' + idx + '").html(Math.floor((maxA - armor * 0.7) * ammoBonus) >= ' + Math.floor(data.attack.damage) + ' && ' + Math.floor(data.attack.damage) + ' >= Math.floor((minA - (armor * 0.7 + Math.floor(armor - 1) * 0.6)) * ammoBonus) ? "○" : "x");'
     result += '}</script>'
     result += '<table style="margin-top:5px;">'
     result += '<tr><th colspan="5">ギミック簡易計算(a11)</th></tr>'
@@ -518,8 +519,7 @@ function genNightBattleHtml(data, power) {
 function toUnexpectedEnemySelectBoxHtml(map) {
     var unexpected = getData("unexpected")
     if (unexpected[map]) {
-        return '<select id="enemy" onchange="selectEnemyName()">' +
-            '<option value="0">全艦</option>' +
+        return '<select id="enemy" multiple="multiple">' +
             Object.keys(unexpected[map]).map(function(index) {
                 return [index.split("_")[2], index.split("_")[3]]
             }).filter(function(x, i, self) {
