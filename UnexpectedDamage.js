@@ -2144,7 +2144,7 @@ var getLandBonus = function (attacker, defender) {
     var b13 = ([0, 75, 110, 140, 160, 160])[wg42]
         + ([0, 30, 55, 75, 90, 90])[type2Mortar]
         + ([0, 60, 110, 110, 110, 110])[type2MortarEx]
-        + ([0, 55, 115, 115, 115, 115])[type4Rocket]
+        + ([0, 55, 115, 160, 160, 160])[type4Rocket]
         + (shikonDaihatsu ? 25 : 0)
         + (m4a1dd ? 40 : 0) // 仮決め
 
@@ -2210,17 +2210,27 @@ var getLandBonus = function (attacker, defender) {
         case 1703:
         case 1704: // 港湾夏姫-壊
             // 三式弾(改)
-            a13 *= type3shell ? 1.8 : 1
+            a13 *= type3shell ? 1.75 : 1
+            // 徹甲弾
+            a13 *= apShell ? 1.3 : 1
             // WG42(Wurfgerät 42)
-            a13 *= wg42 ? 1.4 : 1
+            a13 *= (wg42 ? 1.4 : 1) * (wg42 >= 2 ? 1.2 : 1)
+            // 艦載型 四式20cm対地噴進砲
+            a13 *= (type4Rocket ? 1.3 : 1) * (type4Rocket >= 2 ? 1.35 : 1)
+            // カテゴリ:迫撃砲
+            a13 *= (mortarGroup ? 1.1 : 1) * (mortarGroup >= 2 ? 1.15 : 1)
+            // 水上戦闘機、水上爆撃機
+            a13 *= suijo ? 1.3 : 1
+            // 艦上爆撃機
+            a13 *= bomber ? 1.3 : 1
             // 大発動艇
             a13 *= daihatsu ? 1.8 : 1
             // 特大発動艇
             // a13 *= tokuDaihatsu ? 1 : 1
             // 大発動艇(八九式中戦車&陸戦隊)
-            a13 *= rikuDaihatsu ? 3.7 : 1
+            a13 *= rikuDaihatsu ? 3.7251 : 1
             // 特大発動艇+戦車第11連隊
-            // a13 *= shikonDaihatsu ? 1 : 1
+            a13 *= shikonDaihatsu ? 3.1636 : 1
             // 特二式内火艇
             a13 *= kamisha ? 2.8 : 1
             break
@@ -2243,7 +2253,7 @@ var getLandBonus = function (attacker, defender) {
             // カテゴリ:迫撃砲
             a13 *= (mortarGroup ? 1.2 : 1) * (mortarGroup >= 2 ? 1.3 : 1)
             // 水上戦闘機、水上爆撃機
-            a13 *= suijo ? 1.2 : 1.0
+            a13 *= suijo ? 1.2 : 1
             // カテゴリ:大発
             a13 *= daihatsuGroup ? 1.4 : 1
             // 特大発動艇
