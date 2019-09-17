@@ -1,6 +1,6 @@
 /**
  * 異常ダメージ検知
- * @version 1.6.6
+ * @version 1.6.7
  * @author Nishikuma
  */
 
@@ -920,8 +920,9 @@ var damageControl = function (shipHp, ship) {
  * @param {Boolean} shouldUseSkilled 熟練度を使用すべきか(default=true)
  * @param {FleetDto} origins 攻撃側艦隊
  * @param {Boolean} isRadarShooting レーダー射撃戦か(default=false)
+ * @param {{min: Number, max:Number, minEx:Number, maxEx:Number, date:Number}} inversion 逆算
  */
-var DetectDto = function (date, mapCell, phase, attack, power, attacker, defender, attackerHp, defenderHp, kind, friendCombinedKind, isEnemyCombined, formation, touchPlane, shouldUseSkilled, origins, isRadarShooting) {
+var DetectDto = function (date, mapCell, phase, attack, power, attacker, defender, attackerHp, defenderHp, kind, friendCombinedKind, isEnemyCombined, formation, touchPlane, shouldUseSkilled, origins, isRadarShooting, inversion) {
     this.date = date
     this.mapCell = mapCell
     this.phase = phase
@@ -939,6 +940,7 @@ var DetectDto = function (date, mapCell, phase, attack, power, attacker, defende
     this.shouldUseSkilled = shouldUseSkilled
     this.origins = origins
     this.isRadarShooting = !!isRadarShooting
+    this.inversion = inversion
 }
 
 /**
@@ -971,7 +973,8 @@ var detectDayBattle = function (date, mapCell, kind, friendCombinedKind, isEnemy
                 var hp = getAtkDefHp(attack, friendHp, enemyHp)
                 // 味方潜水への攻撃は検出対象から除外(敵対潜値が不明のため)
                 if (!(!attack.friendAttack && isSubMarine(ship.defender))) {
-                    var power = getDayBattlePower(date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, attack, ship.attacker, ship.defender, hp.attacker, shouldUseSkilled === undefined ? true : shouldUseSkilled, attack.friendAttack ? friends : enemies).getAfterCapPower()
+                    var p = getDayBattlePower(date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, attack, ship.attacker, ship.defender, hp.attacker, shouldUseSkilled === undefined ? true : shouldUseSkilled, attack.friendAttack ? friends : enemies)
+                    var power = p.getAfterCapPower()
                     var armor = Math.max(ship.defender.soukou + getArmorBonus(date, mapCell, ship.attacker, ship.defender), 1)
                     var minDef = armor * 0.7
                     var maxDef = armor * 0.7 + Math.floor(armor - 1) * 0.6
@@ -983,13 +986,36 @@ var detectDayBattle = function (date, mapCell, kind, friendCombinedKind, isEnemy
                     var maxSunkDmg = Math.floor(hp.defender.now * 0.8 - 0.3)
                     var covered = minPropDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxPropDmg || !attack.friendAttack && minSunkDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxSunkDmg || isHp1ReplacementShip(ship.defender, attack.defender === 0)
                     if (!(minDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxDmg || covered)) {
+                        var ammoBonus = getAmmoBonus(ship.attacker, attack.friendAttack ? friends : enemies, mapCell)
+                        var minAfterPower = attack.damage / ammoBonus + armor * 0.7
+                        var maxAfterPower = attack.damage / ammoBonus + armor * 0.7 + (armor * 0.7 + Math.floor(armor - 1) * 0.6)
+                        var inversion = {
+                            min: minAfterPower / power[1],
+                            max: maxAfterPower / power[0],
+                            minEx: 0,
+                            maxEx: 0,
+                            date:date.getTime()
+                        }
+
+                        if (!isSubMarine(ship.defender) && p.isAPshellBonusTarget() && isCritical(attack)) {
+                            // [[[キャップ後攻撃力] * 弾着観測射撃 * 戦爆連合カットイン攻撃 * イベント特効 * 徹甲弾補正] * クリティカル補正]
+                            inversion.minEx = Math.ceil(Math.ceil(minAfterPower) / getCriticalBonus(attack)) / power[1]
+                            inversion.maxEx = Math.ceil(Math.ceil(maxAfterPower) / getCriticalBonus(attack)) / power[0]
+                        } else if (!isSubMarine(ship.defender) && !p.isAPshellBonusTarget() || !isCritical(attack)) {
+                            // [キャップ後攻撃力] * 弾着観測射撃 * 戦爆連合カットイン攻撃 * イベント特効
+                            inversion.minEx = minAfterPower / power[1]
+                            inversion.maxEx = maxAfterPower / power[0]
+                        } else {
+                            // [[キャップ後攻撃力] * 弾着観測射撃 * 戦爆連合カットイン攻撃 * イベント特効 * 徹甲弾補正]
+                            // [[キャップ後攻撃力] * 弾着観測射撃 * 戦爆連合カットイン攻撃 * イベント特効 * クリティカル補正]
+                            inversion.minEx = Math.ceil(minAfterPower) / power[1]
+                            inversion.maxEx = Math.ceil(maxAfterPower) / power[0]
+                        }
                         if (mapCell.map[0] >= 22 && attack.friendAttack) {
                             // 熟練度
                             var skilled = getSkilledBonus(date, attack, ship.attacker, ship.defender, hp.attacker)
                             // 割合ダメージ等ではない&(敵が陸上型またはPT小鬼群または熟練度補正攻撃ではない)
                             if (!covered && !(isGround(ship.defender) || isPT(ship.defender) || skilled[0] > 1)) {
-                                var ammoBonus = getAmmoBonus(ship.attacker, attack.friendAttack ? friends : enemies, mapCell)
-                                var back = [(attack.damage / ammoBonus + armor * 0.7) / power[1], (attack.damage / ammoBonus + (armor * 0.7 + Math.floor(armor - 1) * 0.6)) / power[0]]
                                 var maps = JSON.stringify(Java.from(mapCell.map))
                                 var index = ship.attacker.shipId + "_" + ship.attacker.friendlyName.replace(/\(.*\)$/, "") + "_" + ship.defender.shipId + "_" + ship.defender.friendlyName.replace(/\(.*\)$/, "")
 
@@ -999,10 +1025,10 @@ var detectDayBattle = function (date, mapCell, kind, friendCombinedKind, isEnemy
                                 if (!unexpected[maps][index]) {
                                     unexpected[maps][index] = []
                                 }
-                                unexpected[maps][index].push({min:back[0], max:back[1], date:date.getTime()})
+                                unexpected[maps][index].push(inversion)
                             }
                         }
-                        result.push(new DetectDto(date, mapCell, 0, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], shouldUseSkilled === undefined ? true : shouldUseSkilled, attack.friendAttack ? friends : enemies, false))
+                        result.push(new DetectDto(date, mapCell, 0, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], shouldUseSkilled === undefined ? true : shouldUseSkilled, attack.friendAttack ? friends : enemies, false, inversion))
                     }
                 }
                 processingShipHpDamage(ship.defender, hp.defender, attack.damage, attack.lastAttack) // ダメージ処理
@@ -1056,11 +1082,29 @@ var detectTorpedoAttack = function (date, mapCell, kind, friendCombinedKind, isE
             var maxSunkDmg = Math.floor(hp.defender.now * 0.8 - 0.3)
             var covered = minPropDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxPropDmg || !attack.friendAttack && minSunkDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxSunkDmg || isHp1ReplacementShip(ship.defender, attack.defender === 0)
             if (!(minDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxDmg || covered)) {
+                var ammoBonus = getAmmoBonus(ship.attacker, attack.friendAttack ? friends : enemies, mapCell)
+                var minAfterPower = attack.damage / ammoBonus + armor * 0.7
+                var maxAfterPower = attack.damage / ammoBonus + armor * 0.7 + (armor * 0.7 + Math.floor(armor - 1) * 0.6)
+                var inversion = {
+                    min: minAfterPower / power[1],
+                    max: maxAfterPower / power[0],
+                    minEx: 0,
+                    maxEx: 0,
+                    date:date.getTime()
+                }
+
+                if (!isCritical(attack)) {
+                    // [キャップ後攻撃力] * イベント特効
+                    inversion.minEx = minAfterPower / power[1]
+                    inversion.maxEx = maxAfterPower / power[0]
+                } else {
+                    // [[キャップ後攻撃力] * イベント特効 * クリティカル補正]
+                    inversion.minEx = Math.ceil(minAfterPower) / power[1]
+                    inversion.maxEx = Math.ceil(maxAfterPower) / power[0]
+                }
                 if (mapCell.map[0] >= 22) {
                     // 割合ダメージ等ではない&(敵がPT小鬼群ではない)
                     if (!covered && !isPT(ship.defender)) {
-                        var ammoBonus = getAmmoBonus(ship.attacker, attack.friendAttack ? friends : enemies, mapCell)
-                        var back = [(attack.damage / ammoBonus + armor * 0.7) / power[1], (attack.damage / ammoBonus + (armor * 0.7 + Math.floor(armor - 1) * 0.6)) / power[0]]
                         var maps = JSON.stringify(Java.from(mapCell.map))
                         var index = ship.attacker.shipId + "_" + ship.attacker.friendlyName.replace(/\(.*\)$/, "") + "_" + ship.defender.shipId + "_" + ship.defender.friendlyName.replace(/\(.*\)$/, "")
 
@@ -1070,10 +1114,10 @@ var detectTorpedoAttack = function (date, mapCell, kind, friendCombinedKind, isE
                         if (!unexpected[maps][index]) {
                             unexpected[maps][index] = []
                         }
-                        unexpected[maps][index].push({min:back[0], max:back[1], date:date.getTime()})
+                        unexpected[maps][index].push(inversion)
                     }
                 }
-                result.push(new DetectDto(date, mapCell, 1, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], false, friends, false))
+                result.push(new DetectDto(date, mapCell, 1, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], false, friends, false, inversion))
             }
             processingShipHpDamage(ship.defender, hp.defender, attack.damage, false) // ダメージ仮処理
         })
@@ -1097,7 +1141,26 @@ var detectTorpedoAttack = function (date, mapCell, kind, friendCombinedKind, isE
             var maxSunkDmg = Math.floor(hp.defender.now * 0.8 - 0.3)
             var covered = minPropDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxPropDmg || !attack.friendAttack && minSunkDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxSunkDmg || isHp1ReplacementShip(ship.defender, attack.defender === 0)
             if (!(minDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxDmg || covered)) {
-                result.push(new DetectDto(date, mapCell, 1, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], false, enemies, false))
+                var minAfterPower = attack.damage + armor * 0.7
+                var maxAfterPower = attack.damage + armor * 0.7 + (armor * 0.7 + Math.floor(armor - 1) * 0.6)
+                var inversion = {
+                    min: minAfterPower / power[1],
+                    max: maxAfterPower / power[0],
+                    minEx: 0,
+                    maxEx: 0,
+                    date:date.getTime()
+                }
+
+                if (!isCritical(attack)) {
+                    // [キャップ後攻撃力] * イベント特効
+                    inversion.minEx = minAfterPower / power[1]
+                    inversion.maxEx = maxAfterPower / power[0]
+                } else {
+                    // [[キャップ後攻撃力] * イベント特効 * クリティカル補正]
+                    inversion.minEx = Math.ceil(minAfterPower) / power[1]
+                    inversion.maxEx = Math.ceil(maxAfterPower) / power[0]
+                }
+                result.push(new DetectDto(date, mapCell, 1, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], false, enemies, false, inversion))
             }
             processingShipHpDamage(ship.defender, hp.defender, attack.damage, false) // ダメージ仮処理
         })
@@ -1171,13 +1234,31 @@ var detectNightBattle = function (date, mapCell, kind, friendCombinedKind, isEne
                     var maxSunkDmg = Math.floor(hp.defender.now * 0.8 - 0.3)
                     var covered = minPropDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxPropDmg || !attack.friendAttack && minSunkDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxSunkDmg || isHp1ReplacementShip(ship.defender, attack.defender === 0)
                     if (!(minDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxDmg || covered)) {
+                        var ammoBonus = getAmmoBonus(ship.attacker, attack.friendAttack ? friends : enemies, mapCell)
+                        var minAfterPower = attack.damage / ammoBonus + armor * 0.7
+                        var maxAfterPower = attack.damage / ammoBonus + armor * 0.7 + (armor * 0.7 + Math.floor(armor - 1) * 0.6)
+                        var inversion = {
+                            min: minAfterPower / power[1],
+                            max: maxAfterPower / power[0],
+                            minEx: 0,
+                            maxEx: 0,
+                            date:date.getTime()
+                        }
+
+                        if (!isCritical(attack)) {
+                            // [キャップ後攻撃力] * イベント特効
+                            inversion.minEx = minAfterPower / power[1]
+                            inversion.maxEx = maxAfterPower / power[0]
+                        } else {
+                            // [[キャップ後攻撃力] * イベント特効 * クリティカル補正]
+                            inversion.minEx = Math.ceil(minAfterPower) / power[1]
+                            inversion.maxEx = Math.ceil(maxAfterPower) / power[0]
+                        }
                         if (mapCell.map[0] >= 22 && attack.friendAttack) {
                             // 熟練度
                             var skilled = getSkilledBonus(date, attack, ship.attacker, ship.defender, hp.attacker)
                             // 割合ダメージ等ではない&(敵が陸上型またはPT小鬼群または熟練度補正攻撃ではない)
                             if (!covered && !(isGround(ship.defender) || isPT(ship.defender) || skilled[0] > 1)) {
-                                var ammoBonus = getAmmoBonus(ship.attacker, attack.friendAttack ? friends : enemies, mapCell)
-                                var back = [(attack.damage / ammoBonus + armor * 0.7) / power[1], (attack.damage / ammoBonus + (armor * 0.7 + Math.floor(armor - 1) * 0.6)) / power[0]]
                                 var maps = JSON.stringify(Java.from(mapCell.map))
                                 var index = ship.attacker.shipId + "_" + ship.attacker.friendlyName.replace(/\(.*\)$/, "") + "_" + ship.defender.shipId + "_" + ship.defender.friendlyName.replace(/\(.*\)$/, "")
 
@@ -1187,10 +1268,10 @@ var detectNightBattle = function (date, mapCell, kind, friendCombinedKind, isEne
                                 if (!unexpected[maps][index]) {
                                     unexpected[maps][index] = []
                                 }
-                                unexpected[maps][index].push({min:back[0], max:back[1], date:date.getTime()})
+                                unexpected[maps][index].push(inversion)
                             }
                         }
-                        result.push(new DetectDto(date, mapCell, 2, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, touchPlane, shouldUseSkilled === undefined ? true : shouldUseSkilled, attack.friendAttack ? friends : enemies, false))
+                        result.push(new DetectDto(date, mapCell, 2, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, touchPlane, shouldUseSkilled === undefined ? true : shouldUseSkilled, attack.friendAttack ? friends : enemies, false, inversion))
                     }
                 }
                 processingShipHpDamage(ship.defender, hp.defender, attack.damage, attack.lastAttack) // ダメージ処理
@@ -1242,7 +1323,26 @@ var detectRadarShooting = function (date, mapCell, kind, friendCombinedKind, isE
                     var maxSunkDmg = Math.floor(hp.defender.now * 0.8 - 0.3)
                     var covered = minPropDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxPropDmg || !attack.friendAttack && minSunkDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxSunkDmg || isHp1ReplacementShip(ship.defender, attack.defender === 0)
                     if (!(minDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxDmg || covered)) {
-                        result.push(new DetectDto(date, mapCell, 2, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], shouldUseSkilled === undefined ? true : shouldUseSkilled, attack.friendAttack ? friends : enemies, true))
+                        var minAfterPower = attack.damage + armor * 0.7
+                        var maxAfterPower = attack.damage + armor * 0.7 + (armor * 0.7 + Math.floor(armor - 1) * 0.6)
+                        var inversion = {
+                            min: minAfterPower / power[1],
+                            max: maxAfterPower / power[0],
+                            minEx: 0,
+                            maxEx: 0,
+                            date:date.getTime()
+                        }
+
+                        if (!isCritical(attack)) {
+                            // [キャップ後攻撃力] * イベント特効
+                            inversion.minEx = minAfterPower / power[1]
+                            inversion.maxEx = maxAfterPower / power[0]
+                        } else {
+                            // [[キャップ後攻撃力] * イベント特効 * クリティカル補正]
+                            inversion.minEx = Math.ceil(minAfterPower) / power[1]
+                            inversion.maxEx = Math.ceil(maxAfterPower) / power[0]
+                        }
+                        result.push(new DetectDto(date, mapCell, 2, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], shouldUseSkilled === undefined ? true : shouldUseSkilled, attack.friendAttack ? friends : enemies, true, inversion))
                     }
                 }
                 processingShipHpDamage(ship.defender, hp.defender, attack.damage, attack.lastAttack) // ダメージ処理

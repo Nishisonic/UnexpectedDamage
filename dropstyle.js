@@ -85,7 +85,7 @@ function create(table, data, index) {
                                 }
                             }))
                             browser = new Browser(shell, SWT.NONE)
-                            browser.setBounds(0, 0, 900, 700)
+                            browser.setBounds(0, 0, 900, 710)
                             shell.pack()
                             shell.open()
                         } else {
@@ -202,12 +202,85 @@ function genBattleHtml(dataLists) {
             ".param{font-weight:bold;}" +
             "header{position:fixed;top:0px;left:0px;padding-left:10px;background-color:#FAFAFA;width:100%;}" +
             "#enemy{width:300px;}" +
+            '.switch3__label{' +
+                'width:37px;' +
+                'position:relative;' +
+                'display:inline-block;' +
+                'padding-top:3px;' +
+            '}' +
+            '.switch3__content{' +
+                'display:block;' +
+                'cursor:pointer;' +
+                'position:relative;' +
+                'border-radius:7px;' +
+                'height:14px;' +
+                'background-color:rgba(34,31,31,.26);' +
+                '-webkit-transition:all.1s.4s;' +
+                '-moz-transition:all.1s.4s;' +
+                '-ms-transition:all.1s.4s;' +
+                '-o-transition:all.1s.4s;' +
+                'transition:all.1s.4s;' +
+                'overflow:hidden;' +
+            '}' +
+            '.switch3__content:after{' +
+                'content:"";' +
+                'display:block;' +
+                'position:absolute;' +
+                'width:0;' +
+                'height:100%;' +
+                'top:0;' +
+                'left:0;' +
+                'border-radius:7px;' +
+                '-webkit-transition:all.5s;' +
+                '-moz-transition:all.5s;' +
+                '-ms-transition:all.5s;' +
+                '-o-transition:all.5s;' +
+                'transition:all.5s;' +
+            '}' +
+            '.switch3__input{' +
+                'display:none;' +
+            '}' +
+            '.switch3__circle{' +
+                'display:block;' +
+                'top:0px;' +
+                'left:0px;' +
+                'position:absolute;' +
+                'width:20px;' +
+                'height:20px;' +
+                '-webkit-border-radius:10px;' +
+                'border-radius:10px;' +
+                'background-color:#F1F1F1;' +
+                '-webkit-transition:all.5s;' +
+                '-moz-transition:all.5s;' +
+                '-ms-transition:all.5s;' +
+                '-o-transition:all.5s;' +
+                'transition:all.5s;' +
+                '-webkit-box-shadow:02px2px#ccc;' +
+                'box-shadow:02px2px#ccc;' +
+                'cursor:pointer;' +
+            '}' +
+            '.switch3__input:checked~.switch3__circle{' +
+                'left:18px;' +
+                'background-color:#009688;' +
+            '}' +
+            '.switch3__input:checked~.switch3__content{' +
+                'border-color:transparent;' +
+                '-webkit-transition:all0s;' +
+                '-moz-transition:all0s;' +
+                '-ms-transition:all0s;' +
+                '-o-transition:all0s;' +
+                'transition:all0s;' +
+            '}' +
+            '.switch3__input:checked~.switch3__content:after{' +
+                'background-color:rgba(0,150,136,.5);' +
+                'width:100%;' +
+            '}' +
         '</style></head>' +
         '<body>' +
         '<header>' +
         '<h2>' + masterData.mapCell + '（' + sdf.format(masterData.date) + '）</h2>' +
         '<div>' +
-            '<div style="float: left; margin-bottom: 45px;">' +
+            '<div style="float: left; margin-bottom: 65px;">' +
                 '<h2>会敵情報</h2>' +
                 '<div>' +
                     '<div>会敵: ' + toIntercept(Number(masterData.formation[2])) + '</div>' +
@@ -239,6 +312,7 @@ function genBattleHtml(dataLists) {
                     'var unexpected = ' + JSON.stringify(getData("unexpected")[JSON.stringify(Java.from(masterData.mapCell.map))]) + ';' +
                     'function selectEnemyName(){' +
                         'var enemyIds = $("#enemy").multipleSelect("getSelects");' +
+                        'var hasExtra = $("#hasExtra").prop("checked");' +
                         'var datalist = Object.keys(unexpected).filter(function(index){' +
                             'return enemyIds.indexOf(index.split("_")[2]) >= 0;' +
                         '}).map(function(index){' +
@@ -249,13 +323,17 @@ function genBattleHtml(dataLists) {
                             '}).reduce(function(p, v){' +
                                 'p.min = Math.max(p.min, v.min);' +
                                 'p.max = Math.min(p.max, v.max);' +
+                                'p.minEx = Math.max(p.minEx, v.minEx);' +
+                                'p.maxEx = Math.min(p.maxEx, v.maxEx);' +
                                 'p.count++;' +
                                 'p.dates.push(v.date);' +
                                 'return p;' +
-                            '}, {min:0, max:9999, count:0, dates:[]});' +
+                            '}, {min:0, max:9999, minEx: 0, maxEx: 9999, count:0, dates:[]});' +
                             'if(p[v[0]]){' +
                                 'p[v[0]].min = Math.max(p[v[0]].min, u.min);' +
                                 'p[v[0]].max = Math.min(p[v[0]].max, u.max);' +
+                                'p[v[0]].minEx = Math.max(p[v[0]].minEx, u.minEx);' +
+                                'p[v[0]].maxEx = Math.min(p[v[0]].maxEx, u.maxEx);' +
                                 'p[v[0]].count += u.count;' +
                                 'Array.prototype.push.apply(p[v[0]].dates, u.dates);' +
                             '} else {' +
@@ -266,6 +344,9 @@ function genBattleHtml(dataLists) {
                         '$("#unexpectedBox").html(Object.keys(datalist).filter(function(key){' +
                             'return datalist[key].count > 0;' +
                         '}).map(function(key){' +
+                            'if (hasExtra) {' +
+                                'return "<div>" + key.split("_")[1] + " - " + datalist[key].minEx.toFixed(4) + " ~ " + datalist[key].maxEx.toFixed(4) + " (" + datalist[key].count + "x)</div>";' +
+                            '}' +
                             'return "<div>" + key.split("_")[1] + " - " + datalist[key].min.toFixed(4) + " ~ " + datalist[key].max.toFixed(4) + " (" + datalist[key].count + "x)</div>";' +
                         '}).join(""));' +
                     '}' +
@@ -297,6 +378,15 @@ function genBattleHtml(dataLists) {
                             '<span style="padding-left: 5px;cursor:pointer;"><a class="input-button" title="全指定に戻す" data-clear>x</a></span>' +
                         '</span>' +
                     '</h2>' +
+                    '<h2 style="margin-top:3px;margin-bottom:3px;"><span style="margin-right: 2px;">速報値計算(OFF=a11/ON=Extra):</span>' +
+                        '<span class="switch3">' +
+                            '<label class="switch3__label">' +
+                                '<input type="checkbox" id="hasExtra" class="switch3__input" onchange="selectEnemyName()"/>' +
+                                '<span class="switch3__content" style="margin-bottom: -3px;"></span>' +
+                                '<span class="switch3__circle" style="margin-bottom: -3px;"></span>' +
+                            '</label>' +
+                        '</span>' +
+                    '</h2>' +
                     '<div id="unexpectedBox" style="overflow: scroll; width: 400px; height: 118px; border:#000000 1px solid; margin-right: 15px; font-size:small;"></div>' +
                 '</div>'
             ) +
@@ -304,7 +394,7 @@ function genBattleHtml(dataLists) {
         '<h2 style="clear: both; padding: 0; margin: 2px 0 0;">異常ダメ検知攻撃一覧</h2>' +
         '<hr style="height: 1px; background-color: #BBB; border: none; margin-right:15px;"></hr>' +
         '</header>' +
-        '<div style="width:100%; height:290px;"></div>' +
+        '<div style="width:100%; height:310px;"></div>' +
         '<div style="overflow: auto; min-width:500px; border:#000000 solid 1px; width: 100%; font-size:small;">' +
         // 昼砲撃戦
         dataLists[0].map(function (data) {
@@ -413,27 +503,15 @@ function genDefenseArmorHtml(data) {
  * @return {String} HTML
  */
 function genGimmickHtml(data, power, idx) {
-    var ammoBonus = getAmmoBonus(data.attacker, data.origins, data.mapCell)
-    var result = '<script type="text/javascript">'
-    result += 'function func' + idx + '(){'
-    result += 'var gimmick = $("#gimmick' + idx + '").val();'
-    result += 'var minA = ' + power.getAfterCapPower()[0] + ' * gimmick;'
-    result += 'var maxA = ' + power.getAfterCapPower()[1] + ' * gimmick;'
-    result += 'var armor = ' + (data.defender.soukou + getArmorBonus(data.date, data.mapCell, data.attacker, data.defender)) + ';'
-    result += 'var ammoBonus = ' + ammoBonus + ';'
-    result += '$("#afterpower' + idx + '").html(minA.toFixed(2) + " ~ " + maxA.toFixed(2));'
-    result += '$("#theoretical' + idx + '").html(Math.floor((minA - (armor * 0.7 + Math.floor(armor - 1) * 0.6)) * ammoBonus) + " ~ " + Math.floor((maxA - armor * 0.7) * ammoBonus));'
-    result += '$("#border' + idx + '").html(Math.floor((maxA - armor * 0.7) * ammoBonus) >= ' + Math.floor(data.attack.damage) + ' && ' + Math.floor(data.attack.damage) + ' >= Math.floor((minA - (armor * 0.7 + Math.floor(armor - 1) * 0.6)) * ammoBonus) ? "○" : "x");'
-    result += '}</script>'
-    result += '<table style="margin-top:5px;">'
-    result += '<tr><th colspan="5">ギミック簡易計算(a11)</th></tr>'
-    result += '<tr><th>倍率</th><th>ギミック後攻撃力</th><th>理論値</th><th>範囲内</th><th>逆算倍率(仮)</th></tr>'
-    result += '<tr><td><input id="gimmick' + idx + '" type="number" value="1" style="width: 80px;" onkeyup="func' + idx + '();"></td>'
-    var armor = data.defender.soukou + getArmorBonus(data.date, data.mapCell, data.attacker, data.defender)
-    var aftPower = power.getAfterCapPower()
-    var dmgWidth = Math.floor((aftPower[0] - (armor * 0.7 + Math.floor(armor - 1) * 0.6)) * ammoBonus) + " ~ " + Math.floor((aftPower[1] - armor * 0.7) * ammoBonus)
-    var back = ((data.attack.damage / ammoBonus + armor * 0.7) / aftPower[1]).toFixed(4) + " ~ " + ((data.attack.damage / ammoBonus + (armor * 0.7 + Math.floor(armor - 1) * 0.6)) / aftPower[0]).toFixed(4)
-    result += '<td id="afterpower' + idx + '">' + aftPower[0].toFixed(2) + ' ~ ' + aftPower[1].toFixed(2) + '</td><td id="theoretical' + idx + '">' + dmgWidth + '</td><td id="border' + idx + '">x</td><td>' + back + '</td></tr>'
+    var result = '<table style="margin-top:5px;">'
+    result += '<tr><th colspan="2">イベント特効逆算</th></tr>'
+    result += '<tr>'
+    result += '<th style="text-decoration: underline;" title="最終攻撃力を出した後にイベント特効倍率を乗算します。&#10;昼戦・雷撃戦・夜戦全て共通のシンプルな形式です。">a11</th>'
+    result += '<th style="text-decoration: underline;" title="キャップ後の特殊な位置にイベント特効倍率を乗算します。&#10;詳しくは更新履歴をご確認下さい。">Extra</th>'
+    result += '</tr><tr>'
+    result += '<td>' + data.inversion.min.toFixed(4) + " ~ " + data.inversion.max.toFixed(4) + '</td>'
+    result += '<td>' + data.inversion.minEx.toFixed(4) + " ~ " + data.inversion.maxEx.toFixed(4) + '</td>'
+    result += '</tr>'
     result += '</table>'
     return result
 }

@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.66
+var VERSION = 1.67
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update.txt"
 /** ファイルの場所 */
@@ -2216,21 +2216,23 @@ var getLandBonus = function (attacker, defender) {
             // WG42(Wurfgerät 42)
             a13 *= (wg42 ? 1.4 : 1) * (wg42 >= 2 ? 1.2 : 1)
             // 艦載型 四式20cm対地噴進砲
-            a13 *= (type4Rocket ? 1.3 : 1) * (type4Rocket >= 2 ? 1.35 : 1)
+            a13 *= (type4Rocket ? 1.25 : 1) * (type4Rocket >= 2 ? 1.4 : 1)
             // カテゴリ:迫撃砲
             a13 *= (mortarGroup ? 1.1 : 1) * (mortarGroup >= 2 ? 1.15 : 1)
             // 水上戦闘機、水上爆撃機
             a13 *= suijo ? 1.3 : 1
             // 艦上爆撃機
-            a13 *= bomber ? 1.3 : 1
-            // 大発動艇
-            a13 *= daihatsu ? 1.8 : 1
+            a13 *= (bomber ? 1.3 : 1) * (bomber >= 2 ? 1.2 : 1)
+            // カテゴリ:大発
+            a13 *= daihatsuGroup ? 1.7 : 1
             // 特大発動艇
-            // a13 *= tokuDaihatsu ? 1 : 1
+            a13 *= tokuDaihatsu ? 1.2 : 1
             // 大発動艇(八九式中戦車&陸戦隊)
-            a13 *= rikuDaihatsu ? 3.7251 : 1
+            a13 *= rikuDaihatsu ? 1.6 : 1
             // 特大発動艇+戦車第11連隊
-            a13 *= shikonDaihatsu ? 3.1636 : 1
+            a13 *= shikonDaihatsu ? 1.8 : 1
+            // M4A1 DD
+            a13 *= m4a1dd ? 2.8 : 1
             // 特二式内火艇
             a13 *= kamisha ? 2.8 : 1
             break
