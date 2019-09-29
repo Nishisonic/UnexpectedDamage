@@ -13,9 +13,9 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.67
+var VERSION = 1.68
 /** バージョン確認URL */
-var UPDATE_CHECK_URL = "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/update.txt"
+var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
 var FILE_URL = [
     "https://raw.githubusercontent.com/Nishisonic/UnexpectedDamage/master/drop_unexpectedDamage.js",
@@ -28,8 +28,6 @@ var EXECUTABLE_FILE = [
     "script/UnexpectedDamage.js",
     "script/dropstyle.js",
 ]
-/** ログファイル保存の場所 */
-var LOG_FILE = "damage.log"
 
 /** ScriptData用 */
 var data_prefix = "damage_"
@@ -809,9 +807,10 @@ DayBattlePower.prototype.getBeforeCapPower = function () {
 
 /**
  * 昼砲撃火力(キャップ後)を返します
+ * @param {Boolean} noCL2 クリティカル前の昼砲撃火力値を返すか(デフォルト=false)
  * @return {[Number,Number]} 昼砲撃火力(キャップ後)
  */
-DayBattlePower.prototype.getAfterCapPower = function () {
+DayBattlePower.prototype.getAfterCapPower = function (noCL2) {
     // サイレント修正(Twitterで確認した限りでは17/9/9が最古=>17夏イベ?)以降、集積地棲姫特効のキャップ位置が変化(a5→a6)
     // 17夏以降に登場したPT小鬼群の特効位置もa6に変化?(乗算と加算組み合わせているっぽいので詳細不明)
     // A = [[キャップ後攻撃力] * 乗算特効補正 + 加算特効補正] * 弾着観測射撃 * 戦爆連合カットイン攻撃
@@ -822,7 +821,7 @@ DayBattlePower.prototype.getAfterCapPower = function () {
         value = Math.floor(value * this.getAPshellBonus())
     }
     // クリティカル判定
-    if (isCritical(this.attack)) {
+    if (!noCL2 && isCritical(this.attack)) {
         // A = [A * クリティカル補正 * 熟練度補正]
         value *= getCriticalBonus(this.attack)
         var skilled = this.shouldUseSkilled ? getSkilledBonus(this.date, this.attack, this.attacker, this.defender, this.attackerHp) : [1.0, 1.0]
@@ -2144,7 +2143,7 @@ var getLandBonus = function (attacker, defender) {
     var b13 = ([0, 75, 110, 140, 160, 160])[wg42]
         + ([0, 30, 55, 75, 90, 90])[type2Mortar]
         + ([0, 60, 110, 110, 110, 110])[type2MortarEx]
-        + ([0, 55, 115, 160, 160, 160])[type4Rocket]
+        + ([0, 55, 115, 160, 195, 195])[type4Rocket]
         + (shikonDaihatsu ? 25 : 0)
         + (m4a1dd ? 40 : 0) // 仮決め
 
@@ -2228,7 +2227,7 @@ var getLandBonus = function (attacker, defender) {
             // 特大発動艇
             a13 *= tokuDaihatsu ? 1.2 : 1
             // 大発動艇(八九式中戦車&陸戦隊)
-            a13 *= rikuDaihatsu ? 1.6 : 1
+            a13 *= (rikuDaihatsu ? 1.6 : 1) * (rikuDaihatsu >= 2 ? 1.5 : 1)
             // 特大発動艇+戦車第11連隊
             a13 *= shikonDaihatsu ? 1.8 : 1
             // M4A1 DD

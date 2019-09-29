@@ -5,7 +5,6 @@ load("script/UnexpectedDamage.js")
 //Import部分
 SimpleDateFormat = Java.type("java.text.SimpleDateFormat")
 Optional = Java.type("java.util.Optional")
-ConcurrentHashMap = Java.type("java.util.concurrent.ConcurrentHashMap")
 IntStream = Java.type("java.util.stream.IntStream")
 FillLayout = Java.type("org.eclipse.swt.layout.FillLayout")
 SWT = Java.type("org.eclipse.swt.SWT")
@@ -72,10 +71,10 @@ function create(table, data, index) {
                     }).reduce(function (p, v) {
                         return p + v
                     }, 0)
-                    if (selected != -1
+                    if (selected !== -1
                         && phaseIndex.some(function (index, i) { return index === column && count > 0 })) {
                         // 初期設定
-                        if (shell === null) {
+                        if (!shell) {
                             shell = new Shell(table.getShell(), SWT.CLOSE | SWT.TITLE | SWT.MAX | SWT.MIN | SWT.RESIZE)
                             shell.setLayout(new FillLayout(SWT.VERTICAL))
                             shell.addShellListener(new ShellAdapter({
@@ -93,7 +92,7 @@ function create(table, data, index) {
                         }
                         shell.setText("異常ダメージ検知 " + String(VERSION).replace(".", "").split("").join("."))
                         browser.setText(genBattleHtml(getData(table.getItem(point).data.battleDate)))
-                    } else if (shell !== null) {
+                    } else if (shell) {
                         shell.setVisible(false)
                     }
                     break
@@ -178,7 +177,7 @@ function genBattleHtml(dataLists) {
         '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">' +
         '<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>' +
         '<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ja.js"></script>' +
-        '<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>' +
+        '<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>' +
         '<script src="https://unpkg.com/multiple-select@1.4.0/dist/multiple-select.js"></script>' +
         '<link href="https://unpkg.com/multiple-select@1.4.0/dist/multiple-select.css" rel="stylesheet">' +
         '<style type="text/css">' +
