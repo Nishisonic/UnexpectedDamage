@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.68
+var VERSION = 1.69
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -763,6 +763,7 @@ DayBattlePower.prototype.getImprovementBonus = function () {
                 case 24: return 1       // 上陸用舟艇
                 case 46: return 1       // 特二式内火艇
                 case 18: return 1       // 三式弾
+                case 37: return 1       // 対地装備
                 default: return 0
             }
         }
@@ -1652,6 +1653,7 @@ NightBattlePower.prototype.getImprovementBonus = function () {
                 case 24: return 1 // 上陸用舟艇
                 case 46: return 1 // 特二式内火艇
                 case 18: return 1 // 三式弾
+                case 37: return 1 // 対地装備
                 default: return 0
             }
         }
@@ -2020,6 +2022,8 @@ var getMultiplySlayerBonus = function (attacker, defender) {
     var type2MortarEx = getItemNum(items, 347)
     var mortarGroup = type2Mortar + type2MortarEx
     var type4Rocket = getItemNum(items, 348)
+    var type4RocketEx = getItemNum(items, 349)
+    var type4RocketGroup = type4Rocket + type4RocketEx
     var bomber = items.filter(function (item) { return item.type2 === 7 }).length
 
     switch (defender.shipId) {
@@ -2043,8 +2047,8 @@ var getMultiplySlayerBonus = function (attacker, defender) {
             var a = Math.pow(daihatsuGroupLv / 50 + 1, rikuDaihatsu ? 2 : 1) * (kamishaLv / 30 + 1)
             // WG42(Wurfgerät 42)
             a *= (wg42 ? 1.25 : 1) * (wg42 >= 2 ? 1.3 : 1)
-            // 艦載型 四式20cm対地噴進砲
-            a *= (type4Rocket ? 1.2 : 1) * (type4Rocket >= 2 ? 1.4 : 1)
+            // カテゴリ:対地噴進砲
+            a *= (type4RocketGroup ? 1.2 : 1) * (type4RocketGroup >= 2 ? 1.4 : 1)
             // カテゴリ:迫撃砲
             a *= (mortarGroup ? 1.15 : 1) * (mortarGroup >= 2 ? 1.2 : 1)
             // カテゴリ:大発
@@ -2137,6 +2141,8 @@ var getLandBonus = function (attacker, defender) {
     var type2MortarEx = getItemNum(items, 347)
     var mortarGroup = type2Mortar + type2MortarEx
     var type4Rocket = getItemNum(items, 348)
+    var type4RocketEx = getItemNum(items, 349)
+    var type4RocketGroup = type4Rocket + type4RocketEx
     var bomber = items.filter(function (item) { return item.type2 === 7 }).length
 
     var a13 = (daihatsuGroupLv / 50 + 1) * (kamishaLv / 30 + 1)
@@ -2144,6 +2150,7 @@ var getLandBonus = function (attacker, defender) {
         + ([0, 30, 55, 75, 90, 90])[type2Mortar]
         + ([0, 60, 110, 110, 110, 110])[type2MortarEx]
         + ([0, 55, 115, 160, 195, 195])[type4Rocket]
+        + ([0, 80, 80, 80, 80, 80])[type4RocketEx]
         + (shikonDaihatsu ? 25 : 0)
         + (m4a1dd ? 40 : 0) // 仮決め
 
@@ -2155,8 +2162,8 @@ var getLandBonus = function (attacker, defender) {
             a13 *= apShell ? 1.85 : 1
             // WG42(Wurfgerät 42)
             a13 *= (wg42 ? 1.6 : 1) * (wg42 >= 2 ? 1.7 : 1)
-            // 艦載型 四式20cm対地噴進砲
-            a13 *= (type4Rocket ? 1.5 : 1) * (type4Rocket >= 2 ? 1.8 : 1)
+            // カテゴリ:対地噴進砲
+            a13 *= (type4RocketGroup ? 1.5 : 1) * (type4RocketGroup >= 2 ? 1.8 : 1)
             // カテゴリ:迫撃砲
             a13 *= (mortarGroup ? 1.3 : 1) * (mortarGroup >= 2 ? 1.5 : 1)
             // 水上戦闘機、水上爆撃機
@@ -2185,8 +2192,8 @@ var getLandBonus = function (attacker, defender) {
             a13 *= type3shell ? 1.75 : 1
             // WG42(Wurfgerät 42)
             a13 *= (wg42 ? 1.4 : 1) * (wg42 >= 2 ? 1.5 : 1)
-            // 艦載型 四式20cm対地噴進砲
-            a13 *= (type4Rocket ? 1.3 : 1) * (type4Rocket >= 2 ? 1.65 : 1)
+            // カテゴリ:対地噴進砲
+            a13 *= (type4RocketGroup ? 1.3 : 1) * (type4RocketGroup >= 2 ? 1.65 : 1)
             // カテゴリ:迫撃砲
             a13 *= (mortarGroup ? 1.2 : 1) * (mortarGroup >= 2 ? 1.4 : 1)
             // 艦上爆撃機
@@ -2214,8 +2221,8 @@ var getLandBonus = function (attacker, defender) {
             a13 *= apShell ? 1.3 : 1
             // WG42(Wurfgerät 42)
             a13 *= (wg42 ? 1.4 : 1) * (wg42 >= 2 ? 1.2 : 1)
-            // 艦載型 四式20cm対地噴進砲
-            a13 *= (type4Rocket ? 1.25 : 1) * (type4Rocket >= 2 ? 1.4 : 1)
+            // カテゴリ:対地噴進砲
+            a13 *= (type4RocketGroup ? 1.25 : 1) * (type4RocketGroup >= 2 ? 1.4 : 1)
             // カテゴリ:迫撃砲
             a13 *= (mortarGroup ? 1.1 : 1) * (mortarGroup >= 2 ? 1.15 : 1)
             // 水上戦闘機、水上爆撃機
@@ -2249,8 +2256,8 @@ var getLandBonus = function (attacker, defender) {
             a13 *= type3shell ? 2.5 : 1
             // WG42(Wurfgerät 42)
             a13 *= (wg42 ? 1.3 : 1) * (wg42 >= 2 ? 1.4 : 1)
-            // 艦載型 四式20cm対地噴進砲
-            a13 *= (type4Rocket ? 1.25 : 1) * (type4Rocket >= 2 ? 1.5 : 1)
+            // カテゴリ:対地噴進砲
+            a13 *= (type4RocketGroup ? 1.25 : 1) * (type4RocketGroup >= 2 ? 1.5 : 1)
             // カテゴリ:迫撃砲
             a13 *= (mortarGroup ? 1.2 : 1) * (mortarGroup >= 2 ? 1.3 : 1)
             // 水上戦闘機、水上爆撃機
