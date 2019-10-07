@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.69
+var VERSION = 1.70
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -44,7 +44,7 @@ var isAkakari = AppConstants.NAME.indexOf("赤仮") >= 0
  * @param {logbook.dto.BattlePhaseKind} kind 戦闘の種類
  * @param {0|1|2|3} friendCombinedKind 自軍側連合種別(0=なし,1=機動,2=水上,3=輸送)
  * @param {Boolean} isEnemyCombined 敵軍は連合艦隊か
- * @param {Number} attackNum 攻撃側艦数(警戒陣用)
+ * @param {Number} numOfAttackShips 攻撃側艦数(警戒陣用)
  * @param {[number,number,number]} formation 昼戦[自軍陣形,敵軍陣形,交戦形態]
  * @param {AttackDto} attack 攻撃データ
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
@@ -54,13 +54,13 @@ var isAkakari = AppConstants.NAME.indexOf("赤仮") >= 0
  * @param {FleetDto} origins 攻撃側艦隊
  * @return {AntiSubmarinePower|DayBattlePower} 昼戦火力
  */
-var getDayBattlePower = function (date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, attack, attacker, defender, attackerHp, shouldUseSkilled, origins) {
+var getDayBattlePower = function (date, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, attack, attacker, defender, attackerHp, shouldUseSkilled, origins) {
     if (isSubMarine(defender)) {
         // 対潜水艦
-        return new AntiSubmarinePower(date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, attack, attacker, defender, attackerHp, shouldUseSkilled, origins)
+        return new AntiSubmarinePower(date, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, attack, attacker, defender, attackerHp, shouldUseSkilled, origins)
     } else {
         // 対水上艦
-        return new DayBattlePower(date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, attack, attacker, defender, attackerHp, shouldUseSkilled, origins)
+        return new DayBattlePower(date, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, attack, attacker, defender, attackerHp, shouldUseSkilled, origins)
     }
 }
 
@@ -70,7 +70,7 @@ var getDayBattlePower = function (date, kind, friendCombinedKind, isEnemyCombine
  * @param {logbook.dto.BattlePhaseKind} kind 戦闘の種類
  * @param {0|1|2|3} friendCombinedKind 自軍側連合種別(0=なし,1=機動,2=水上,3=輸送)
  * @param {Boolean} isEnemyCombined 敵軍は連合艦隊か
- * @param {Number} attackNum 攻撃側艦数(警戒陣用)
+ * @param {Number} numOfAttackShips 攻撃側艦数(警戒陣用)
  * @param {[number,number,number]} formation 昼戦[自軍陣形,敵軍陣形,交戦形態]
  * @param {AttackDto} attack 攻撃データ
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
@@ -78,8 +78,8 @@ var getDayBattlePower = function (date, kind, friendCombinedKind, isEnemyCombine
  * @param {ShipHpDto} attackerHp 攻撃艦Hp
  * @return {TorpedoPower} 雷撃火力
  */
-var getTorpedoPower = function (date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, attack, attacker, defender, attackerHp) {
-    return new TorpedoPower(date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, attack, attacker, defender, attackerHp)
+var getTorpedoPower = function (date, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, attack, attacker, defender, attackerHp) {
+    return new TorpedoPower(date, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, attack, attacker, defender, attackerHp)
 }
 
 /**
@@ -88,7 +88,7 @@ var getTorpedoPower = function (date, kind, friendCombinedKind, isEnemyCombined,
  * @param {logbook.dto.BattlePhaseKind} kind 戦闘の種類
  * @param {0|1|2|3} friendCombinedKind 自軍側連合種別(0=なし,1=機動,2=水上,3=輸送)
  * @param {Boolean} isEnemyCombined 敵軍は連合艦隊か
- * @param {Number} attackNum 攻撃側艦数(警戒陣用)
+ * @param {Number} numOfAttackShips 攻撃側艦数(警戒陣用)
  * @param {[number,number,number]} formation 夜戦[自軍陣形,敵軍陣形,交戦形態]
  * @param {[Number,Number]} touchPlane 夜間触接
  * @param {AttackDto} attack 攻撃データ
@@ -99,13 +99,13 @@ var getTorpedoPower = function (date, kind, friendCombinedKind, isEnemyCombined,
  * @param {FleetDto} origins 攻撃側艦隊
  * @return {AntiSubmarinePower|NightBattlePower} 夜戦火力
  */
-var getNightBattlePower = function (date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, touchPlane, attack, attacker, defender, attackerHp, shouldUseSkilled, origins) {
+var getNightBattlePower = function (date, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, touchPlane, attack, attacker, defender, attackerHp, shouldUseSkilled, origins) {
     if (isSubMarine(defender)) {
         // 対潜水艦
-        return new AntiSubmarinePower(date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, attack, attacker, defender, attackerHp, shouldUseSkilled, origins)
+        return new AntiSubmarinePower(date, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, attack, attacker, defender, attackerHp, shouldUseSkilled, origins)
     } else {
         // 対水上艦
-        return new NightBattlePower(date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, touchPlane, attack, attacker, defender, attackerHp, shouldUseSkilled, origins)
+        return new NightBattlePower(date, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, touchPlane, attack, attacker, defender, attackerHp, shouldUseSkilled, origins)
     }
 }
 
@@ -115,7 +115,7 @@ var getNightBattlePower = function (date, kind, friendCombinedKind, isEnemyCombi
  * @param {logbook.dto.BattlePhaseKind} kind 戦闘の種類
  * @param {0|1|2|3} friendCombinedKind 自軍側連合種別(0=なし,1=機動,2=水上,3=輸送)
  * @param {Boolean} isEnemyCombined 敵軍は連合艦隊か
- * @param {Number} attackNum 攻撃側艦数(警戒陣用)
+ * @param {Number} numOfAttackShips 攻撃側艦数(警戒陣用)
  * @param {[number,number,number]} formation レーダー射撃戦[自軍陣形,敵軍陣形,交戦形態]
  * @param {AttackDto} attack 攻撃データ
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
@@ -125,13 +125,13 @@ var getNightBattlePower = function (date, kind, friendCombinedKind, isEnemyCombi
  * @param {FleetDto} origins 攻撃側艦隊
  * @return {AntiSubmarinePower|NightBattlePower} 夜戦火力
  */
-var getRadarShootingPower = function (date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, attack, attacker, defender, attackerHp, shouldUseSkilled, origins) {
+var getRadarShootingPower = function (date, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, attack, attacker, defender, attackerHp, shouldUseSkilled, origins) {
     if (isSubMarine(defender)) {
         // 対潜水艦
-        return new AntiSubmarinePower(date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, attack, attacker, defender, attackerHp, shouldUseSkilled, origins, true)
+        return new AntiSubmarinePower(date, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, attack, attacker, defender, attackerHp, shouldUseSkilled, origins, true)
     } else {
         // 対水上艦
-        return new NightBattlePower(date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, [-1, -1], attack, attacker, defender, attackerHp, shouldUseSkilled, origins)
+        return new NightBattlePower(date, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, [-1, -1], attack, attacker, defender, attackerHp, shouldUseSkilled, origins)
     }
 }
 
@@ -291,7 +291,7 @@ var getItemNum = function (items, id) {
  * @param {logbook.dto.BattlePhaseKind} kind 戦闘の種類
  * @param {0|1|2|3} friendCombinedKind 自軍側連合種別(0=なし,1=機動,2=水上,3=輸送)
  * @param {Boolean} isEnemyCombined 敵軍は連合艦隊か
- * @param {Number} attackNum 攻撃側艦数(警戒陣用)
+ * @param {Number} numOfAttackShips 攻撃側艦数(警戒陣用)
  * @param {[number,number,number]} formation 昼戦[自軍陣形,敵軍陣形,交戦形態]
  * @param {AttackDto} attack 攻撃データ
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
@@ -301,12 +301,12 @@ var getItemNum = function (items, id) {
  * @param {Boolean} shouldUseSkilled 熟練度を使用すべきか
  * @param {Boolean} isRadarShooting レーダー射撃戦か(default=false)
  */
-var AntiSubmarinePower = function (date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, attack, attacker, defender, attackerHp, shouldUseSkilled, origins, isRadarShooting) {
+var AntiSubmarinePower = function (date, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, attack, attacker, defender, attackerHp, shouldUseSkilled, origins, isRadarShooting) {
     this.date = date
     this.kind = kind
     this.friendCombinedKind = friendCombinedKind
     this.isEnemyCombined = isEnemyCombined
-    this.attackNum = attackNum
+    this.numOfAttackShips = numOfAttackShips
     this.formation = formation
     this.attack = attack
     this.attacker = attacker
@@ -642,7 +642,7 @@ AntiSubmarinePower.prototype.getFormationBonus = function () {
         case FORMATION.DIAMOND: return 1.2
         case FORMATION.ECHELON: return CHANGE_ECHELON_BONUS_DATE.before(this.date) ? 1.1 : 1.0
         case FORMATION.LINE_ABREAST: return 1.3
-        case FORMATION.VANGUARD: return this.attack.attacker < Math.floor(this.attackNum / 2) ? 1.0 : 0.6
+        case FORMATION.VANGUARD: return this.attack.attacker < Math.floor(this.numOfAttackShips / 2) ? 1.0 : 0.6
         case FORMATION.CRUISING_FORMATION_1: return 1.3
         case FORMATION.CRUISING_FORMATION_2: return 1.1
         case FORMATION.CRUISING_FORMATION_3: return 1.0
@@ -675,7 +675,7 @@ AntiSubmarinePower.prototype.getConditionBonus = function () {
  * @param {logbook.dto.BattlePhaseKind} kind 戦闘の種類
  * @param {0|1|2|3} friendCombinedKind 自軍側連合種別(0=なし,1=機動,2=水上,3=輸送)
  * @param {Boolean} isEnemyCombined 敵軍は連合艦隊か
- * @param {Number} attackNum 攻撃側艦数(警戒陣用)
+ * @param {Number} numOfAttackShips 攻撃側艦数(警戒陣用)
  * @param {[number,number,number]} formation 昼戦[自軍陣形,敵軍陣形,交戦形態]
  * @param {AttackDto} attack 攻撃データ
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
@@ -684,12 +684,12 @@ AntiSubmarinePower.prototype.getConditionBonus = function () {
  * @param {Boolean} shouldUseSkilled 熟練度を使用すべきか
  * @param {FleetDto} origins 攻撃側艦隊
  */
-var DayBattlePower = function (date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, attack, attacker, defender, attackerHp, shouldUseSkilled, origins) {
+var DayBattlePower = function (date, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, attack, attacker, defender, attackerHp, shouldUseSkilled, origins) {
     this.date = date
     this.kind = kind
     this.friendCombinedKind = friendCombinedKind
     this.isEnemyCombined = isEnemyCombined
-    this.attackNum = attackNum
+    this.numOfAttackShips = numOfAttackShips
     this.formation = formation
     this.attack = attack
     this.attacker = attacker
@@ -843,7 +843,7 @@ DayBattlePower.prototype.getFormationBonus = function () {
         case FORMATION.DIAMOND: return 0.7
         case FORMATION.ECHELON: return CHANGE_ECHELON_BONUS_DATE.before(this.date) && !(this.friendCombinedKind === COMBINED_FLEET.NONE && this.isEnemyCombined) ? 0.75 : 0.6
         case FORMATION.LINE_ABREAST: return 0.6
-        case FORMATION.VANGUARD: return this.attack.attacker < Math.floor(this.attackNum / 2) ? 0.5 : 1.0
+        case FORMATION.VANGUARD: return this.attack.attacker < Math.floor(this.numOfAttackShips / 2) ? 0.5 : 1.0
         case FORMATION.CRUISING_FORMATION_1: return 0.8
         case FORMATION.CRUISING_FORMATION_2: return 1.0
         case FORMATION.CRUISING_FORMATION_3: return 0.7
@@ -1115,19 +1115,19 @@ DayBattlePower.prototype.getCombinedPowerBonus = function () {
  * @param {logbook.dto.BattlePhaseKind} kind 戦闘の種類
  * @param {0|1|2|3} friendCombinedKind 自軍側連合種別(0=なし,1=機動,2=水上,3=輸送)
  * @param {Boolean} isEnemyCombined 敵軍は連合艦隊か
- * @param {Number} attackNum 攻撃側艦数(警戒陣用)
+ * @param {Number} numOfAttackShips 攻撃側艦数(警戒陣用)
  * @param {[number,number,number]} formation 昼戦[自軍陣形,敵軍陣形,交戦形態]
  * @param {AttackDto} attack 攻撃データ
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} defender 防御艦
  * @param {ShipHpDto} attackerHp 攻撃艦Hp
  */
-var TorpedoPower = function (date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, attack, attacker, defender, attackerHp) {
+var TorpedoPower = function (date, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, attack, attacker, defender, attackerHp) {
     this.date = date
     this.kind = kind
     this.friendCombinedKind = friendCombinedKind
     this.isEnemyCombined = isEnemyCombined
-    this.attackNum = attackNum
+    this.numOfAttackShips = numOfAttackShips
     this.formation = formation
     this.attack = attack
     this.attacker = attacker
@@ -1276,7 +1276,7 @@ TorpedoPower.prototype.getCombinedPowerBonus = function () {
  * @param {logbook.dto.BattlePhaseKind} kind 戦闘の種類
  * @param {0|1|2|3} friendCombinedKind 自軍側連合種別(0=なし,1=機動,2=水上,3=輸送)
  * @param {Boolean} isEnemyCombined 敵軍は連合艦隊か
- * @param {Number} attackNum 攻撃側艦数(警戒陣用)
+ * @param {Number} numOfAttackShips 攻撃側艦数(警戒陣用)
  * @param {[number,number,number]} formation 昼戦[自軍陣形,敵軍陣形,交戦形態]
  * @param {[Number,Number]} touchPlane 夜間触接
  * @param {AttackDto} attack 攻撃データ
@@ -1286,12 +1286,12 @@ TorpedoPower.prototype.getCombinedPowerBonus = function () {
  * @param {Boolean} shouldUseSkilled 熟練度を使用すべきか
  * @param {FleetDto} origins 攻撃側艦隊
  */
-var NightBattlePower = function (date, kind, friendCombinedKind, isEnemyCombined, attackNum, formation, touchPlane, attack, attacker, defender, attackerHp, shouldUseSkilled, origins) {
+var NightBattlePower = function (date, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, touchPlane, attack, attacker, defender, attackerHp, shouldUseSkilled, origins) {
     this.date = date
     this.kind = kind
     this.friendCombinedKind = friendCombinedKind
     this.isEnemyCombined = isEnemyCombined
-    this.attackNum = attackNum
+    this.numOfAttackShips = numOfAttackShips
     this.formation = formation
     this.touchPlane = touchPlane
     this.attack = attack
@@ -1687,7 +1687,7 @@ NightBattlePower.prototype.getImprovementBonus = function () {
  */
 NightBattlePower.prototype.getFormationBonus = function () {
     switch (Number(this.formation[this.attack.friendAttack ? 0 : 1])) {
-        case FORMATION.VANGUARD: return this.attack.attacker < Math.floor(this.attackNum / 2) ? 0.5 : 1.0
+        case FORMATION.VANGUARD: return this.attack.attacker < Math.floor(this.numOfAttackShips / 2) ? 0.5 : 1.0
         default: return 1.0
     }
 }
@@ -2149,7 +2149,7 @@ var getLandBonus = function (attacker, defender) {
     var b13 = ([0, 75, 110, 140, 160, 160])[wg42]
         + ([0, 30, 55, 75, 90, 90])[type2Mortar]
         + ([0, 60, 110, 110, 110, 110])[type2MortarEx]
-        + ([0, 55, 115, 160, 195, 195])[type4Rocket]
+        + ([0, 55, 115, 160, 190, 190])[type4Rocket]
         + ([0, 80, 80, 80, 80, 80])[type4RocketEx]
         + (shikonDaihatsu ? 25 : 0)
         + (m4a1dd ? 40 : 0) // 仮決め

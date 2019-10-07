@@ -171,7 +171,6 @@ function genBattleHtml(dataLists) {
     // データがあるものをひとまず検索
     var masterData = flatten([dataLists[0], dataLists[1], dataLists[2]]).filter(function (d) { return d })[0]
     var touchPlane = dataLists[2].length > 0 ? dataLists[2][0].touchPlane : [-1, -1]
-    var idx = 0
     var html =
         '<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">' +
         '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">' +
@@ -398,39 +397,40 @@ function genBattleHtml(dataLists) {
         // 昼砲撃戦
         dataLists[0].map(function (data) {
             var power = getDayBattlePower(data.date, data.kind, data.friendCombinedKind, data.isEnemyCombined,
-                data.attackNum, data.formation, data.attack, data.attacker, data.defender, data.attackerHp, data.shouldUseSkilled, data.origins)
+                data.numOfAttackShips, data.formation, data.attack, data.attacker, data.defender, data.attackerHp, data.shouldUseSkilled, data.origins)
             var result = '<div style="border:#000000 solid 1px; padding:5px; margin:5px; background-color:#fce4d6;">'
-            result += genHeaderHtml(data, power)
+            result += genHeaderHtml(data)
             result += isSubMarine(data.defender) ? genAntiSubMarineHtml(data, power) : genDayBattleHtml(data, power)
             result += genDefenseArmorHtml(data)
-            result += genGimmickHtml(data, power, idx++)
+            result += genGimmickHtml(data)
             return result + '</div>'
         }).join('') +
         // 昼雷撃戦
         dataLists[1].map(function (data) {
             var power = getTorpedoPower(data.date, data.kind, data.friendCombinedKind, data.isEnemyCombined,
-                data.attackNum, data.formation, data.attack, data.attacker, data.defender, data.attackerHp)
+                data.numOfAttackShips, data.formation, data.attack, data.attacker, data.defender, data.attackerHp)
             var result = '<div style="border:#000000 solid 1px; padding:5px; margin:5px; background-color:#ddebf7;">'
-            result += genHeaderHtml(data, power)
+            result += genHeaderHtml(data)
             result += genTorpedoAttackHtml(data, power)
             result += genDefenseArmorHtml(data)
-            result += genGimmickHtml(data, power, idx++)
+            result += genGimmickHtml(data)
             return result + '</div>'
         }).join('') +
         // 夜戦
         dataLists[2].map(function (data) {
+            var power
             if (data.isRadarShooting) {
-                var power = getRadarShootingPower(data.date, data.kind, data.friendCombinedKind, data.isEnemyCombined,
-                    data.attackNum, data.formation, data.attack, data.attacker, data.defender, data.attackerHp, data.shouldUseSkilled, data.origins)
+                power = getRadarShootingPower(data.date, data.kind, data.friendCombinedKind, data.isEnemyCombined,
+                    data.numOfAttackShips, data.formation, data.attack, data.attacker, data.defender, data.attackerHp, data.shouldUseSkilled, data.origins)
             } else {
-                var power = getNightBattlePower(data.date, data.kind, data.friendCombinedKind, data.isEnemyCombined,
-                    data.attackNum, data.formation, data.touchPlane, data.attack, data.attacker, data.defender, data.attackerHp, data.shouldUseSkilled, data.origins)
+                power = getNightBattlePower(data.date, data.kind, data.friendCombinedKind, data.isEnemyCombined,
+                    data.numOfAttackShips, data.formation, data.touchPlane, data.attack, data.attacker, data.defender, data.attackerHp, data.shouldUseSkilled, data.origins)
             }
             var result = '<div style="border:#000000 solid 1px; padding:5px; margin:5px; background-color:#e8d9f3;">'
-            result += genHeaderHtml(data, power)
+            result += genHeaderHtml(data)
             result += isSubMarine(data.defender) ? genAntiSubMarineHtml(data, power) : genNightBattleHtml(data, power)
             result += genDefenseArmorHtml(data)
-            result += genGimmickHtml(data, power, idx++)
+            result += genGimmickHtml(data)
             return result + '</div>'
         }).join('') +
         '</div>' +
@@ -463,15 +463,13 @@ function genBattleHtml(dataLists) {
 /**
  * 名前や理論値などのヘッダー部分のHTMLを生成して返す
  * @param {DetectDto} data 検知データ
- * @param {AntiSubmarinePower|DayBattlePower|TorpedoPower|NightBattlePower} power 火力
  * @return {String} HTML
  */
-function genHeaderHtml(data, power) {
+function genHeaderHtml(data) {
     var result = '<table style="margin-bottom:5px;">'
     result += '<tr><th>艦</th><th></th><th>艦</th><th>ダメージ</th><th>残りHP</th><th>理論値</th><th>弾薬補正</th></tr>'
     var armor = data.defender.soukou + getArmorBonus(data.date, data.mapCell, data.attacker, data.defender)
-    var aftPower = power.getAfterCapPower()
-    var dmgWidth = Math.floor((aftPower[0] - (armor * 0.7 + Math.floor(armor - 1) * 0.6)) * getAmmoBonus(data.attacker, data.origins, data.mapCell)) + " ~ " + Math.floor((aftPower[1] - armor * 0.7) * getAmmoBonus(data.attacker, data.origins, data.mapCell))
+    var dmgWidth = Math.floor((data.power[0] - (armor * 0.7 + Math.floor(armor - 1) * 0.6)) * getAmmoBonus(data.attacker, data.origins, data.mapCell)) + " ~ " + Math.floor((data.power[1] - armor * 0.7) * getAmmoBonus(data.attacker, data.origins, data.mapCell))
     result += '<tr><td class="' + (data.attacker.isFriend() ? 'friend' : 'enemy') + '" title="' + getItems(data.attacker).map(function(item) { return item.name + (item.level > 0 ? '+' + item.level : '') }).join('&#10;') + '">'
         + (data.attack.attacker + 1) + '.' + data.attacker.friendlyName + '</td><td>→</td><td class="' + (data.defender.isFriend() ? 'friend' : 'enemy') + '" title="' + getItems(data.defender).map(function(item) { return item.name + (item.level > 0 ? '+' + item.level : '') }).join('&#10;') + '">'
         + (data.attack.defender + 1) + '.' + data.defender.friendlyName + '</td><td' + (isCritical(data.attack) ? ' style="font-weight:bold;"' : '') + '>' + data.attack.damage + '</td><td class="' + (data.defender.isFriend() ? 'friend' : 'enemy') + '">'
@@ -498,10 +496,9 @@ function genDefenseArmorHtml(data) {
 /**
  * ギミック簡易計算用のHTMLを生成して返す
  * @param {DetectDto} data 検知データ
- * @param {DayBattlePower|AntiSubmarinePower|TorpedoPower|NightBattlePower} power 火力
  * @return {String} HTML
  */
-function genGimmickHtml(data, power, idx) {
+function genGimmickHtml(data) {
     var result = '<table style="margin-top:5px;">'
     result += '<tr><th colspan="2">イベント特効逆算</th></tr>'
     result += '<tr>'
@@ -541,7 +538,7 @@ function genAntiSubMarineHtml(data, power) {
 function genDayBattleHtml(data, power) {
     var result = '<tr><th rowspan="8" style="padding: 0px 3px;">攻<br>撃<br>側</th><th>基本攻撃力</th><th>改修火力</th><th>連合補正</th><th>対陸上敵加算補正(b12)</th><th>対陸上敵乗算補正(a13)</th><th>対陸上敵加算補正(b13)</th></tr>'
     var landBonus = getLandBonus(data.attacker, data.defender)
-    result += '<tr><td>' + power.getBasePower().toFixed(2) + '</td><td>' + power.getImprovementBonus().toFixed(2) + '</td><td>' + power.getCombinedPowerBonus() + '</td><td>' + (landBonus.b12) + '</td><td>' + landBonus.a13.toFixed(2) + '</td><td>' + (landBonus.b13) + '</td></tr>'
+    result += '<tr><td>' + power.getBasePower().toFixed(2) + '</td><td>' + power.getImprovementBonus().toFixed(2) + '</td><td>' + power.getCombinedPowerBonus() + '</td><td>' + (landBonus.b12) + '</td><td>' + landBonus.a13.toFixed(3) + '</td><td>' + (landBonus.b13) + '</td></tr>'
     result += '<tr><th>キャップ前火力</th><th>交戦形態補正</th><th>攻撃側陣形補正</th><th>損傷補正</th><th>特殊砲補正</th><th></th></tr>'
     result += '<tr><td>' + power.getBeforeCapPower().toFixed(2) + '</td><td>' + getFormationMatchBonus(data.formation).toFixed(2) + '</td><td>' + power.getFormationBonus().toFixed(2) + '</td><td>' + power.getConditionBonus().toFixed(2) + '</td><td>' + getOriginalGunPowerBonus(power.attacker).toFixed(2) + '</td><td></td></tr>'
     result += '<tr><th rowspan="2">最終攻撃力</th><th>キャップ値</th><th>キャップ後火力</th><th>特殊敵乗算特効</th><th>特殊敵加算特効</th><th></th></tr>'
