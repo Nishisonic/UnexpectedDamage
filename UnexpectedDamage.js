@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.70
+var VERSION = 1.71
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -328,7 +328,7 @@ var AntiSubmarinePower = function (date, kind, friendCombinedKind, isEnemyCombin
  * 対潜火力(基本攻撃力)を返します
  * @return {Number} 対潜火力(基本攻撃力)
  */
-AntiSubmarinePower.prototype.getBasePower = function () {
+AntiSubmarinePower.prototype.getBasicPower = function () {
     // レーダー射撃戦専用処理
     if (this.isRadarShooting) {
         return Math.sqrt(this.attacker.raisou) * 2
@@ -616,16 +616,16 @@ AntiSubmarinePower.prototype.getSynergyBonus = function () {
  * 対潜火力(キャップ前)を返します
  * @return {Number} 対潜火力(キャップ前)
  */
-AntiSubmarinePower.prototype.getBeforeCapPower = function () {
-    return this.getBasePower() * getFormationMatchBonus(this.formation) * this.getFormationBonus() * this.getConditionBonus() * this.getSynergyBonus()
+AntiSubmarinePower.prototype.getPreCapPower = function () {
+    return this.getBasicPower() * getFormationMatchBonus(this.formation) * this.getFormationBonus() * this.getConditionBonus() * this.getSynergyBonus()
 }
 
 /**
  * 対潜火力(キャップ後)を返します
  * @return {[Number,Number]} 対潜火力(キャップ後)
  */
-AntiSubmarinePower.prototype.getAfterCapPower = function () {
-    var v = Math.floor(getAfterCapValue(this.getBeforeCapPower(), this.CAP_VALUE)) * getCriticalBonus(this.attack)
+AntiSubmarinePower.prototype.getPostCapPower = function () {
+    var v = Math.floor(getPostCapValue(this.getPreCapPower(), this.CAP_VALUE)) * getCriticalBonus(this.attack)
     var s = this.shouldUseSkilled ? getSkilledBonus(this.date, this.attack, this.attacker, this.defender, this.attackerHp) : [1.0, 1.0]
     return [Math.floor(v * s[0]), Math.floor(v * s[1])]
 }
@@ -705,7 +705,7 @@ var DayBattlePower = function (date, kind, friendCombinedKind, isEnemyCombined, 
  * 昼砲撃火力(基本攻撃力)を返します
  * @return {Number} 昼砲撃火力(基本攻撃力)
  */
-DayBattlePower.prototype.getBasePower = function () {
+DayBattlePower.prototype.getBasicPower = function () {
     var landBonus = getLandBonus(this.attacker, this.defender)
     // 空撃または陸上型かつ艦上爆撃機,艦上攻撃機,陸上攻撃機,噴式戦闘爆撃機,噴式攻撃機所持時?
     if (getAttackTypeAtDay(this.attack, this.attacker, this.defender) === 1 || isGround(this.attacker) && this.items.some(function (item) { return [7, 8, 47, 57, 58].indexOf(item.type2) >= 0 })) {
@@ -729,10 +729,10 @@ DayBattlePower.prototype.getBasePower = function () {
                 }, 0)
             }
         }
-        return 25 + Math.floor(1.5 * ((5 + this.attacker.karyoku + this.getImprovementBonus() + this.getCombinedPowerBonus()) * landBonus.a13 + landBonus.b13 + Math.floor(Math.floor(baku * 1.3) + rai) + 15))
+        return 25 + Math.floor(1.5 * (((5 + this.attacker.karyoku + this.getImprovementBonus() + this.getCombinedPowerBonus()) * landBonus.a13 + landBonus.b13) * landBonus.a13_ + landBonus.b13_ + Math.floor(Math.floor(baku * 1.3) + rai) + 15))
     } else {
         // 砲撃
-        return (this.attacker.karyoku + this.getImprovementBonus() + this.getCombinedPowerBonus() + 5 + landBonus.b12) * landBonus.a13 + landBonus.b13
+        return ((this.attacker.karyoku + this.getImprovementBonus() + this.getCombinedPowerBonus() + 5 + landBonus.b12) * landBonus.a13 + landBonus.b13) * landBonus.a13_ + landBonus.b13_
     }
 }
 
@@ -802,8 +802,8 @@ DayBattlePower.prototype.getImprovementBonus = function () {
  * 昼砲撃火力(キャップ前)を返します
  * @return {Number} 昼砲撃火力(キャップ前)
  */
-DayBattlePower.prototype.getBeforeCapPower = function () {
-    return this.getBasePower() * getFormationMatchBonus(this.formation) * this.getFormationBonus() * this.getConditionBonus() + getOriginalGunPowerBonus(this.attacker)
+DayBattlePower.prototype.getPreCapPower = function () {
+    return this.getBasicPower() * getFormationMatchBonus(this.formation) * this.getFormationBonus() * this.getConditionBonus() + getOriginalGunPowerBonus(this.attacker)
 }
 
 /**
@@ -811,11 +811,11 @@ DayBattlePower.prototype.getBeforeCapPower = function () {
  * @param {Boolean} noCL2 クリティカル前の昼砲撃火力値を返すか(デフォルト=false)
  * @return {[Number,Number]} 昼砲撃火力(キャップ後)
  */
-DayBattlePower.prototype.getAfterCapPower = function (noCL2) {
+DayBattlePower.prototype.getPostCapPower = function (noCL2) {
     // サイレント修正(Twitterで確認した限りでは17/9/9が最古=>17夏イベ?)以降、集積地棲姫特効のキャップ位置が変化(a5→a6)
     // 17夏以降に登場したPT小鬼群の特効位置もa6に変化?(乗算と加算組み合わせているっぽいので詳細不明)
     // A = [[キャップ後攻撃力] * 乗算特効補正 + 加算特効補正] * 弾着観測射撃 * 戦爆連合カットイン攻撃
-    var value = Math.floor(Math.floor(getAfterCapValue(this.getBeforeCapPower(), this.CAP_VALUE)) * getMultiplySlayerBonus(this.attacker, this.defender) + getAddSlayerBonus(this.attacker, this.defender)) * this.getSpottingBonus() * this.getUnifiedBombingBonus()
+    var value = Math.floor(Math.floor(getPostCapValue(this.getPreCapPower(), this.CAP_VALUE)) * getMultiplySlayerBonus(this.attacker, this.defender) + getAddSlayerBonus(this.attacker, this.defender)) * this.getSpottingBonus() * this.getUnifiedBombingBonus()
     // 徹甲弾補正判定
     if (this.isAPshellBonusTarget()) {
         // A = [A * 徹甲弾補正]
@@ -1141,7 +1141,7 @@ var TorpedoPower = function (date, kind, friendCombinedKind, isEnemyCombined, nu
  * 雷撃火力(基本攻撃力)を返します
  * @return {Number} 雷撃火力(基本攻撃力)
  */
-TorpedoPower.prototype.getBasePower = function () {
+TorpedoPower.prototype.getBasicPower = function () {
     return this.attacker.raisou + this.getImprovementBonus() + this.getCombinedPowerBonus() + 5
 }
 
@@ -1168,17 +1168,17 @@ TorpedoPower.prototype.getImprovementBonus = function () {
  * 雷撃火力(キャップ前)を返します
  * @return {Number} 雷撃火力(キャップ前)
  */
-TorpedoPower.prototype.getBeforeCapPower = function () {
-    return this.getBasePower() * getFormationMatchBonus(this.formation) * this.getFormationBonus() * this.getConditionBonus()
+TorpedoPower.prototype.getPreCapPower = function () {
+    return this.getBasicPower() * getFormationMatchBonus(this.formation) * this.getFormationBonus() * this.getConditionBonus()
 }
 
 /**
  * 雷撃火力(キャップ後)を返します
  * @return {[Number,Number]} 雷撃火力(キャップ後)
  */
-TorpedoPower.prototype.getAfterCapPower = function () {
+TorpedoPower.prototype.getPostCapPower = function () {
     var result = [0, 0]
-    var value = getAfterCapValue(this.getBeforeCapPower(), this.CAP_VALUE)
+    var value = getPostCapValue(this.getPreCapPower(), this.CAP_VALUE)
     var critical = getCriticalBonus(this.attack)
     result[0] = result[1] = Math.floor(Math.floor(value) * critical)
     return result
@@ -1308,7 +1308,7 @@ var NightBattlePower = function (date, kind, friendCombinedKind, isEnemyCombined
  * 夜戦火力(基本攻撃力)を返します
  * @return {Number} 夜戦火力(基本攻撃力)
  */
-NightBattlePower.prototype.getBasePower = function () {
+NightBattlePower.prototype.getBasicPower = function () {
     var useRaisou = !isGround(this.defender) || isNorthernmostLandingPrincess(this.defender) || this.items.length === 0
     // 夜襲
     if (isNightCvAttack(this.attacker, this.attackerHp)) {
@@ -1625,7 +1625,7 @@ NightBattlePower.prototype.getBasePower = function () {
         } else {
             power = this.attacker.karyoku + (useRaisou ? this.attacker.raisou : 0) + this.getImprovementBonus()
         }
-        return (power + this.getNightTouchPlaneBonus() + landBonus.b12) * landBonus.a13 + landBonus.b13
+        return ((power + this.getNightTouchPlaneBonus() + landBonus.b12) * landBonus.a13 + landBonus.b13) * landBonus.a13_ + landBonus.b13_
     }
 }
 
@@ -1696,17 +1696,17 @@ NightBattlePower.prototype.getFormationBonus = function () {
  * 夜戦火力(キャップ前)を返します
  * @return {Number} 夜戦火力(キャップ前)
  */
-NightBattlePower.prototype.getBeforeCapPower = function () {
-    return this.getBasePower() * this.getFormationBonus() * this.getCutinBonus() * this.getConditionBonus() + getOriginalGunPowerBonus(this.attacker)
+NightBattlePower.prototype.getPreCapPower = function () {
+    return this.getBasicPower() * this.getFormationBonus() * this.getCutinBonus() * this.getConditionBonus() + getOriginalGunPowerBonus(this.attacker)
 }
 
 /**
  * 夜戦火力(キャップ後)を返します
  * @return {[Number,Number]} 夜戦火力(キャップ後)
  */
-NightBattlePower.prototype.getAfterCapPower = function () {
+NightBattlePower.prototype.getPostCapPower = function () {
     // A = [[キャップ後攻撃力] * 乗算特効補正 + 加算特効補正]
-    var value = Math.floor(Math.floor(getAfterCapValue(this.getBeforeCapPower(), this.CAP_VALUE)) * getMultiplySlayerBonus(this.attacker, this.defender) + getAddSlayerBonus(this.attacker, this.defender))
+    var value = Math.floor(Math.floor(getPostCapValue(this.getPreCapPower(), this.CAP_VALUE)) * getMultiplySlayerBonus(this.attacker, this.defender) + getAddSlayerBonus(this.attacker, this.defender))
     // クリティカル判定
     if (isCritical(this.attack)) {
         // A = [A * クリティカル補正 * 熟練度補正]
@@ -2005,25 +2005,46 @@ var getAmmoBonus = function (ship, origins, mapCell) {
 var getMultiplySlayerBonus = function (attacker, defender) {
     var items = getItems(attacker)
     // 陸上特効補正と同じ
+
+    /** [カテゴリ]三式弾 */
     var type3shell = items.filter(function (item) { return item.type2 === 18 }).length
+    /** 大発動艇 */
     var daihatsu = getItemNum(items, 68)
+    /** 特大発動艇 */
     var tokuDaihatsu = getItemNum(items, 193)
+    /** 大発動艇(八九式中戦車&陸戦隊) */
     var rikuDaihatsu = getItemNum(items, 166)
+    /** 特大発動艇+戦車第11連隊 */
     var shikonDaihatsu = getItemNum(items, 230)
+    /** M4A1 DD */
     var m4a1dd = getItemNum(items, 355)
+    /** [カテゴリ]上陸用舟艇 */
     var daihatsuGroup = items.filter(function (item) { return item.type2 === 24 }).length
+    /** [カテゴリ]上陸用舟艇[改修] */
     var daihatsuGroupLv = daihatsuGroup > 0 ? items.filter(function (item) { return item.type2 === 24 }).map(function (item) { return item.level }).reduce(function (p, c) { return p + c }, 0) / daihatsuGroup : 0
+    /** 特二式内火艇 */
     var kamisha = getItemNum(items, 167)
+    /** [カテゴリ]特型内火艇[改修] */
     var kamishaLv = kamisha > 0 ? items.filter(function (item) { return item.slotitemId === 167 }).map(function (item) { return item.level }).reduce(function (p, c) { return p + c }, 0) / kamisha : 0
+    /** [カテゴリ]水上戦闘機・水上爆撃機 */
     var suijo = items.filter(function (item) { return [11, 45].indexOf(item.type2) >= 0 }).length
+    /** [カテゴリ]徹甲弾 */
     var apShell = items.filter(function (item) { return item.type2 === 19 }).length
+    /** WG42(Wurfgerät 42) */
     var wg42 = getItemNum(items, 126)
+    /** 二式12cm迫撃砲改 */
     var type2Mortar = getItemNum(items, 346)
+    /** 二式12cm迫撃砲改 集中配備 */
     var type2MortarEx = getItemNum(items, 347)
+    /** [カテゴリ]迫撃砲 */
     var mortarGroup = type2Mortar + type2MortarEx
+    /** 艦載型 四式20cm対地噴進砲 */
     var type4Rocket = getItemNum(items, 348)
+    /** 四式20cm対地噴進砲 集中配備 */
     var type4RocketEx = getItemNum(items, 349)
+    /** [カテゴリ]対地噴進砲 */
     var type4RocketGroup = type4Rocket + type4RocketEx
+    /** [カテゴリ]艦上爆撃機 */
     var bomber = items.filter(function (item) { return item.type2 === 7 }).length
 
     switch (defender.shipId) {
@@ -2045,46 +2066,15 @@ var getMultiplySlayerBonus = function (attacker, defender) {
         case 1813:
         case 1814: // 集積地棲姫 バカンスmode-壊
             var a = Math.pow(daihatsuGroupLv / 50 + 1, rikuDaihatsu ? 2 : 1) * (kamishaLv / 30 + 1)
-            // WG42(Wurfgerät 42)
             a *= (wg42 ? 1.25 : 1) * (wg42 >= 2 ? 1.3 : 1)
-            // カテゴリ:対地噴進砲
             a *= (type4RocketGroup ? 1.2 : 1) * (type4RocketGroup >= 2 ? 1.4 : 1)
-            // カテゴリ:迫撃砲
             a *= (mortarGroup ? 1.15 : 1) * (mortarGroup >= 2 ? 1.2 : 1)
-            // カテゴリ:大発
             a *= daihatsuGroup ? 1.7 : 1
-            // 特大発動艇
             a *= tokuDaihatsu ? 1.2 : 1
-            // 大発動艇(八九式中戦車&陸戦隊)
             a *= (rikuDaihatsu ? 1.3 : 1) * (rikuDaihatsu >= 2 ? 1.6 : 1)
-            // 特二式内火艇
+            a *= m4a1dd ? 1.2 : 1
             a *= (kamisha ? 1.7 : 1.0) * (kamisha >= 2 ? 1.5 : 1)
             return a
-        // case 1815:
-        // case 1816:
-        // case 1817: // 泊地水鬼 バカンスmode
-        // case 1818:
-        // case 1819:
-        // case 1820: // 泊地水鬼 バカンスmode
-        //     // [注意]値は全て仮決め
-        //     var a = (daihatsuGroupLv / 50 + 1) * (kamishaLv / 30 + 1)
-        //     // 三式弾(改)
-        //     a *= type3shell ? 1.5 : 1
-        //     // WG42(Wurfgerät 42)
-        //     a *= wg42 ? 1.25 : 1
-        //     // 艦上爆撃機
-        //     a *= (bomber ? 1.4 : 1) * (bomber >= 2 ? 1.7 : 1)
-        //     // カテゴリ:大発
-        //     a *= daihatsuGroup ? 1.45 : 1
-        //     // 大発動艇(八九式中戦車&陸戦隊)
-        //     a *= rikuDaihatsu ? 1.2 : 1
-        //     // 特大発動艇+戦車第11連隊
-        //     a *= shikonDaihatsu ? 1.1 : 1
-        //     // M4A1 DD
-        //     a *= m4a1dd ? 1.75 : 1
-        //     // 特二式内火艇
-        //     a *= kamisha ? 2.4 : 1
-        //     return a
     }
     return 1.0
 }
@@ -2122,63 +2112,71 @@ var isAnchorageWaterDemonVacationMode = function (ship) {
  * @return {{a13:Number, b12:Number, b13: Number}} 補正値
  */
 var getLandBonus = function (attacker, defender) {
-    if (!isGround(defender) && !isAnchorageWaterDemonVacationMode(defender) || isNorthernmostLandingPrincess(defender)) return {a13: 1, b12: 0, b13: 0}
+    if (!isGround(defender) && !isAnchorageWaterDemonVacationMode(defender) || isNorthernmostLandingPrincess(defender)) return {a13: 1, a13_: 1, b12: 0, b13: 0, b13_: 0}
     var items = getItems(attacker)
+    /** [カテゴリ]三式弾 */
     var type3shell = items.filter(function (item) { return item.type2 === 18 }).length
+    /** 大発動艇 */
     var daihatsu = getItemNum(items, 68)
+    /** 特大発動艇 */
     var tokuDaihatsu = getItemNum(items, 193)
+    /** 大発動艇(八九式中戦車&陸戦隊) */
     var rikuDaihatsu = getItemNum(items, 166)
+    /** 特大発動艇+戦車第11連隊 */
     var shikonDaihatsu = getItemNum(items, 230)
+    /** M4A1 DD */
     var m4a1dd = getItemNum(items, 355)
+    /** [カテゴリ]上陸用舟艇 */
     var daihatsuGroup = items.filter(function (item) { return item.type2 === 24 }).length
+    /** [カテゴリ]上陸用舟艇[改修] */
     var daihatsuGroupLv = daihatsuGroup > 0 ? items.filter(function (item) { return item.type2 === 24 }).map(function (item) { return item.level }).reduce(function (p, c) { return p + c }, 0) / daihatsuGroup : 0
+    /** 特二式内火艇 */
     var kamisha = getItemNum(items, 167)
+    /** [カテゴリ]特型内火艇[改修] */
     var kamishaLv = kamisha > 0 ? items.filter(function (item) { return item.slotitemId === 167 }).map(function (item) { return item.level }).reduce(function (p, c) { return p + c }, 0) / kamisha : 0
+    /** [カテゴリ]水上戦闘機・水上爆撃機 */
     var suijo = items.filter(function (item) { return [11, 45].indexOf(item.type2) >= 0 }).length
+    /** [カテゴリ]徹甲弾 */
     var apShell = items.filter(function (item) { return item.type2 === 19 }).length
+    /** WG42(Wurfgerät 42) */
     var wg42 = getItemNum(items, 126)
+    /** 二式12cm迫撃砲改 */
     var type2Mortar = getItemNum(items, 346)
+    /** 二式12cm迫撃砲改 集中配備 */
     var type2MortarEx = getItemNum(items, 347)
+    /** [カテゴリ]迫撃砲 */
     var mortarGroup = type2Mortar + type2MortarEx
+    /** 艦載型 四式20cm対地噴進砲 */
     var type4Rocket = getItemNum(items, 348)
+    /** 四式20cm対地噴進砲 集中配備 */
     var type4RocketEx = getItemNum(items, 349)
+    /** [カテゴリ]対地噴進砲 */
     var type4RocketGroup = type4Rocket + type4RocketEx
+    /** [カテゴリ]艦上爆撃機 */
     var bomber = items.filter(function (item) { return item.type2 === 7 }).length
 
     var a13 = (daihatsuGroupLv / 50 + 1) * (kamishaLv / 30 + 1)
-    var b13 = ([0, 75, 110, 140, 160, 160])[wg42]
+    var b13_ = ([0, 75, 110, 140, 160, 160])[wg42]
         + ([0, 30, 55, 75, 90, 90])[type2Mortar]
-        + ([0, 60, 110, 110, 110, 110])[type2MortarEx]
+        + ([0, 60, 110, 150, 150, 150])[type2MortarEx]
         + ([0, 55, 115, 160, 190, 190])[type4Rocket]
-        + ([0, 80, 80, 80, 80, 80])[type4RocketEx]
-        + (shikonDaihatsu ? 25 : 0)
-        + (m4a1dd ? 40 : 0) // 仮決め
+        + ([0, 80, 170, 170, 170, 170])[type4RocketEx]
 
     switch (defender.shipId) {
         case 1665:
         case 1666:
         case 1667: // 砲台小鬼
-            // 徹甲弾
             a13 *= apShell ? 1.85 : 1
-            // WG42(Wurfgerät 42)
             a13 *= (wg42 ? 1.6 : 1) * (wg42 >= 2 ? 1.7 : 1)
-            // カテゴリ:対地噴進砲
             a13 *= (type4RocketGroup ? 1.5 : 1) * (type4RocketGroup >= 2 ? 1.8 : 1)
-            // カテゴリ:迫撃砲
             a13 *= (mortarGroup ? 1.3 : 1) * (mortarGroup >= 2 ? 1.5 : 1)
-            // 水上戦闘機、水上爆撃機
             a13 *= suijo ? 1.5 : 1
-            // 艦上爆撃機
-            a13 *= bomber ? 1.5 : 1
-            // カテゴリ:大発
+            a13 *= (bomber ? 1.5 : 1) * (bomber >= 2 ? 2.0 : 1)
             a13 *= daihatsuGroup ? 1.8 : 1
-            // 特大発動艇
             a13 *= tokuDaihatsu ? 1.15 : 1
-            // 大発動艇(八九式中戦車&陸戦隊)
             a13 *= (rikuDaihatsu ? 1.5 : 1) * (rikuDaihatsu >= 2 ? 1.4 : 1)
-            // 特大発動艇+戦車第11連隊
             a13 *= shikonDaihatsu ? 1.8 : 1
-            // 特二式内火艇
+            a13 *= m4a1dd ? 2.0 : 1
             a13 *= (kamisha ? 2.4 : 1) * (kamisha >= 2 ? 1.35 : 1)
             // 艦種補正(a12/13):駆逐艦、軽巡洋艦
             a13 *= [2, 3].indexOf(attacker.stype) >= 0 ? 1.4 : 1
@@ -2188,25 +2186,16 @@ var getLandBonus = function (attacker, defender) {
         case 1670:
         case 1671:
         case 1672: // 離島棲姫
-            // 三式弾(改)
             a13 *= type3shell ? 1.75 : 1
-            // WG42(Wurfgerät 42)
             a13 *= (wg42 ? 1.4 : 1) * (wg42 >= 2 ? 1.5 : 1)
-            // カテゴリ:対地噴進砲
             a13 *= (type4RocketGroup ? 1.3 : 1) * (type4RocketGroup >= 2 ? 1.65 : 1)
-            // カテゴリ:迫撃砲
             a13 *= (mortarGroup ? 1.2 : 1) * (mortarGroup >= 2 ? 1.4 : 1)
-            // 艦上爆撃機
-            a13 *= bomber ? 1.4 : 1
-            // カテゴリ:大発
+            a13 *= (bomber ? 1.4 : 1) * (bomber >= 2 ? 1.8 : 1)
             a13 *= daihatsuGroup ? 1.8 : 1
-            // 特大発動艇
             a13 *= tokuDaihatsu ? 1.15 : 1
-            // 大発動艇(八九式中戦車&陸戦隊)
             a13 *= (rikuDaihatsu ? 1.2 : 1) * (rikuDaihatsu >= 2 ? 1.4 : 1)
-            // 特大発動艇+戦車第11連隊
             a13 *= shikonDaihatsu ? 1.8 : 1
-            // 特二式内火艇 (x2.4 * 1.35~1.45(推测为3.24))
+            a13 *= m4a1dd ? 1.8 : 1
             a13 *= (kamisha ? 2.4 : 1) * (kamisha >= 2 ? 1.35 : 1)
             break
         case 1699:
@@ -2215,72 +2204,41 @@ var getLandBonus = function (attacker, defender) {
         case 1702:
         case 1703:
         case 1704: // 港湾夏姫-壊
-            // 三式弾(改)
             a13 *= type3shell ? 1.75 : 1
-            // 徹甲弾
             a13 *= apShell ? 1.3 : 1
-            // WG42(Wurfgerät 42)
             a13 *= (wg42 ? 1.4 : 1) * (wg42 >= 2 ? 1.2 : 1)
-            // カテゴリ:対地噴進砲
             a13 *= (type4RocketGroup ? 1.25 : 1) * (type4RocketGroup >= 2 ? 1.4 : 1)
-            // カテゴリ:迫撃砲
             a13 *= (mortarGroup ? 1.1 : 1) * (mortarGroup >= 2 ? 1.15 : 1)
-            // 水上戦闘機、水上爆撃機
             a13 *= suijo ? 1.3 : 1
-            // 艦上爆撃機
             a13 *= (bomber ? 1.3 : 1) * (bomber >= 2 ? 1.2 : 1)
-            // カテゴリ:大発
             a13 *= daihatsuGroup ? 1.7 : 1
-            // 特大発動艇
             a13 *= tokuDaihatsu ? 1.2 : 1
-            // 大発動艇(八九式中戦車&陸戦隊)
             a13 *= (rikuDaihatsu ? 1.6 : 1) * (rikuDaihatsu >= 2 ? 1.5 : 1)
-            // 特大発動艇+戦車第11連隊
             a13 *= shikonDaihatsu ? 1.8 : 1
-            // M4A1 DD
-            a13 *= m4a1dd ? 2.8 : 1
-            // 特二式内火艇
+            a13 *= m4a1dd ? 2.0 : 1
             a13 *= kamisha ? 2.8 : 1
             break
-        case 1753:
-        case 1754: // 集積地夏姫
-            // 三式弾(改)
-            a13 *= type3shell ? 2.5 : 1
-            // 特大発動艇+戦車第11連隊
-            a13 *= shikonDaihatsu ? 2.2 : 1
-            // 特二式内火艇
-            // a13 *= kamisha ? 1 : 1
-            break
         default: // ソフトスキン
-            // 三式弾(改)
             a13 *= type3shell ? 2.5 : 1
-            // WG42(Wurfgerät 42)
             a13 *= (wg42 ? 1.3 : 1) * (wg42 >= 2 ? 1.4 : 1)
-            // カテゴリ:対地噴進砲
             a13 *= (type4RocketGroup ? 1.25 : 1) * (type4RocketGroup >= 2 ? 1.5 : 1)
-            // カテゴリ:迫撃砲
             a13 *= (mortarGroup ? 1.2 : 1) * (mortarGroup >= 2 ? 1.3 : 1)
-            // 水上戦闘機、水上爆撃機
             a13 *= suijo ? 1.2 : 1
-            // カテゴリ:大発
             a13 *= daihatsuGroup ? 1.4 : 1
-            // 特大発動艇
             a13 *= tokuDaihatsu ? 1.15 : 1
-            // 大発動艇(八九式中戦車&陸戦隊)
             a13 *= (rikuDaihatsu ? 1.5 : 1) * (rikuDaihatsu >= 2 ? 1.3 : 1)
-            // 特大発動艇+戦車第11連隊
             a13 *= shikonDaihatsu ? 1.8 : 1
-            // M4A1 DD (仮決め)
-            a13 *= m4a1dd ? 1.5 : 1
-            // 特二式内火艇
+            a13 *= m4a1dd ? 1.1 : 1
             a13 *= (kamisha ? 1.5 : 1) * (kamisha >= 2 ? 1.2 : 1)
             break
     }
     return {
         a13: a13,
+        a13_: m4a1dd ? 1.4 : 1,
         // 潜水艦
         b12: [13, 14].indexOf(attacker.stype) >= 0 ? 30 : 0,
-        b13: b13,
+        b13: (shikonDaihatsu + m4a1dd) * 25,
+        b13_: b13_
     }
 }
 
@@ -2305,7 +2263,7 @@ var getFormationMatchBonus = function (formation) {
  * @param {Number} capValue キャップ値
  * @return {Number} キャップ後火力
  */
-var getAfterCapValue = function (value, capValue) {
+var getPostCapValue = function (value, capValue) {
     return capValue < value ? Math.sqrt(value - capValue) + capValue : value
 }
 
