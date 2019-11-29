@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.71
+var VERSION = 1.72
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -410,6 +410,8 @@ AntiSubmarinePower.prototype.getBasicPower = function () {
             425: 471,
             // 朝霜改
             344: 471,
+            // 朝霜改二
+            578: 471,
             // 潮
             16: {
                 // 三式水中探信儀
@@ -959,10 +961,12 @@ DayBattlePower.prototype.getSpottingBonus = function () {
             var secondShipBonus = function(secondShipId, attackNum){
                 if (attackNum < 3) {
                     switch (secondShipId) {
+                        case 275:            // 長門改
                         case 541: return 1.2 // 長門改二
                     }
                 } else {
                     switch (secondShipId) {
+                        case 275:            // 長門改
                         case 541: return 1.4 // 長門改二
                     }
                 }
@@ -1803,13 +1807,15 @@ NightBattlePower.prototype.getCutinBonus = function () {
         case 102: // 長門、いい？ いくわよ！ 主砲一斉射ッ！
             var secondShipId = this.origins[this.attack.mainAttack ? "main" : "escort"][1].shipId
             var base = this.attack.attackNum < 3 ? 1.4 : 1.2
-            var secondShipBonus = function(secondShipId, attackNum){
+            var secondShipBonus = function(secondShipId, attackNum) {
                 if (attackNum < 3) {
                     switch (secondShipId) {
+                        case 275:            // 長門改
                         case 541: return 1.2 // 長門改二
                     }
                 } else {
                     switch (secondShipId) {
+                        case 275:            // 長門改
                         case 541: return 1.4 // 長門改二
                     }
                 }
@@ -2190,7 +2196,7 @@ var getLandBonus = function (attacker, defender) {
             a13 *= (wg42 ? 1.4 : 1) * (wg42 >= 2 ? 1.5 : 1)
             a13 *= (type4RocketGroup ? 1.3 : 1) * (type4RocketGroup >= 2 ? 1.65 : 1)
             a13 *= (mortarGroup ? 1.2 : 1) * (mortarGroup >= 2 ? 1.4 : 1)
-            a13 *= (bomber ? 1.4 : 1) * (bomber >= 2 ? 1.8 : 1)
+            a13 *= (bomber ? 1.4 : 1) * (bomber >= 2 ? 1.75 : 1)
             a13 *= daihatsuGroup ? 1.8 : 1
             a13 *= tokuDaihatsu ? 1.15 : 1
             a13 *= (rikuDaihatsu ? 1.2 : 1) * (rikuDaihatsu >= 2 ? 1.4 : 1)

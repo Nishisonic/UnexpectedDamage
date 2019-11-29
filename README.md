@@ -27,4 +27,4 @@
 
 ## 連絡先
 
-* 開発:[Nishikuma](https://twitter.com/n0i1s0h6i1k9uma)
+* 開発:[Nishikuma](https://twitter.com/nishikkuma)
