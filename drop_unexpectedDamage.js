@@ -1,6 +1,6 @@
 /**
  * 異常ダメージ検知
- * @version 1.7.2
+ * @version 1.7.3
  * @author Nishikuma
  */
 
@@ -106,7 +106,7 @@ var isInvestiagate = function (battle) {
         // 渦潮(弾薬減)マップ除外
         && !(MAELSTROM_MAP_LIST.some(function (map) { return map[0] === battle.mapCellDto.map[0] && map[1] === battle.mapCellDto.map[1] }))
         // 過去のイベント分は除外
-        && !(battle.mapCellDto.map[0] >= 22 && battle.mapCellDto.map[0] <= 44)
+        && !(battle.mapCellDto.map[0] >= 22 && battle.mapCellDto.map[0] <= 45)
     // 何らかのフィルタを条件する際はここに追加
 }
 
