@@ -5,6 +5,7 @@ load("script/UnexpectedDamage.js")
 //Import部分
 SimpleDateFormat = Java.type("java.text.SimpleDateFormat")
 Optional = Java.type("java.util.Optional")
+Collectors = Java.type("java.util.stream.Collectors")
 IntStream = Java.type("java.util.stream.IntStream")
 FillLayout = Java.type("org.eclipse.swt.layout.FillLayout")
 SWT = Java.type("org.eclipse.swt.SWT")
@@ -16,6 +17,7 @@ Listener = Java.type("org.eclipse.swt.widgets.Listener")
 Shell = Java.type("org.eclipse.swt.widgets.Shell")
 SWTResourceManager = Java.type("org.eclipse.wb.swt.SWTResourceManager")
 AppConstants = Java.type("logbook.constants.AppConstants")
+Ship = Java.type("logbook.internal.Ship")
 ReportUtils = Java.type("logbook.util.ReportUtils")
 
 var phaseIndex = [-1, -1, -1]
@@ -169,6 +171,7 @@ function genBattleHtml(dataLists) {
     var touchPlane = dataLists[2].length > 0 ? dataLists[2][0].touchPlane : [-1, -1]
     var html =
         '<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">' +
+        '<script src="https://momentjs.com/downloads/moment.js"></script>' +
         '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">' +
         '<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>' +
         '<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ja.js"></script>' +
@@ -272,10 +275,10 @@ function genBattleHtml(dataLists) {
         '</style></head>' +
         '<body>' +
         '<header>' +
-        '<h2>' + masterData.mapCell + '（' + sdf.format(masterData.date) + '）</h2>' +
-        '<div>' +
+        '<div style="clear: left;">' +
             '<div style="float: left; margin-bottom: 65px;">' +
-                '<h2>会敵情報</h2>' +
+                '<h2 style="float:left;">' + masterData.mapCell + '（' + sdf.format(masterData.date) + '）</h2>' +
+                '<h2 style="clear:left;">会敵情報</h2>' +
                 '<div>' +
                     '<div>会敵: ' + toIntercept(Number(masterData.formation[2])) + '</div>' +
                     '<table style="margin-bottom: 20px;">' +
@@ -302,6 +305,13 @@ function genBattleHtml(dataLists) {
             '</div>' +
             (masterData.mapCell.map[0] < 22 ? '' :
                 '<script type="text/javascript">' +
+                    'var ships = ' + JSON.stringify(Java.from(Ship.map.values().stream().map(function(ship){
+                        var flagship = (ship.charId > 1500 ? ship.flagship : "")
+                        return [ship.shipId, ship.name + (flagship.length > 0 ? " " + flagship : ""), JSON.parse(ship.json.toString()).api_sort_id]
+                    }).collect(Collectors.toList())).reduce(function(p, v){
+                        p[v[0]] = {name:v[1], sortId:v[2]}
+                        return p
+                    }, {})) + ";" +
                     'var dates = [];' +
                     'var unexpected = ' + JSON.stringify(getData("unexpected")[JSON.stringify(Java.from(masterData.mapCell.map))]) + ';' +
                     'function selectEnemyName(){' +
@@ -337,6 +347,8 @@ function genBattleHtml(dataLists) {
                         '}, {});' +
                         '$("#unexpectedBox").html(Object.keys(datalist).filter(function(key){' +
                             'return datalist[key].count > 0;' +
+                        '}).sort(function(a, b){' +
+                            'return ships[a.split("_")[0]].sortId - ships[b.split("_")[0]].sortId;' +
                         '}).map(function(key){' +
                             'if (hasExtra) {' +
                                 'return "<div>" + key.split("_")[1] + " - " + datalist[key].minEx.toFixed(4) + " ~ " + datalist[key].maxEx.toFixed(4) + " (" + datalist[key].count + "x)</div>";' +
@@ -359,29 +371,84 @@ function genBattleHtml(dataLists) {
                             '},' +
                         '});' +
                         '$("#enemy").multipleSelect("checkAll");' +
-                    '})' +
+                    '});' +
+                    'function fetchTsunDB() {' +
+                        'if ($("#local").css("display") === "none") {' +
+                            '$("#local").css("display", "inline");' +
+                            '$("#tsun").css("display", "none");' +
+                        '} else {' +
+                            '$("#local").css("display", "none");' +
+                            '$("#tsun").css("display", "inline");' +
+                        '}' +
+                        '$.ajax({' +
+                            'type: "GET",' +
+                            'url: "https://raw.githubusercontent.com/KC3Kai/KC3Kai/ba3b926a856c973d2c2e36669c84899c6fc6f4a4/src/data/edges.json",' +
+                            'dataType:"json",' +
+                        '}).done(function(res){' +
+                            'var map = "' + masterData.mapCell.map[0] + '-' + masterData.mapCell.map[1] + '";' +
+                            'var nodes = res["World " + map];' +
+                            'if (nodes) {' +
+                                'var node = res["World " + map][' + masterData.mapCell.map[2] + '];' +
+                                'if (node) {' +
+                                    '$.ajax({' +
+                                       'type: "GET",' +
+                                       'url: "https://www.nishikuma.net/UnexpectDamage/" + map + "/" + node[1] + ".json",' +
+                                       'dataType:"json",' +
+                                    '}).done(function(res){' +
+                                        '$("#tsunMap").html(map + " " + node[1] + "マス(" + res.samples + " Samples) <span style=' + "'font-size: x-small;'" + '>" + moment(res.date).format("YYYY-MM-DD HH:mm:ss") + " 取得</span>");' +
+                                        '$("#tsunBox").html(Object.keys(res.data).sort(function(a, b){' +
+                                            'return ships[a].sortId - ships[b].sortId;' +
+                                        '}).map(function(id){' +
+                                            'var data = res.data[id];' +
+                                            'return ships[id].name + " - " + data.min + " ~ " + data.max + " (" + data.count + "x)";' +
+                                        '}).join("<br>"));' +
+                                    '}).fail(function(){' +
+                                        '$("#tsunMap").html(map + " ?マス");' +
+                                        '$("#tsunBox").html("Error");' +
+                                    '});' +
+                                '} else {' +
+                                    '$("#tsunMap").html(map + " ?マス");' +
+                                    '$("#tsunBox").html("Error");' +
+                                '}' +
+                            '} else {' +
+                                '$("#tsunMap").html(map + " ?マス");' +
+                                '$("#tsunBox").html("Error");' +
+                            '}' +
+                        '}).fail(function(){' +
+                            '$("#tsunMap").html(map + " ?マス");' +
+                            '$("#tsunBox").html("Error");' +
+                        '});' +
+                    '}' +
                 '</script>' +
                 '<div style="float: right;">' +
-                    '<h2 style="margin-bottom: 0">' +
-                        masterData.mapCell.map[0] + '-' + masterData.mapCell.map[1] + '-' + masterData.mapCell.map[2] + ' 特効倍率(速報値) ※イベント限定 <span style="font-size: x-small;">対陸上、PT、熟練度は除外</span><br>' +
-                        '<span style="margin-right: 2px;">対象敵:</span>' + toUnexpectedEnemySelectBoxHtml(JSON.stringify(Java.from(masterData.mapCell.map))) +
-                    '</h2>' +
-                    '<h2 style="margin-top:3px;margin-bottom:3px;"><span style="margin-right: 2px;">期間:</span>' +
-                        '<span class="flatpickr">' +
-                            '<input type="text" placeholder="全指定" class="flatpickr" data-input style="width:280px">' +
-                            '<span style="padding-left: 5px;cursor:pointer;"><a class="input-button" title="全指定に戻す" data-clear>x</a></span>' +
-                        '</span>' +
-                    '</h2>' +
-                    '<h2 style="margin-top:3px;margin-bottom:3px;"><span style="margin-right: 2px;">速報値計算(OFF=a11/ON=Extra):</span>' +
-                        '<span class="switch3">' +
-                            '<label class="switch3__label">' +
-                                '<input type="checkbox" id="hasExtra" class="switch3__input" onchange="selectEnemyName()"/>' +
-                                '<span class="switch3__content" style="margin-bottom: -3px;"></span>' +
-                                '<span class="switch3__circle" style="margin-bottom: -3px;"></span>' +
-                            '</label>' +
-                        '</span>' +
-                    '</h2>' +
-                    '<div id="unexpectedBox" style="overflow: scroll; width: 400px; height: 118px; border:#000000 1px solid; margin-right: 15px; font-size:small;"></div>' +
+                    '<h2 style="float: left; margin-right: 10px;">TsunDBで調べてみる(試験用)</h2>' +
+                    '<input type="button" value="切替" style="margin-top: 10px; cursor: pointer;" onclick="fetchTsunDB()">' +
+                    '<div id="local">' +
+                        '<h2 style="margin-bottom: 0">' +
+                            masterData.mapCell.map[0] + '-' + masterData.mapCell.map[1] + '-' + masterData.mapCell.map[2] + ' 特効倍率(速報値) ※イベント限定 <span style="font-size: x-small;">対陸上、PT、熟練度は除外</span><br>' +
+                            '<span style="margin-right: 2px;">対象敵:</span>' + toUnexpectedEnemySelectBoxHtml(JSON.stringify(Java.from(masterData.mapCell.map))) +
+                        '</h2>' +
+                        '<h2 style="margin-top:3px;margin-bottom:3px;"><span style="margin-right: 2px;">期間:</span>' +
+                            '<span class="flatpickr">' +
+                                '<input type="text" placeholder="全指定" class="flatpickr" data-input style="width:280px">' +
+                                '<span style="padding-left: 5px;cursor:pointer;"><a class="input-button" title="全指定に戻す" data-clear>x</a></span>' +
+                            '</span>' +
+                        '</h2>' +
+                        '<h2 style="margin-top:3px;margin-bottom:3px;"><span style="margin-right: 2px;">速報値計算(OFF=a11/ON=Extra):</span>' +
+                            '<span class="switch3">' +
+                                '<label class="switch3__label">' +
+                                    '<input type="checkbox" id="hasExtra" class="switch3__input" onchange="selectEnemyName()"/>' +
+                                    '<span class="switch3__content" style="margin-bottom: -3px;"></span>' +
+                                    '<span class="switch3__circle" style="margin-bottom: -3px;"></span>' +
+                                '</label>' +
+                            '</span>' +
+                        '</h2>' +
+                        '<div id="unexpectedBox" style="overflow: scroll; width: 400px; height: 118px; border:#000000 1px solid; margin-right: 15px; font-size:small;"></div>' +
+                    '</div>' +
+                    '<div id="tsun" style="display: none;">' +
+                        '<h2 id="tsunMap" style="clear: right;">??-? ?マス(????? Samples) <span style="font-size: x-small;">????-??-?? ??:??:?? 取得</span></h2>' +
+                        '<div id="tsunBox" style="overflow: scroll; width: 400px; height: 187px; border:#000000 1px solid; margin-right: 15px; font-size:small;"></div>' +
+                    '</div>' +
                 '</div>'
             ) +
         '</div>' +
