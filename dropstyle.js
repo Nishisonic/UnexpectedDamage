@@ -382,7 +382,7 @@ function genBattleHtml(dataLists) {
                         '}' +
                         '$.ajax({' +
                             'type: "GET",' +
-                            'url: "https://raw.githubusercontent.com/KC3Kai/KC3Kai/ba3b926a856c973d2c2e36669c84899c6fc6f4a4/src/data/edges.json",' +
+                            'url: "https://raw.githubusercontent.com/KC3Kai/KC3Kai/develop/src/data/edges.json",' +
                             'dataType:"json",' +
                         '}).done(function(res){' +
                             'var map = "' + masterData.mapCell.map[0] + '-' + masterData.mapCell.map[1] + '";' +
