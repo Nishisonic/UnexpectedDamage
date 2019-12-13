@@ -136,12 +136,7 @@ async function fetchTsunDB() {
             result["data"] = Object.keys(idobj)
               .filter(key => ships[key])
               .filter(key => idobj[key].max > 1 && idobj[key].min > 1)
-              .sort((a, b) => {
-                const c = ships[a].sortId - ships[b].sortId;
-                if (c > 0) return 1;
-                if (c < 0) return -1;
-                return 0;
-              })
+              .sort((a, b) => ships[a].sortId - ships[b].sortId)
               .reduce((p, key) => {
                 p[key] = {
                   min: Math.floor(idobj[key].min * 1000) / 1000,
