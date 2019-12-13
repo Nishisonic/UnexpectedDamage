@@ -32,12 +32,20 @@ async function fetchTsunDB() {
       .map(world => world.replace("World ", ""))
       .filter(map => map.replace(/(\d+)-\d+/, "$1") >= 46)
       .map(async map => {
+        const mapdata = (
+          await axios.get(`http://kc.piro.moe/api/routing/maps/${map}`)
+        ).data;
+
         const nodes = Array.from(
           new Set(
-            Array.prototype.concat.apply(
-              [],
-              Object.values(edges[`World ${map}`]).map(nodes => nodes[1])
-            )
+            Object.values(mapdata.route)
+              // api_event_id 4=通常戦闘, 5=ボス戦闘
+              // api_color_no 4=通常戦闘/気のせいだった, 5=ボス戦闘, 11=夜戦, 12=払暁戦?
+              .filter(
+                data =>
+                  [4, 5].includes(data[3]) && [4, 5, 11, 12].includes(data[2])
+              )
+              .map(data => data[1])
           )
         );
 
