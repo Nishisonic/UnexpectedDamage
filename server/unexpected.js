@@ -85,6 +85,7 @@ async function fetchTsunDB() {
                   entry.ship.spAttackType >= 100 ||
                   entry.enemy.hp <= 0 ||
                   entry.damageinstance.resupplyUsed ||
+                  !ships[entry.enemy.id] ||
                   ships[entry.enemy.id].soku === 0 ||
                   ships[entry.enemy.id].name === "PT小鬼群" ||
                   (Math.floor(entry.enemy.hp * 0.06) <= damage &&
