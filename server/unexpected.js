@@ -78,16 +78,8 @@ async function fetchTsunDB() {
 
             const counter = entries
               .filter(entry => {
+                const [minDmg, maxDmg] = entry.damageinstance.expectedDamage;
                 const damage = entry.damageinstance.actualDamage;
-                const postcapPower = entry.ship.postcapPower;
-                const minDef = 0.7 * entry.enemy.armor;
-                const maxDef = minDef + Math.floor(entry.enemy.armor - 1) * 0.6;
-                const minDmg = Math.floor(
-                  (postcapPower - maxDef) * entry.ship.rAmmoMod
-                );
-                const maxDmg = Math.floor(
-                  (postcapPower - minDef) * entry.ship.rAmmoMod
-                );
 
                 return !(
                   entry.ship.spAttackType >= 100 ||
