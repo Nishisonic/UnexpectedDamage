@@ -55,6 +55,37 @@ async function fetchNodes() {
     .flat();
 }
 
+function writeFiles(results) {
+  results
+    .filter(result => result)
+    .forEach(result => {
+      const dir = `${__dirname}/${result.map}`;
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, 0o775);
+      }
+      fs.writeFile(
+        `${dir}/${result.node}.json`,
+        JSON.stringify(result),
+        err => {
+          if (err) {
+            console.error(
+              `${new Date()} MAP:${result.map} ${
+                result.node
+              } Data Writing [Failed].`
+            );
+            console.error(err);
+          }
+          fs.chmodSync(`${dir}/${result.node}.json`, 0o664);
+          console.log(
+            `${new Date()} MAP:${result.map} ${
+              result.node
+            } Data Writing [Success].`
+          );
+        }
+      );
+    });
+}
+
 async function fetchShips() {
   return (
     await axios.get("https://www.nishikuma.net/ImgKCbuilder/static/START2.json")
@@ -90,7 +121,28 @@ function datafilter({ ship, enemy, damageinstance }, ships) {
   );
 }
 
-async function fetchTsunDB() {
+async function fetchTsunDB(map, node, edgesFromNode) {
+  return await client
+    .query(
+      `SELECT * FROM abnormaldamage WHERE map = $1 AND edgeid = ANY($2) AND debuffed = false ORDER BY id`,
+      [map, edgesFromNode]
+    )
+    .then(data => {
+      console.log(
+        `${new Date()} MAP:${map} ${node} Get TsunDB Data [Success].`
+      );
+      return data;
+    })
+    .catch(err => {
+      console.error(
+        `${new Date()} MAP:${map} ${node} Get TsunDB Data [Failed].`
+      );
+      console.error(err);
+      return null;
+    });
+}
+
+async function execute() {
   const startTime = new Date();
   console.log(`Fetch Start - ${startTime}`);
   const ships = await fetchShips();
@@ -98,21 +150,18 @@ async function fetchTsunDB() {
 
   return Promise.all(
     nodes.map(async ({ map, node, edgesFromNode }) => {
+      const data = await fetchTsunDB(map, node, edgesFromNode);
+
+      if (!data) {
+        // データ取得失敗時
+        return null;
+      }
+
       const result = {
         map: map,
         node: node
       };
 
-      const data = await client
-        .query(
-          `SELECT * FROM abnormaldamage WHERE map = $1 AND edgeid = ANY($2) AND debuffed = false ORDER BY id`,
-          [map, edgesFromNode]
-        )
-        .catch(err => {
-          console.error(`${new Date()} MAP:${map} ${node} Failed.`);
-          console.error(err);
-          return null;
-        });
       const entries = data.rows;
       result["entries"] = entries.length;
       const idobj = {};
@@ -153,32 +202,23 @@ async function fetchTsunDB() {
           }),
           {}
         );
-
-      const dir = `${__dirname}/${result.map}`;
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, 0o775);
-      }
-      fs.writeFile(
-        `${dir}/${result.node}.json`,
-        JSON.stringify(result),
-        err => {
-          if (err) {
-            console.error(`${new Date()} MAP:${map} ${node} Failed.`);
-            console.error(err);
-          }
-          fs.chmodSync(`${dir}/${result.node}.json`, 0o664);
-          console.log(`${new Date()} MAP:${map} ${node} Complete.`);
-          return result;
-        }
-      );
+      return result;
     })
-  ).finally(() => {
-    const endTime = new Date();
-    console.log(
-      `Fetch Complete. (${endTime.getTime() - startTime.getTime()}ms)`
-    );
-    client.end();
-  });
+  )
+    .finally(results => {
+      console.log(
+        `${new Date()} MAP:${result.map} ${result.node} TsunDB disconnection.`
+      );
+      client.end();
+      return results;
+    })
+    .then(writeFiles)
+    .finally(() => {
+      const endTime = new Date();
+      console.log(
+        `Fetch Complete. (${endTime.getTime() - startTime.getTime()}ms)`
+      );
+    });
 }
 
-fetchTsunDB();
+execute();
