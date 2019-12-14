@@ -7,27 +7,14 @@ const dblogin = require(`${__dirname}/dblogin.json`);
 const client = new Client(dblogin);
 client.connect();
 
-async function fetchTsunDB() {
-  const startTime = new Date();
-  console.log(`Fetch Start - ${startTime}`);
+async function fetchNodes() {
   const edges = (
     await axios.get(
       "https://raw.githubusercontent.com/KC3Kai/KC3Kai/develop/src/data/edges.json"
     )
   ).data;
-  const ships = (
-    await axios.get("https://www.nishikuma.net/ImgKCbuilder/static/START2.json")
-  ).data.api_data.api_mst_ship.reduce((p, v) => {
-    p[v.api_id] = {
-      name: v.api_name,
-      stype: v.api_mst_stype,
-      sortId: v.api_sort_id,
-      soku: v.api_soku
-    };
-    return p;
-  }, {});
 
-  const nodes = (
+  return (
     await Promise.all(
       Object.keys(edges)
         .map(world => world.replace("World ", ""))
@@ -66,8 +53,50 @@ async function fetchTsunDB() {
       })
     )
     .flat();
+}
 
-  Promise.all(
+async function fetchShips() {
+  return (
+    await axios.get("https://www.nishikuma.net/ImgKCbuilder/static/START2.json")
+  ).data.api_data.api_mst_ship.reduce(
+    (obj, v) => ({
+      ...obj,
+      [v.api_id]: {
+        name: v.api_name,
+        stype: v.api_mst_stype,
+        sortId: v.api_sort_id,
+        soku: v.api_soku
+      }
+    }),
+    {}
+  );
+}
+
+function datafilter({ ship, enemy, damageinstance }, ships) {
+  const [minDmg, maxDmg] = damageinstance.expectedDamage;
+  const damage = damageinstance.actualDamage;
+
+  return !(
+    ship.spAttackType >= 100 ||
+    enemy.hp <= 0 ||
+    damageinstance.resupplyUsed ||
+    !ships[ship.id] ||
+    !ships[enemy.id] ||
+    ships[enemy.id].soku === 0 ||
+    ships[enemy.id].name === "PT小鬼群" ||
+    (Math.floor(enemy.hp * 0.06) <= damage &&
+      damage <= Math.max(Math.floor(enemy.hp * 0.14 - 0.08), 0)) ||
+    (minDmg <= damage && damage <= maxDmg)
+  );
+}
+
+async function fetchTsunDB() {
+  const startTime = new Date();
+  console.log(`Fetch Start - ${startTime}`);
+  const ships = await fetchShips();
+  const nodes = await fetchNodes();
+
+  return Promise.all(
     nodes.map(async ({ map, node, edgesFromNode }) => {
       const result = {
         map: map,
@@ -89,22 +118,7 @@ async function fetchTsunDB() {
       const idobj = {};
 
       const counter = entries
-        .filter(({ ship, enemy, damageinstance }) => {
-          const [minDmg, maxDmg] = damageinstance.expectedDamage;
-          const damage = damageinstance.actualDamage;
-
-          return !(
-            ship.spAttackType >= 100 ||
-            enemy.hp <= 0 ||
-            damageinstance.resupplyUsed ||
-            !ships[enemy.id] ||
-            ships[enemy.id].soku === 0 ||
-            ships[enemy.id].name === "PT小鬼群" ||
-            (Math.floor(enemy.hp * 0.06) <= damage &&
-              damage <= Math.max(Math.floor(enemy.hp * 0.14 - 0.08), 0)) ||
-            (minDmg <= damage && damage <= maxDmg)
-          );
-        })
+        .filter(entry => datafilter(entry, ships))
         .map(({ ship, enemy, damageinstance }) => {
           idobj[ship.id] = idobj[ship.id] || {
             min: 0,
@@ -126,7 +140,6 @@ async function fetchTsunDB() {
       result["date"] = new Date();
       result["samples"] = counter;
       result["data"] = Object.keys(idobj)
-        .filter(key => ships[key])
         .filter(key => idobj[key].max > 1 && idobj[key].min > 1)
         .sort((a, b) => ships[a].sortId - ships[b].sortId)
         .reduce(
