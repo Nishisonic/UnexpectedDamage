@@ -126,8 +126,8 @@ async function fetchTsunDB(map, node, edgesFromNode) {
         OR (enemy->>'hp')::int <= 0
         OR (damageinstance->>'resupplyUsed')::boolean
         OR (enemy->>'id')::int BETWEEN 1637 AND 1640
-        OR (round((enemy->>'hp')::int * 0.06, 0) <= (damageinstance->>'actualDamage')::int
-          AND (damageinstance->>'actualDamage')::int <= round((enemy->>'hp')::int * 0.14 - 0.08, 0))
+        OR (FLOOR((enemy->>'hp')::int * 0.06) <= (damageinstance->>'actualDamage')::int
+          AND (damageinstance->>'actualDamage')::int <= FLOOR((enemy->>'hp')::int * 0.14 - 0.08))
       )
       ORDER BY id;`,
       [map, edgesFromNode]
