@@ -103,28 +103,27 @@ async function fetchShips() {
   );
 }
 
-function datafilter({ ship, enemy, damageinstance }, ships) {
-  const [minDmg, maxDmg] = damageinstance.expectedDamage;
-  const damage = damageinstance.actualDamage;
-
-  return !(
-    ship.spAttackType >= 100 ||
-    enemy.hp <= 0 ||
-    damageinstance.resupplyUsed ||
-    !ships[ship.id] ||
-    !ships[enemy.id] ||
-    ships[enemy.id].soku === 0 ||
-    ships[enemy.id].name === "PT小鬼群" ||
-    (Math.floor(enemy.hp * 0.06) <= damage &&
-      damage <= Math.max(Math.floor(enemy.hp * 0.14 - 0.08), 0)) ||
-    (minDmg <= damage && damage <= maxDmg)
-  );
+function datafilter({ ship, enemy }, ships) {
+  return ships[ship.id] && ships[enemy.id] && ships[enemy.id].soku > 0;
 }
 
 async function fetchTsunDB(map, node, edgesFromNode) {
   return await client
     .query(
-      `SELECT * FROM abnormaldamage WHERE map = $1 AND edgeid = ANY($2) AND debuffed = false ORDER BY id`,
+      `SELECT *
+      FROM abnormaldamage
+      WHERE map = $1
+      AND edgeid = ANY($2)
+      AND debuffed = false
+      AND NOT (
+        (ship->>'spAttackType')::int >= 100
+        OR (enemy->>'hp')::int <= 0
+        OR (damageinstance->>'resupplyUsed')::boolean
+        OR (enemy->>'id')::int BETWEEN 1637 AND 1640
+        OR (round((enemy->>'hp')::int * 0.06, 0) <= (damageinstance->>'actualDamage')::int
+          AND (damageinstance->>'actualDamage')::int <= round((enemy->>'hp')::int * 0.14 - 0.08, 0))
+      )
+      ORDER BY id;`,
       [map, edgesFromNode]
     )
     .then(data => {
