@@ -129,13 +129,13 @@ async function fetchTsunDB(map, node, edgesFromNode) {
     )
     .then(data => {
       console.log(
-        `${new Date()} MAP:${map} ${node} Get TsunDB Data [Success].`
+        `${new Date()} MAP:${map} ${node} Fetch TsunDB Data [Success].`
       );
       return data;
     })
     .catch(err => {
       console.error(
-        `${new Date()} MAP:${map} ${node} Get TsunDB Data [Failed].`
+        `${new Date()} MAP:${map} ${node} Fetch TsunDB Data [Failed].`
       );
       console.error(err);
       return null;
@@ -190,7 +190,6 @@ async function execute() {
       result["samples"] = counter;
       result["data"] = Object.keys(idobj)
         .filter(key => idobj[key].max > 1 && idobj[key].min > 1)
-        .sort((a, b) => ships[a].sortId - ships[b].sortId)
         .reduce(
           (obj, key) => ({
             ...obj,
@@ -206,9 +205,7 @@ async function execute() {
     })
   )
     .finally(results => {
-      console.log(
-        `${new Date()} MAP:${result.map} ${result.node} TsunDB disconnection.`
-      );
+      console.log(`${new Date()} TsunDB disconnection.`);
       client.end();
       return results;
     })
