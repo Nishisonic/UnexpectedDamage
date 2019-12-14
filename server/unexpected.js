@@ -54,15 +54,15 @@ async function fetchTsunDB() {
         })
     )
   )
-    .map(data =>
-      data.nodes.map(node => {
-        const edgesFromNode = Object.keys(edges[`World ${data.map}`])
+    .map(({ map, nodes }) =>
+      nodes.map(node => {
+        const edgesFromNode = Object.keys(edges[`World ${map}`])
           .filter(edge => {
-            const e = edges[`World ${data.map}`][edge];
+            const e = edges[`World ${map}`][edge];
             return e[1] === node;
           })
           .map(edge => parseInt(edge));
-        return { map: data.map, node, edgesFromNode };
+        return { map, node, edgesFromNode };
       })
     )
     .flat();
@@ -120,7 +120,7 @@ async function fetchTsunDB() {
 
           idobj[ship.id].min = Math.max(idobj[ship.id].min, lowMod);
           idobj[ship.id].max = Math.min(idobj[ship.id].max, highMod);
-          idobj[ship.id].count = idobj[ship.id].count + 1;
+          idobj[ship.id].count++;
         }).length;
 
       result["date"] = new Date();
@@ -129,14 +129,17 @@ async function fetchTsunDB() {
         .filter(key => ships[key])
         .filter(key => idobj[key].max > 1 && idobj[key].min > 1)
         .sort((a, b) => ships[a].sortId - ships[b].sortId)
-        .reduce((p, key) => {
-          p[key] = {
-            min: Math.floor(idobj[key].min * 1000) / 1000,
-            max: Math.floor(idobj[key].max * 1000) / 1000,
-            count: idobj[key].count
-          };
-          return p;
-        }, {});
+        .reduce(
+          (obj, key) => ({
+            ...obj,
+            [key]: {
+              min: Math.floor(idobj[key].min * 1000) / 1000,
+              max: Math.floor(idobj[key].max * 1000) / 1000,
+              count: idobj[key].count
+            }
+          }),
+          {}
+        );
 
       const dir = `${__dirname}/${result.map}`;
       if (!fs.existsSync(dir)) {
