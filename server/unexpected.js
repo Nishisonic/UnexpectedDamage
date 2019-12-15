@@ -179,16 +179,19 @@ async function execute() {
             max: 999,
             count: 0
           };
-          const postcapPower = ship.postcapPower;
-          const lowPower =
-            damageinstance.actualDamage / ship.rAmmoMod + 0.7 * enemy.armor;
-          const highPower = lowPower + Math.floor(0.6 * (enemy.armor - 1));
+          const { id, postcapPower, rAmmoMod } = ship;
+          const { armor } = enemy;
+          const { actualDamage } = damageinstance;
+          const lowArmor = 0.7 * armor;
+          const highArmor = lowArmor + Math.floor(0.6 * (armor - 1));
+          const lowPower = actualDamage / rAmmoMod + lowArmor;
+          const highPower = (actualDamage + 1) / rAmmoMod + highArmor;
           const lowMod = lowPower / postcapPower;
           const highMod = highPower / postcapPower;
 
-          idobj[ship.id].min = Math.max(idobj[ship.id].min, lowMod);
-          idobj[ship.id].max = Math.min(idobj[ship.id].max, highMod);
-          idobj[ship.id].count++;
+          idobj[id].min = Math.max(idobj[id].min, lowMod);
+          idobj[id].max = Math.min(idobj[id].max, highMod);
+          idobj[id].count++;
         }).length;
 
       result["date"] = new Date();
