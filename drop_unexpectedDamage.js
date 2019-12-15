@@ -1,6 +1,6 @@
 /**
  * 異常ダメージ検知
- * @version 1.7.6
+ * @version 1.7.7
  * @author Nishikuma
  */
 
@@ -914,11 +914,11 @@ var detectDayBattle = function (date, mapCell, kind, friendCombinedKind, isEnemy
                     var covered = minPropDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxPropDmg || !attack.friendAttack && (minSunkDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxSunkDmg || redCondDying)
                     if (!(minDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxDmg || covered)) {
                         var ammoBonus = getAmmoBonus(ship.attacker, attack.friendAttack ? friends : enemies, mapCell)
-                        var minAfterPower = attack.damage / ammoBonus + minDef
-                        var maxAfterPower = attack.damage / ammoBonus + maxDef
+                        var minPostcapPower = attack.damage / ammoBonus + minDef
+                        var maxPostcapPower = (attack.damage + 1) / ammoBonus + maxDef
                         var inversion = {
-                            min: minAfterPower / power[1],
-                            max: maxAfterPower / power[0],
+                            min: minPostcapPower / power[1],
+                            max: maxPostcapPower / power[0],
                             minEx: 0,
                             maxEx: 0,
                             date:date.getTime()
@@ -929,17 +929,17 @@ var detectDayBattle = function (date, mapCell, kind, friendCombinedKind, isEnemy
                         if (!isSubMarine(ship.defender) && p.isAPshellBonusTarget() && isCritical(attack)) {
                             var power2 = p.getPostCapPower(true)
                             // [[[キャップ後攻撃力] * 弾着観測射撃 * 戦爆連合カットイン攻撃 * イベント特効 * 徹甲弾補正] * クリティカル補正]
-                            inversion.minEx = Math.ceil(Math.ceil(minAfterPower) / getCriticalBonus(attack)) / power2[1] / skilled[1]
-                            inversion.maxEx = Math.ceil(Math.ceil(maxAfterPower) / getCriticalBonus(attack)) / power2[0] / skilled[0]
+                            inversion.minEx = Math.ceil(Math.ceil(minPostcapPower) / getCriticalBonus(attack)) / power2[1] / skilled[1]
+                            inversion.maxEx = Math.ceil(Math.ceil(maxPostcapPower) / getCriticalBonus(attack)) / power2[0] / skilled[0]
                         } else if (!isSubMarine(ship.defender) && !p.isAPshellBonusTarget() || !isCritical(attack)) {
                             // [キャップ後攻撃力] * 弾着観測射撃 * 戦爆連合カットイン攻撃 * イベント特効
-                            inversion.minEx = minAfterPower / power[1]
-                            inversion.maxEx = maxAfterPower / power[0]
+                            inversion.minEx = minPostcapPower / power[1]
+                            inversion.maxEx = maxPostcapPower / power[0]
                         } else {
                             // [[キャップ後攻撃力] * 弾着観測射撃 * 戦爆連合カットイン攻撃 * イベント特効 * 徹甲弾補正]
                             // [[キャップ後攻撃力] * 弾着観測射撃 * 戦爆連合カットイン攻撃 * イベント特効 * クリティカル補正]
-                            inversion.minEx = Math.ceil(minAfterPower) / power[1]
-                            inversion.maxEx = Math.ceil(maxAfterPower) / power[0]
+                            inversion.minEx = Math.ceil(minPostcapPower) / power[1]
+                            inversion.maxEx = Math.ceil(maxPostcapPower) / power[0]
                         }
                         if (mapCell.map[0] >= 22 && attack.friendAttack) {
                             // 割合ダメージ等ではない&(敵が陸上型またはPT小鬼群または熟練度補正攻撃ではない)
@@ -1009,11 +1009,11 @@ var detectTorpedoAttack = function (date, mapCell, kind, friendCombinedKind, isE
             var covered = minPropDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxPropDmg
             if (!(minDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxDmg || covered)) {
                 var ammoBonus = getAmmoBonus(ship.attacker, attack.friendAttack ? friends : enemies, mapCell)
-                var minAfterPower = attack.damage / ammoBonus + minDef
-                var maxAfterPower = attack.damage / ammoBonus + maxDef
+                var minPostcapPower = attack.damage / ammoBonus + minDef
+                var maxPostcapPower = (attack.damage + 1) / ammoBonus + maxDef
                 var inversion = {
-                    min: minAfterPower / power[1],
-                    max: maxAfterPower / power[0],
+                    min: minPostcapPower / power[1],
+                    max: maxPostcapPower / power[0],
                     minEx: 0,
                     maxEx: 0,
                     date:date.getTime()
@@ -1021,12 +1021,12 @@ var detectTorpedoAttack = function (date, mapCell, kind, friendCombinedKind, isE
 
                 if (!isCritical(attack)) {
                     // [キャップ後攻撃力] * イベント特効
-                    inversion.minEx = minAfterPower / power[1]
-                    inversion.maxEx = maxAfterPower / power[0]
+                    inversion.minEx = minPostcapPower / power[1]
+                    inversion.maxEx = maxPostcapPower / power[0]
                 } else {
                     // [[キャップ後攻撃力] * イベント特効 * クリティカル補正]
-                    inversion.minEx = Math.ceil(minAfterPower) / power[1]
-                    inversion.maxEx = Math.ceil(maxAfterPower) / power[0]
+                    inversion.minEx = Math.ceil(minPostcapPower) / power[1]
+                    inversion.maxEx = Math.ceil(maxPostcapPower) / power[0]
                 }
                 if (mapCell.map[0] >= 22) {
                     // 割合ダメージ等ではない&(敵がPT小鬼群ではない)
@@ -1068,11 +1068,11 @@ var detectTorpedoAttack = function (date, mapCell, kind, friendCombinedKind, isE
             var redCondDying = isHp1ReplacementShip(ship.defender, attack.defender === 0) && ((hp.defender.now - attack.damage) === 1)
             var covered = minPropDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxPropDmg || minSunkDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxSunkDmg || redCondDying
             if (!(minDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxDmg || covered)) {
-                var minAfterPower = attack.damage + minDef
-                var maxAfterPower = attack.damage + maxDef
+                var minPostcapPower = attack.damage / ammoBonus + minDef
+                var maxPostcapPower = (attack.damage + 1) / ammoBonus + maxDef
                 var inversion = {
-                    min: minAfterPower / power[1],
-                    max: maxAfterPower / power[0],
+                    min: minPostcapPower / power[1],
+                    max: maxPostcapPower / power[0],
                     minEx: 0,
                     maxEx: 0,
                     date:date.getTime()
@@ -1080,12 +1080,12 @@ var detectTorpedoAttack = function (date, mapCell, kind, friendCombinedKind, isE
 
                 if (!isCritical(attack)) {
                     // [キャップ後攻撃力] * イベント特効
-                    inversion.minEx = minAfterPower / power[1]
-                    inversion.maxEx = maxAfterPower / power[0]
+                    inversion.minEx = minPostcapPower / power[1]
+                    inversion.maxEx = maxPostcapPower / power[0]
                 } else {
                     // [[キャップ後攻撃力] * イベント特効 * クリティカル補正]
-                    inversion.minEx = Math.ceil(minAfterPower) / power[1]
-                    inversion.maxEx = Math.ceil(maxAfterPower) / power[0]
+                    inversion.minEx = Math.ceil(minPostcapPower) / power[1]
+                    inversion.maxEx = Math.ceil(maxPostcapPower) / power[0]
                 }
                 result.push(new DetectDto(date, mapCell, 1, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], false, enemies, false, inversion))
             }
@@ -1164,11 +1164,11 @@ var detectNightBattle = function (date, mapCell, kind, friendCombinedKind, isEne
                     var covered = minPropDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxPropDmg || !attack.friendAttack && (minSunkDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxSunkDmg || redCondDying)
                     if (!(minDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxDmg || covered)) {
                         var ammoBonus = getAmmoBonus(ship.attacker, attack.friendAttack ? friends : enemies, mapCell)
-                        var minAfterPower = attack.damage / ammoBonus + minDef
-                        var maxAfterPower = attack.damage / ammoBonus + maxDef
+                        var minPostcapPower = attack.damage / ammoBonus + minDef
+                        var maxPostcapPower = (attack.damage + 1) / ammoBonus + maxDef
                         var inversion = {
-                            min: minAfterPower / power[1],
-                            max: maxAfterPower / power[0],
+                            min: minPostcapPower / power[1],
+                            max: maxPostcapPower / power[0],
                             minEx: 0,
                             maxEx: 0,
                             date:date.getTime()
@@ -1176,12 +1176,12 @@ var detectNightBattle = function (date, mapCell, kind, friendCombinedKind, isEne
 
                         if (!isCritical(attack)) {
                             // [キャップ後攻撃力] * イベント特効
-                            inversion.minEx = minAfterPower / power[1]
-                            inversion.maxEx = maxAfterPower / power[0]
+                            inversion.minEx = minPostcapPower / power[1]
+                            inversion.maxEx = maxPostcapPower / power[0]
                         } else {
                             // [[キャップ後攻撃力] * イベント特効 * クリティカル補正]
-                            inversion.minEx = Math.ceil(minAfterPower) / power[1]
-                            inversion.maxEx = Math.ceil(maxAfterPower) / power[0]
+                            inversion.minEx = Math.ceil(minPostcapPower) / power[1]
+                            inversion.maxEx = Math.ceil(maxPostcapPower) / power[0]
                         }
                         if (mapCell.map[0] >= 22 && attack.friendAttack) {
                             // 熟練度
@@ -1255,11 +1255,11 @@ var detectRadarShooting = function (date, mapCell, kind, friendCombinedKind, isE
                     var covered = minPropDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxPropDmg || !attack.friendAttack && minSunkDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxSunkDmg || redCondDying
                     if (!(minDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxDmg || covered)) {
                         var ammoBonus = getAmmoBonus(ship.attacker, attack.friendAttack ? friends : enemies, mapCell)
-                        var minAfterPower = attack.damage / ammoBonus + minDef
-                        var maxAfterPower = attack.damage / ammoBonus + maxDef
+                        var minPostcapPower = attack.damage / ammoBonus + minDef
+                        var maxPostcapPower = (attack.damage + 1) / ammoBonus + maxDef
                         var inversion = {
-                            min: minAfterPower / power[1],
-                            max: maxAfterPower / power[0],
+                            min: minPostcapPower / power[1],
+                            max: maxPostcapPower / power[0],
                             minEx: 0,
                             maxEx: 0,
                             date:date.getTime()
@@ -1267,12 +1267,12 @@ var detectRadarShooting = function (date, mapCell, kind, friendCombinedKind, isE
 
                         if (!isCritical(attack)) {
                             // [キャップ後攻撃力] * イベント特効
-                            inversion.minEx = minAfterPower / power[1]
-                            inversion.maxEx = maxAfterPower / power[0]
+                            inversion.minEx = minPostcapPower / power[1]
+                            inversion.maxEx = maxPostcapPower / power[0]
                         } else {
                             // [[キャップ後攻撃力] * イベント特効 * クリティカル補正]
-                            inversion.minEx = Math.ceil(minAfterPower) / power[1]
-                            inversion.maxEx = Math.ceil(maxAfterPower) / power[0]
+                            inversion.minEx = Math.ceil(minPostcapPower) / power[1]
+                            inversion.maxEx = Math.ceil(maxPostcapPower) / power[0]
                         }
                         result.push(new DetectDto(date, mapCell, 2, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], shouldUseSkilled === undefined ? true : shouldUseSkilled, attack.friendAttack ? friends : enemies, true, inversion))
                     }
