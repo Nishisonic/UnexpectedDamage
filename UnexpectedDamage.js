@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.76
+var VERSION = 1.77
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -626,8 +626,8 @@ AntiSubmarinePower.prototype.getPreCapPower = function () {
  * 対潜火力(キャップ後)を返します
  * @return {[Number,Number]} 対潜火力(キャップ後)
  */
-AntiSubmarinePower.prototype.getPostCapPower = function () {
-    var v = Math.floor(getPostCapValue(this.getPreCapPower(), this.CAP_VALUE)) * getCriticalBonus(this.attack)
+AntiSubmarinePower.prototype.getPostcapPower = function () {
+    var v = Math.floor(getPostcapValue(this.getPreCapPower(), this.CAP_VALUE)) * getCriticalBonus(this.attack)
     var s = this.shouldUseSkilled ? getSkilledBonus(this.date, this.attack, this.attacker, this.defender, this.attackerHp) : [1.0, 1.0]
     return [Math.floor(v * s[0]), Math.floor(v * s[1])]
 }
@@ -813,11 +813,11 @@ DayBattlePower.prototype.getPreCapPower = function () {
  * @param {Boolean} noCL2 クリティカル前の昼砲撃火力値を返すか(デフォルト=false)
  * @return {[Number,Number]} 昼砲撃火力(キャップ後)
  */
-DayBattlePower.prototype.getPostCapPower = function (noCL2) {
+DayBattlePower.prototype.getPostcapPower = function (noCL2) {
     // サイレント修正(Twitterで確認した限りでは17/9/9が最古=>17夏イベ?)以降、集積地棲姫特効のキャップ位置が変化(a5→a6)
     // 17夏以降に登場したPT小鬼群の特効位置もa6に変化?(乗算と加算組み合わせているっぽいので詳細不明)
     // A = [[キャップ後攻撃力] * 乗算特効補正 + 加算特効補正] * 弾着観測射撃 * 戦爆連合カットイン攻撃
-    var value = Math.floor(Math.floor(getPostCapValue(this.getPreCapPower(), this.CAP_VALUE)) * getMultiplySlayerBonus(this.attacker, this.defender) + getAddSlayerBonus(this.attacker, this.defender)) * this.getSpottingBonus() * this.getUnifiedBombingBonus()
+    var value = Math.floor(Math.floor(getPostcapValue(this.getPreCapPower(), this.CAP_VALUE)) * getMultiplySlayerBonus(this.attacker, this.defender) + getAddSlayerBonus(this.attacker, this.defender)) * this.getSpottingBonus() * this.getUnifiedBombingBonus()
     // 徹甲弾補正判定
     if (this.isAPshellBonusTarget()) {
         // A = [A * 徹甲弾補正]
@@ -1180,9 +1180,9 @@ TorpedoPower.prototype.getPreCapPower = function () {
  * 雷撃火力(キャップ後)を返します
  * @return {[Number,Number]} 雷撃火力(キャップ後)
  */
-TorpedoPower.prototype.getPostCapPower = function () {
+TorpedoPower.prototype.getPostcapPower = function () {
     var result = [0, 0]
-    var value = getPostCapValue(this.getPreCapPower(), this.CAP_VALUE)
+    var value = getPostcapValue(this.getPreCapPower(), this.CAP_VALUE)
     var critical = getCriticalBonus(this.attack)
     result[0] = result[1] = Math.floor(Math.floor(value) * critical)
     return result
@@ -1708,9 +1708,9 @@ NightBattlePower.prototype.getPreCapPower = function () {
  * 夜戦火力(キャップ後)を返します
  * @return {[Number,Number]} 夜戦火力(キャップ後)
  */
-NightBattlePower.prototype.getPostCapPower = function () {
+NightBattlePower.prototype.getPostcapPower = function () {
     // A = [[キャップ後攻撃力] * 乗算特効補正 + 加算特効補正]
-    var value = Math.floor(Math.floor(getPostCapValue(this.getPreCapPower(), this.CAP_VALUE)) * getMultiplySlayerBonus(this.attacker, this.defender) + getAddSlayerBonus(this.attacker, this.defender))
+    var value = Math.floor(Math.floor(getPostcapValue(this.getPreCapPower(), this.CAP_VALUE)) * getMultiplySlayerBonus(this.attacker, this.defender) + getAddSlayerBonus(this.attacker, this.defender))
     // クリティカル判定
     if (isCritical(this.attack)) {
         // A = [A * クリティカル補正 * 熟練度補正]
@@ -2269,7 +2269,7 @@ var getFormationMatchBonus = function (formation) {
  * @param {Number} capValue キャップ値
  * @return {Number} キャップ後火力
  */
-var getPostCapValue = function (value, capValue) {
+var getPostcapValue = function (value, capValue) {
     return capValue < value ? Math.sqrt(value - capValue) + capValue : value
 }
 
