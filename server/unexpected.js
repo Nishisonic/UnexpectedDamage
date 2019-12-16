@@ -150,10 +150,9 @@ async function fetchTsunDB(map, node, edgesFromNode) {
 async function execute() {
   const startTime = new Date();
   console.log(`Fetch Start - ${startTime}`);
-  const ships = await fetchShips();
-  const nodes = await fetchNodes();
+  const [ships, nodes] = await Promise.all([fetchShips(), fetchNodes()]);
 
-  return Promise.all(
+  return await Promise.all(
     nodes.map(async ({ map, node, edgesFromNode }) => {
       const data = await fetchTsunDB(map, node, edgesFromNode);
 
