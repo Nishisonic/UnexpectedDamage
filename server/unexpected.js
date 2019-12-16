@@ -4,9 +4,6 @@ const fs = require("fs");
 
 const dblogin = require(`${__dirname}/dblogin.json`);
 
-const client = new Client(dblogin);
-client.connect();
-
 async function fetchNodes() {
   const edges = (
     await axios.get(
@@ -114,7 +111,10 @@ function datafilter({ ship, enemy }, ships) {
 }
 
 async function fetchTsunDB(map, node, edgesFromNode) {
-  return await client
+  const client = new Client(dblogin);
+  client.connect();
+
+  return client
     .query(
       `SELECT *
       FROM abnormaldamage
@@ -144,6 +144,10 @@ async function fetchTsunDB(map, node, edgesFromNode) {
       );
       console.error(err);
       return err;
+    })
+    .finally(data => {
+      client.end();
+      return data;
     });
 }
 
@@ -152,7 +156,7 @@ async function execute() {
   console.log(`Fetch Start - ${startTime}`);
   const [ships, nodes] = await Promise.all([fetchShips(), fetchNodes()]);
 
-  return await Promise.all(
+  return Promise.all(
     nodes.map(async ({ map, node, edgesFromNode }) => {
       const data = await fetchTsunDB(map, node, edgesFromNode);
 
@@ -211,11 +215,6 @@ async function execute() {
       return result;
     })
   )
-    .finally(results => {
-      console.log(`${new Date()} TsunDB disconnection.`);
-      client.end();
-      return results;
-    })
     .then(writeFiles)
     .finally(() => {
       const endTime = new Date();
