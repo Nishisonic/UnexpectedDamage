@@ -52,41 +52,35 @@ async function fetchNodes() {
     .flat();
 }
 
-function writeFiles(results) {
-  return Promise.all(
-    results
-      .filter(result => result)
-      .map(result => {
-        const dir = `${__dirname}/${result.map}`;
-        if (!fs.existsSync(dir)) {
-          fs.mkdirSync(dir, 0o775);
-        }
-        return new Promise((resolve, reject) => {
-          fs.writeFile(
-            `${dir}/${result.node}.json`,
-            JSON.stringify(result),
-            err => {
-              if (err) {
-                console.error(
-                  `${new Date()} MAP:${result.map} ${
-                    result.node
-                  } Data Writing [Failed].`
-                );
-                console.error(err);
-                return reject(err);
-              }
-              fs.chmodSync(`${dir}/${result.node}.json`, 0o664);
-              console.log(
-                `${new Date()} MAP:${result.map} ${
-                  result.node
-                } Data Writing [Success].`
-              );
-              return resolve(result);
-            }
+function writeFile(result) {
+  const dir = `${__dirname}/${result.map}`;
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, 0o775);
+  }
+  return new Promise((resolve, reject) => {
+    fs.writeFile(
+      `${dir}/${result.node}.json`,
+      JSON.stringify(result),
+      err => {
+        if (err) {
+          console.error(
+            `${new Date()} MAP:${result.map} ${
+              result.node
+            } Data Writing [Failed].`
           );
-        });
-      })
-  );
+          console.error(err);
+          return reject(err);
+        }
+        fs.chmodSync(`${dir}/${result.node}.json`, 0o664);
+        console.log(
+          `${new Date()} MAP:${result.map} ${
+            result.node
+          } Data Writing [Success].`
+        );
+        return resolve(result);
+      }
+    );
+  });
 }
 
 async function fetchShips() {
@@ -212,10 +206,9 @@ async function execute() {
           }),
           {}
         );
-      return result;
+      return writeFile(result);
     })
   )
-    .then(writeFiles)
     .finally(() => {
       const endTime = new Date();
       console.log(
