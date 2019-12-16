@@ -58,28 +58,22 @@ function writeFile(result) {
     fs.mkdirSync(dir, 0o775);
   }
   return new Promise((resolve, reject) => {
-    fs.writeFile(
-      `${dir}/${result.node}.json`,
-      JSON.stringify(result),
-      err => {
-        if (err) {
-          console.error(
-            `${new Date()} MAP:${result.map} ${
-              result.node
-            } Data Writing [Failed].`
-          );
-          console.error(err);
-          return reject(err);
-        }
-        fs.chmodSync(`${dir}/${result.node}.json`, 0o664);
-        console.log(
+    fs.writeFile(`${dir}/${result.node}.json`, JSON.stringify(result), err => {
+      if (err) {
+        console.error(
           `${new Date()} MAP:${result.map} ${
             result.node
-          } Data Writing [Success].`
+          } Data Writing [Failed].`
         );
-        return resolve(result);
+        console.error(err);
+        return reject();
       }
-    );
+      fs.chmodSync(`${dir}/${result.node}.json`, 0o664);
+      console.log(
+        `${new Date()} MAP:${result.map} ${result.node} Data Writing [Success].`
+      );
+      resolve();
+    });
   });
 }
 
@@ -137,12 +131,8 @@ async function fetchTsunDB(map, node, edgesFromNode) {
         `${new Date()} MAP:${map} ${node} Fetch TsunDB Data [Failed].`
       );
       console.error(err);
-      return err;
     })
-    .finally(data => {
-      client.end();
-      return data;
-    });
+    .finally(() => client.end());
 }
 
 async function execute() {
@@ -208,15 +198,14 @@ async function execute() {
         );
       return writeFile(result);
     })
-  )
-    .finally(() => {
-      const endTime = new Date();
-      console.log(
-        `Fetch Complete. (${Math.floor(
-          (endTime.getTime() - startTime.getTime()) / 1000
-        )}s)`
-      );
-    });
+  ).finally(() => {
+    const endTime = new Date();
+    console.log(
+      `Fetch Complete. (${Math.floor(
+        (endTime.getTime() - startTime.getTime()) / 1000
+      )}s)`
+    );
+  });
 }
 
 execute();
