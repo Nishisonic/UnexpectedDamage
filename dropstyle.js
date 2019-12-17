@@ -392,7 +392,7 @@ function genBattleHtml(dataLists) {
                                 'if (node) {' +
                                     '$.ajax({' +
                                        'type: "GET",' +
-                                       'url: "https://www.nishikuma.net/UnexpectedDamage/" + map + "/" + node[1] + ".json",' +
+                                       'url: "https://nishikuma.net/UnexpectedDamage/" + map + "/" + node[1] + ".json",' +
                                        'dataType:"json",' +
                                     '}).done(function(res){' +
                                         '$("#tsunMap").html(map + " " + node[1] + "マス(" + res.samples + " Samples) <span style=' + "'font-size: x-small;'" + '>" + moment(res.date).format("YYYY-MM-DD HH:mm:ss") + " 取得</span>");' +
