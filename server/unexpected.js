@@ -85,7 +85,7 @@ async function fetchShips() {
       ...obj,
       [v.api_id]: {
         name: v.api_name,
-        stype: v.api_mst_stype,
+        stype: v.api_stype,
         sortId: v.api_sort_id,
         soku: v.api_soku
       }
@@ -170,7 +170,7 @@ async function execute() {
           const { armor } = enemy;
           const { actualDamage } = damageinstance;
           const lowArmor = 0.7 * armor;
-          const highArmor = lowArmor + Math.floor(0.6 * (armor - 1));
+          const highArmor = lowArmor + 0.6 * Math.floor(armor - 1);
           const lowPower = actualDamage / rAmmoMod + lowArmor;
           const highPower = (actualDamage + 1) / rAmmoMod + highArmor;
           const lowMod = lowPower / postcapPower;
