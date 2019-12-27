@@ -94,8 +94,8 @@ async function fetchShips() {
   );
 }
 
-function datafilter({ ship, enemy }, ships) {
-  return ships[ship.id] && ships[enemy.id] && ships[enemy.id].soku > 0;
+function datafilter({ shipid, enemyid }, ships) {
+  return ships[shipid] && ships[enemyid] && ships[enemyid].soku > 0;
 }
 
 async function fetchTsunDB(map, node, edgesFromNode) {
@@ -104,7 +104,10 @@ async function fetchTsunDB(map, node, edgesFromNode) {
 
   return client
     .query(
-      `SELECT ship, enemy, damageinstance
+      `SELECT (ship->>'id')::int shipid,
+        (enemy->>'id')::int enemyid,
+        ((damageinstance->>'actualDamage')::int / (ship->>'rAmmoMod')::real + 0.7 * ((enemy->>'armor')::double precision)) / ((ship->>'postcapPower')::double precision) lowmod,
+        (((damageinstance->>'actualDamage')::int + 1) / (ship->>'rAmmoMod')::real + 0.7 * ((enemy->>'armor')::double precision) + 0.6 * FLOOR((enemy->>'armor')::double precision - 1)) / ((ship->>'postcapPower')::double precision) highmod
       FROM abnormaldamage
       WHERE map = $1
       AND edgeid = ANY($2)
@@ -160,25 +163,16 @@ async function execute() {
 
       const counter = entries
         .filter(entry => datafilter(entry, ships))
-        .map(({ ship, enemy, damageinstance }) => {
-          idobj[ship.id] = idobj[ship.id] || {
+        .map(({ shipid, lowmod, highmod }) => {
+          idobj[shipid] = idobj[shipid] || {
             min: 0,
             max: 999,
             count: 0
           };
-          const { id, postcapPower, rAmmoMod } = ship;
-          const { armor } = enemy;
-          const { actualDamage } = damageinstance;
-          const lowArmor = 0.7 * armor;
-          const highArmor = lowArmor + 0.6 * Math.floor(armor - 1);
-          const lowPower = actualDamage / rAmmoMod + lowArmor;
-          const highPower = (actualDamage + 1) / rAmmoMod + highArmor;
-          const lowMod = lowPower / postcapPower;
-          const highMod = highPower / postcapPower;
 
-          idobj[id].min = Math.max(idobj[id].min, lowMod);
-          idobj[id].max = Math.min(idobj[id].max, highMod);
-          idobj[id].count++;
+          idobj[shipid].min = Math.max(idobj[shipid].min, lowmod);
+          idobj[shipid].max = Math.min(idobj[shipid].max, highmod);
+          idobj[shipid].count++;
         }).length;
 
       result["date"] = new Date();
