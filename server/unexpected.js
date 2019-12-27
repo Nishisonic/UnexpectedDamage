@@ -104,7 +104,7 @@ async function fetchTsunDB(map, node, edgesFromNode) {
 
   return client
     .query(
-      `SELECT *
+      `SELECT ship, enemy, damageinstance
       FROM abnormaldamage
       WHERE map = $1
       AND edgeid = ANY($2)
