@@ -1,6 +1,6 @@
 /**
  * 異常ダメージ検知
- * @version 1.7.9
+ * @version 1.8.1
  * @author Nishikuma
  */
 
@@ -409,9 +409,9 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
                         var damage = Math.floor(json.api_damage[idx][didx])
                         var critical = json.api_cl_list[idx][didx]
                         if (friendAttack) {
-                            result[idx][didx] = new AttackDto(phase.kind, friendAttack, attacker < friendNum, attacker % Math.max(6, friendNum), defender < enemyNum, defender % Math.max(6, enemyNum), lastAttack, damage, critical, attackType, showItem, didx + 1)
+                            result[idx][didx] = new AttackDto(phase.kind, friendAttack, attacker < friendNum, attacker % Math.max(6, friendNum), defender < enemyNum, defender % Math.max(6, enemyNum), lastAttack, damage, critical, attackType, showItem, didx)
                         } else {
-                            result[idx][didx] = new AttackDto(phase.kind, friendAttack, attacker < enemyNum, attacker % Math.max(6, enemyNum), defender < friendNum, defender % Math.max(6, friendNum), lastAttack, damage, critical, attackType, showItem, didx + 1)
+                            result[idx][didx] = new AttackDto(phase.kind, friendAttack, attacker < enemyNum, attacker % Math.max(6, enemyNum), defender < friendNum, defender % Math.max(6, friendNum), lastAttack, damage, critical, attackType, showItem, didx)
                         }
                     }
                 }
@@ -428,13 +428,13 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
             Java.from(atackList.get(true)).forEach(function (atack, i) {
                 result.friend[i] = []
                 Java.from(atack.ot).forEach(function (x, j) {
-                    result.friend[i][j] = new AttackDto(phase.kind, true, atack.origin[j] < friendNum, atack.origin[j] % Math.max(6, friendNum), atack.target[x] < enemyNum, atack.target[x] % Math.max(6, enemyNum), false, atack.ydam[j], atack.critical ? atack.critical[j] : 0, null, null, 1)
+                    result.friend[i][j] = new AttackDto(phase.kind, true, atack.origin[j] < friendNum, atack.origin[j] % Math.max(6, friendNum), atack.target[x] < enemyNum, atack.target[x] % Math.max(6, enemyNum), false, atack.ydam[j], atack.critical ? atack.critical[j] : 0, null, null, 0)
                 })
             })
             Java.from(atackList.get(false)).forEach(function (atack, i) {
                 result.enemy[i] = []
                 Java.from(atack.ot).forEach(function (x, j) {
-                    result.enemy[i][j] = new AttackDto(phase.kind, false, atack.origin[j] < enemyNum, atack.origin[j] % Math.max(6, enemyNum), atack.target[x] < friendNum, atack.target[x] % Math.max(6, friendNum), false, atack.ydam[j], atack.critical ? atack.critical[j] : 0, null, null, 1)
+                    result.enemy[i][j] = new AttackDto(phase.kind, false, atack.origin[j] < enemyNum, atack.origin[j] % Math.max(6, enemyNum), atack.target[x] < friendNum, atack.target[x] % Math.max(6, friendNum), false, atack.ydam[j], atack.critical ? atack.critical[j] : 0, null, null, 0)
                 })
             })
             return result
@@ -470,9 +470,9 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
                         var damage = Math.floor(json.api_damage[idx][didx])
                         var critical = json.api_cl_list[idx][didx]
                         if (friendAttack) {
-                            result[idx][didx] = new AttackDto(phase.kind, friendAttack, attacker < friendNum, attacker % Math.max(6, friendNum), defender < enemyNum, defender % Math.max(6, enemyNum), lastAttack, damage, critical, attackType, showItem, didx + 1)
+                            result[idx][didx] = new AttackDto(phase.kind, friendAttack, attacker < friendNum, attacker % Math.max(6, friendNum), defender < enemyNum, defender % Math.max(6, enemyNum), lastAttack, damage, critical, attackType, showItem, didx)
                         } else {
-                            result[idx][didx] = new AttackDto(phase.kind, friendAttack, attacker < enemyNum, attacker % Math.max(6, enemyNum), defender < friendNum, defender % Math.max(6, friendNum), lastAttack, damage, critical, attackType, showItem, didx + 1)
+                            result[idx][didx] = new AttackDto(phase.kind, friendAttack, attacker < enemyNum, attacker % Math.max(6, enemyNum), defender < friendNum, defender % Math.max(6, friendNum), lastAttack, damage, critical, attackType, showItem, didx)
                         }
                     }
                 }
