@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.78
+var VERSION = 1.80
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -914,6 +914,7 @@ DayBattlePower.prototype.isAPshellBonusTarget = function () {
 DayBattlePower.prototype.getSpottingBonus = function () {
     var ADD_ITEM_BONUS_DATE = getJstDate(2018, 12, 7, 12, 0, 0)
     var UPDATE_SPECIAL_ATTACK_BONUS_DATE = getJstDate(2019, 2, 27, 12, 0, 0)
+    var attackNum = this.attack.attackNum
 
     switch (Number(this.attack.attackType)) {
         case 0: return 1.0   // 通常攻撃
@@ -927,9 +928,9 @@ DayBattlePower.prototype.getSpottingBonus = function () {
         case 100: return Number(this.formation[2]) === 4 ? 2.5 : 2.0 // Nelson Touch(≠弾着攻撃)
         case 101: // 一斉射かッ…胸が熱いな！
             var secondShipId = this.origins[this.attack.mainAttack ? "main" : "escort"][1].shipId
-            var base = this.attack.attackNum < 3 ? 1.4 : 1.2
+            var base = attackNum < 2 ? 1.4 : 1.2
             var secondShipBonus = function(date, secondShipId, attackNum){
-                if (attackNum < 3) {
+                if (attackNum < 2) {
                     switch (secondShipId) {
                         case 573: return 1.2  // 陸奥改二
                         case 276: return 1.15 // 陸奥改
@@ -943,7 +944,7 @@ DayBattlePower.prototype.getSpottingBonus = function () {
                     }
                 }
                 return 1.0
-            }(this.date, secondShipId, this.attack.attackNum)
+            }(this.date, secondShipId, attackNum)
             var itemBonus = function(date, items) {
                 if (ADD_ITEM_BONUS_DATE.after(date)) return 1
                 var surfaceRadarBonus = items.some(function(item) {
@@ -953,13 +954,13 @@ DayBattlePower.prototype.getSpottingBonus = function () {
                     return item.type3 === 13
                 }) ? 1.35 : 1
                 return surfaceRadarBonus * apShellBonus
-            }(this.date, !this.attack.lastAttack ? this.items : getItems(this.origins[this.attack.mainAttack ? "main" : "escort"][1]))
+            }(this.date, attackNum < 2 ? this.items : getItems(this.origins[this.attack.mainAttack ? "main" : "escort"][1]))
             return base * secondShipBonus * itemBonus
         case 102: // 長門、いい？ いくわよ！ 主砲一斉射ッ！
             var secondShipId = this.origins[this.attack.mainAttack ? "main" : "escort"][1].shipId
-            var base = this.attack.attackNum < 3 ? 1.4 : 1.2
+            var base = attackNum < 2 ? 1.4 : 1.2
             var secondShipBonus = function(secondShipId, attackNum){
-                if (attackNum < 3) {
+                if (attackNum < 2) {
                     switch (secondShipId) {
                         case 275:            // 長門改
                         case 541: return 1.2 // 長門改二
@@ -971,7 +972,7 @@ DayBattlePower.prototype.getSpottingBonus = function () {
                     }
                 }
                 return 1.0
-            }(secondShipId, this.attack.attackNum)
+            }(secondShipId, attackNum)
             var itemBonus = function(items) {
                 var surfaceRadarBonus = items.some(function(item) {
                     return item.type3 === 11 && item.param.saku >= 5
@@ -980,12 +981,12 @@ DayBattlePower.prototype.getSpottingBonus = function () {
                     return item.type3 === 13
                 }) ? 1.35 : 1
                 return surfaceRadarBonus * apShellBonus
-            }(!this.attack.lastAttack ? this.items : getItems(this.origins[this.attack.mainAttack ? "main" : "escort"][1]))
+            }(attackNum < 2 ? this.items : getItems(this.origins[this.attack.mainAttack ? "main" : "escort"][1]))
             return base * secondShipBonus * itemBonus
         case 103: // Colorado 特殊攻撃
             var secondShipId = this.origins[this.attack.mainAttack ? "main" : "escort"][1].shipId
             var thirdShipId = this.origins[this.attack.mainAttack ? "main" : "escort"][2].shipId
-            var base = this.attack.attackNum === 1 ? 1.3 : 1.15
+            var base = attackNum === 0 ? 1.3 : 1.15
             var companionShipBonus = function (secondShipId, thirdShipId, attackNum) {
                 var isBig7 = function(shipId){
                     switch (shipId) {
@@ -1003,13 +1004,13 @@ DayBattlePower.prototype.getSpottingBonus = function () {
                 }
 
                 switch (attackNum) {
-                    case 2:
+                    case 1:
                         return isBig7(secondShipId) ? 1.1 : 1
-                    case 3:
+                    case 2:
                         return isBig7(thirdShipId) ? 1.15 * (isBig7(secondShipId) ? 1.1 : 1) : 1
                 }
                 return 1
-            }(secondShipId, thirdShipId, this.attackNum)
+            }(secondShipId, thirdShipId, attackNum)
             var itemBonus = function(items, origins, attackNum) {
                 var surfaceRadarBonus = function(items) {
                     return items.some(function(item) {
@@ -1022,17 +1023,17 @@ DayBattlePower.prototype.getSpottingBonus = function () {
                     }) ? 1.35 : 1
                 }
                 switch (attackNum) {
-                    case 1: return surfaceRadarBonus(items) * apShellBonus(items)
-                    case 2:
+                    case 0: return surfaceRadarBonus(items) * apShellBonus(items)
+                    case 1:
                         var secondShipItems = getItems(origins[this.attack.mainAttack ? "main" : "escort"][1])
                         return surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems)
-                    case 3:
+                    case 2:
                         var secondShipItems = getItems(origins[this.attack.mainAttack ? "main" : "escort"][1])
                         var thirdShipItems = getItems(origins[this.attack.mainAttack ? "main" : "escort"][2])
                         return Math.max(surfaceRadarBonus(secondShipItems), surfaceRadarBonus(thirdShipItems)) * Math.max(apShellBonus(secondShipItems), apShellBonus(thirdShipItems))
                 }
                 return 1
-            }(this.items, this.origins, this.attackNum)
+            }(this.items, this.origins, attackNum)
             return base * companionShipBonus * itemBonus
         case 200: return 1.35 // 瑞雲立体攻撃
         case 201: return 1.3 // 海空立体攻撃
@@ -1728,6 +1729,7 @@ NightBattlePower.prototype.getPostcapPower = function () {
 NightBattlePower.prototype.getCutinBonus = function () {
     var ADD_ITEM_BONUS_DATE = getJstDate(2018, 12, 7, 12, 0, 0)
     var UPDATE_SPECIAL_ATTACK_BONUS_DATE = getJstDate(2019, 2, 27, 12, 0, 0)
+    var attackNum = this.attack.attackNum
 
     /**
      * 駆逐専用CI:12.7cm連装砲D型改二ボーナスを返します
@@ -1776,9 +1778,9 @@ NightBattlePower.prototype.getCutinBonus = function () {
             return Number(this.formation[2]) === 4 ? 2.5 : 2.0
         case 101: // 一斉射かッ…胸が熱いな！
             var secondShipId = this.origins[this.attack.mainAttack ? "main" : "escort"][1].shipId
-            var base = this.attack.attackNum < 3 ? 1.4 : 1.2
+            var base = attackNum < 2 ? 1.4 : 1.2
             var secondShipBonus = function(date, secondShipId, attackNum){
-                if (attackNum < 3) {
+                if (attackNum < 2) {
                     switch (secondShipId) {
                         case 573: return 1.2  // 陸奥改二
                         case 276: return 1.15 // 陸奥改
@@ -1792,7 +1794,7 @@ NightBattlePower.prototype.getCutinBonus = function () {
                     }
                 }
                 return 1.0
-            }(this.date, secondShipId, this.attack.attackNum)
+            }(this.date, secondShipId, attackNum)
             var itemBonus = function(date, items) {
                 if (ADD_ITEM_BONUS_DATE.after(date)) return 1
                 var surfaceRadarBonus = items.some(function(item) {
@@ -1802,13 +1804,13 @@ NightBattlePower.prototype.getCutinBonus = function () {
                     return item.type3 === 13
                 }) ? 1.35 : 1
                 return surfaceRadarBonus * apShellBonus
-            }(this.date, !this.attack.lastAttack ? this.items : getItems(this.origins[this.attack.mainAttack ? "main" : "escort"][1]))
+            }(this.date, attackNum < 2 ? this.items : getItems(this.origins[this.attack.mainAttack ? "main" : "escort"][1]))
             return base * secondShipBonus * itemBonus
         case 102: // 長門、いい？ いくわよ！ 主砲一斉射ッ！
             var secondShipId = this.origins[this.attack.mainAttack ? "main" : "escort"][1].shipId
-            var base = this.attack.attackNum < 3 ? 1.4 : 1.2
+            var base = attackNum < 2 ? 1.4 : 1.2
             var secondShipBonus = function(secondShipId, attackNum) {
-                if (attackNum < 3) {
+                if (attackNum < 2) {
                     switch (secondShipId) {
                         case 275:            // 長門改
                         case 541: return 1.2 // 長門改二
@@ -1820,7 +1822,7 @@ NightBattlePower.prototype.getCutinBonus = function () {
                     }
                 }
                 return 1.0
-            }(secondShipId, this.attack.attackNum)
+            }(secondShipId, attackNum)
             var itemBonus = function(items) {
                 var surfaceRadarBonus = items.some(function(item) {
                     return item.type3 === 11 && item.param.saku >= 5
@@ -1829,12 +1831,12 @@ NightBattlePower.prototype.getCutinBonus = function () {
                     return item.type3 === 13
                 }) ? 1.35 : 1
                 return surfaceRadarBonus * apShellBonus
-            }(!this.attack.lastAttack ? this.items : getItems(this.origins[this.attack.mainAttack ? "main" : "escort"][1]))
+            }(attackNum < 2 ? this.items : getItems(this.origins[this.attack.mainAttack ? "main" : "escort"][1]))
             return base * secondShipBonus * itemBonus
         case 103: // Colorado 特殊攻撃
             var secondShipId = this.origins[this.attack.mainAttack ? "main" : "escort"][1].shipId
             var thirdShipId = this.origins[this.attack.mainAttack ? "main" : "escort"][2].shipId
-            var base = this.attack.attackNum === 1 ? 1.3 : 1.15
+            var base = this.attack.attackNum === 0 ? 1.3 : 1.15
             var companionShipBonus = function (secondShipId, thirdShipId, attackNum) {
                 var isBig7 = function(shipId){
                     switch (shipId) {
@@ -1852,9 +1854,9 @@ NightBattlePower.prototype.getCutinBonus = function () {
                 }
 
                 switch (attackNum) {
-                    case 2:
+                    case 1:
                         return isBig7(secondShipId) ? 1.1 : 1
-                    case 3:
+                    case 2:
                         return isBig7(thirdShipId) ? 1.15 * (isBig7(secondShipId) ? 1.1 : 1) : 1
                 }
                 return 1
@@ -1871,17 +1873,17 @@ NightBattlePower.prototype.getCutinBonus = function () {
                     }) ? 1.35 : 1
                 }
                 switch (attackNum) {
-                    case 1: return surfaceRadarBonus(items) * apShellBonus(items)
-                    case 2:
+                    case 0: return surfaceRadarBonus(items) * apShellBonus(items)
+                    case 1:
                         var secondShipItems = getItems(origins[this.attack.mainAttack ? "main" : "escort"][1])
                         return surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems)
-                    case 3:
+                    case 2:
                         var secondShipItems = getItems(origins[this.attack.mainAttack ? "main" : "escort"][1])
                         var thirdShipItems = getItems(origins[this.attack.mainAttack ? "main" : "escort"][2])
                         return Math.max(surfaceRadarBonus(secondShipItems), surfaceRadarBonus(thirdShipItems)) * Math.max(apShellBonus(secondShipItems), apShellBonus(thirdShipItems))
                 }
                 return 1
-            }(this.items, this.origins, this.attackNum)
+            }(this.items, this.origins, attackNum)
             return base * companionShipBonus * itemBonus
         case 200: return 1.35 // 瑞雲立体攻撃
         case 201: return 1.3 // 海空立体攻撃
