@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.81
+var VERSION = 1.82
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -1378,8 +1378,6 @@ NightBattlePower.prototype.getBasicPower = function () {
                 560: {
                     // 二式艦上偵察機
                     61: {param:[0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3], count: 1, group: 1},
-                    // 彗星一二型(三一号光電管爆弾搭載機)
-                    320: {param: 4, count: 1},
                     // 九七式艦攻改 試製三号戊型(空六号電探改装備機)
                     344: 2,
                     // 九七式艦攻改(熟練) 試製三号戊型(空六号電探改装備機)
@@ -1591,8 +1589,8 @@ NightBattlePower.prototype.getBasicPower = function () {
             if (item !== null && slot > 0) {
                 // 夜戦、夜攻
                 if (item.type3 === 45 || item.type3 === 46) {
-                    // 火力+雷装+3*機数+0.45*(火力+雷装+爆装+対潜)*sqrt(機数)+sqrt(★)
-                    return item.param.karyoku + (useRaisou ? item.param.raisou : item.param.baku) + 3 * slot + 0.45 * (item.param.karyoku + item.param.raisou + item.param.baku + item.param.taisen) * Math.sqrt(slot) + Math.sqrt(item.level)
+                    // 火力+雷装+爆装+3*機数+0.45*(火力+雷装+爆装+対潜)*sqrt(機数)+sqrt(★)
+                    return item.param.karyoku + (useRaisou ? item.param.raisou : 0) + item.param.baku + 3 * slot + 0.45 * (item.param.karyoku + item.param.raisou + item.param.baku + item.param.taisen) * Math.sqrt(slot) + Math.sqrt(item.level)
                 } else {
                     switch (item.slotitemId) {
                         case 154: // 零戦62型(爆戦/岩井隊)
@@ -1600,8 +1598,8 @@ NightBattlePower.prototype.getBasicPower = function () {
                         case 243: // Swordfish Mk.II(熟練)
                         case 244: // Swordfish Mk.III(熟練)
                         case 320: // 彗星一二型(三一号光電管爆弾搭載機)
-                            // 火力+雷装+0.3*(火力+雷装+爆装+対潜)*sqrt(機数)+sqrt(★)
-                            return item.param.karyoku + (useRaisou ? item.param.raisou : item.param.baku) + 0.3 * (item.param.karyoku + item.param.raisou + item.param.baku + item.param.taisen) * Math.sqrt(slot) + Math.sqrt(item.level)
+                            // 火力+雷装+爆装+0.3*(火力+雷装+爆装+対潜)*sqrt(機数)+sqrt(★)
+                            return item.param.karyoku + (useRaisou ? item.param.raisou : 0) + item.param.baku + 0.3 * (item.param.karyoku + item.param.raisou + item.param.baku + item.param.taisen) * Math.sqrt(slot) + Math.sqrt(item.level)
                     }
                 }
             }
@@ -1763,7 +1761,7 @@ NightBattlePower.prototype.getCutinBonus = function () {
             // 夜間攻撃機
             var kind2 = items.filter(function (item) { return item.type3 === 46 }).length
             // その他(SF,岩井,彗星(31号))
-            var kind3 = items.map(function (item) { return item.slotitemId }).filter(function (id) { return [154,242,243,244,320].indexOf(id) >= 0 }).length
+            var kind3 = items.filter(function (item) { return [154,242,243,244,320].indexOf(item.id) >= 0 }).length
             if (kind1 === 2 && kind2 === 1) return 1.25
             if ((kind1 + kind2 + kind3) === 2) return 1.2
             if ((kind1 + kind2 + kind3) === 3) return 1.18
