@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.82
+var VERSION = 1.83
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -502,6 +502,44 @@ AntiSubmarinePower.prototype.getBasicPower = function () {
             },
             // 鳳翔改
             285: 89,
+            // 夕張改二
+            622: {
+                // 四式水中聴音機
+                149: {param: 1, count: 1, date: getJstDate(2020, 1, 14, 12, 0, 0)},
+                // 試製15cm9連装対潜噴進砲
+                288: {param: 2, count: 1, date: getJstDate(2020, 1, 14, 12, 0, 0)},
+                // 14cm連装砲改
+                310: {param: 1, date: getJstDate(2020, 1, 14, 12, 0, 0)},
+            },
+            // 夕張改二特
+            623: {
+                // 四式水中聴音機
+                149: {param: 1, count: 1, date: getJstDate(2020, 1, 14, 12, 0, 0)},
+                // 14cm連装砲改
+                310: {param: 1, date: getJstDate(2020, 1, 14, 12, 0, 0)},
+            },
+            // 夕張改二丁
+            624: {
+                // 四式水中聴音機
+                149: {param: 3, count: 1, date: getJstDate(2020, 1, 14, 12, 0, 0)},
+                // 試製15cm9連装対潜噴進砲
+                288: {param: 3, count: 1, date: getJstDate(2020, 1, 14, 12, 0, 0)},
+                // 14cm連装砲改
+                310: {param: 1, date: getJstDate(2020, 1, 14, 12, 0, 0)},
+            },
+            // 五十鈴改二
+            141: {
+                // 四式水中聴音機
+                149: {param: 1, count: 1, date: getJstDate(2020, 1, 14, 12, 0, 0)},
+                // 三式爆雷投射機 集中配備
+                287: {param: 1, count: 1, date: getJstDate(2020, 1, 14, 12, 0, 0)},
+                // 試製15cm9連装対潜噴進砲
+                288: {param: 2, count: 1, date: getJstDate(2020, 1, 14, 12, 0, 0)},
+            },
+            // 由良改二
+            488: 141,
+            // 那珂改二
+            160: 141
         },
         ctype : {
             // 球磨型
@@ -520,6 +558,11 @@ AntiSubmarinePower.prototype.getBasicPower = function () {
                 // S9 Osprey
                 304: 2,
             },
+            // 秋月型
+            54: {
+                // 四式水中聴音機
+                149: {param: 1, count: 1, date: getJstDate(2020, 1, 14, 12, 0, 0)},
+            }
         },
     }
     var taisenShip = this.attacker.taisen - this.attacker.slotParam.taisen - getEquipmentBonus(this.date, this.attacker, BONUS_LIST)
@@ -567,7 +610,7 @@ AntiSubmarinePower.prototype.getImprovementBonus = function () {
 
 /**
  * 対潜艦種別定数を返します
- * @return {8|13} 対潜艦種別定数
+ * @return {0|8|13} 対潜艦種別定数
  */
 AntiSubmarinePower.prototype.getShipTypeConstant = function () {
     if (isSubMarine(this.defender)) {
