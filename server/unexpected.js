@@ -15,7 +15,7 @@ async function fetchNodes() {
     await Promise.all(
       Object.keys(edges)
         .map(world => world.replace("World ", ""))
-        .filter(map => map.replace(/(\d+)-\d+/, "$1") >= 46)
+        .filter(map => map.replace(/(\d+)-\d+/, "$1") >= 47)
         .map(async map => {
           const mapdata = (
             await axios.get(`http://kc.piro.moe/api/routing/maps/${map}`)
@@ -104,12 +104,14 @@ async function fetchTsunDB(map, node, edgesFromNode) {
 
   return client
     .query(
+      // IDを指定しないと処理が終わらない
       `SELECT (ship->>'id')::int shipid,
         (enemy->>'id')::int enemyid,
         ((damageinstance->>'actualDamage')::int / (ship->>'rAmmoMod')::real + 0.7 * ((enemy->>'armor')::double precision)) / ((ship->>'postcapPower')::double precision) lowmod,
         (((damageinstance->>'actualDamage')::int + 1) / (ship->>'rAmmoMod')::real + 0.7 * ((enemy->>'armor')::double precision) + 0.6 * FLOOR((enemy->>'armor')::double precision - 1)) / ((ship->>'postcapPower')::double precision) highmod
       FROM abnormaldamage
-      WHERE map = $1
+      WHERE id >= 24162736
+      AND map = $1
       AND edgeid = ANY($2)
       AND debuffed = false
       AND NOT (
