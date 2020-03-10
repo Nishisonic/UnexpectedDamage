@@ -1,6 +1,6 @@
 /**
  * 異常ダメージ検知
- * @version 1.8.3
+ * @version 1.8.4
  * @author Nishikuma
  */
 
