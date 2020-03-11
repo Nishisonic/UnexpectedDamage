@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.84
+var VERSION = 1.85
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -1637,11 +1637,7 @@ NightBattlePower.prototype.getPrecapPower = function () {
  * @return {Number} 夜戦火力(キャップ前)
  */
 NightBattlePower.prototype.getPrecapPostMultiplyPower = function () {
-    var modelDGunSynergyBonus = [7, 8].indexOf(Number(this.attack.attackType)) >= 0
-        && this.items.some(function (item) { return item.slotitemId === 267 })
-        && this.items.some(function (item) { return item.slotitemId === 366 }) ? 10 : 0
-
-    return modelDGunSynergyBonus + getOriginalGunPowerBonus(this.attacker)
+    return getOriginalGunPowerBonus(this.attacker)
 }
 
 /**
@@ -1667,16 +1663,14 @@ NightBattlePower.prototype.getPostcapPower = function () {
  */
 NightBattlePower.prototype.getCutinBonus = function () {
     /**
-     * 駆逐専用CI:12.7cm連装砲D型改二ボーナスを返します
+     * 駆逐専用CI:12.7cm連装砲D型ボーナスを返します
      * @return {Number} 倍率
      */
     var modelDGunBonus = function (items) {
-        var num = items.filter(function (item) { return [267, 366].indexOf(item.slotitemId) >= 0 }).length
-        switch (num) {
-            case 1: return 1.25
-            case 2: return 1.4
-        }
-        return 1
+        var ids = items.map(function(item) { return item.slotitemId })
+        var modelD2 = ids.filter(function (id) { return id === 267 }).length
+        var modelD3 = ids.filter(function (id) { return id === 366 }).length
+        return (([1, 1.25, 1.4])[modelD2 + modelD3] || 1.4) * (1 + modelD3 * 0.05)
     }(this.items)
 
     switch (Number(this.attack.attackType)) {
@@ -2358,13 +2352,26 @@ var getSpecialAttackBonus = function(that) {
                         var secondShipItems = getItems(ships[1])
                         return surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems)
                     case 2:
+                        var secondShipItems = getItems(ships[1])
+                        var thirdShipItems = getItems(ships[2])
                         if (isBig7(thirdShipId)) {
-                            var secondShipItems = getItems(ships[1])
-                            var thirdShipItems = getItems(ships[2])
                             if (isBig7(secondShipId) || surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems) > 1) {
                                 return surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems)
                             }
                             return surfaceRadarBonus(thirdShipItems) * apShellBonus(thirdShipItems)
+                        } else if (ships[1].item2.size() === 5) {
+                            var item = ships[1].item2.get(4)
+                            var isRadar = item && item.type3 === 11 && item.param.saku >= 5
+                            var isAPshell = item && item.type3 === 13
+                            // 二番艦に5スロの艦かつ補強増設が空いている状態で、
+                            var cond = ships[1].hasSlotEx() && !ships[1].slotExItem
+                            // 5番スロットに徹甲弾もしくは水上電探を装備
+                                && (isRadar || isAPshell)
+                            // そして三番艦にビッグ7ではない艦を置き、何かしらの装備を載せる
+                                && thirdShipItems.length > 0
+                            if (cond) {
+                                return surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems) * (isAPshell ? 1.35 : 1.15)
+                            }
                         }
                 }
                 return 1
