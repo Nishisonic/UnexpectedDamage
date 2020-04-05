@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.86
+var VERSION = 1.87
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -2076,14 +2076,11 @@ function getEquipmentBonus(date, attacker) {
     var ctype = (JSON.parse(Ship.get(attacker.shipId).json).api_ctype | 0)
     var yomi = attacker.shipInfo.flagship
     var items = getItems(attacker)
-    var bonus = {
-        fp: 0,
-        asw: 0,
-        add: function(effect, num, max) {
-            ["fp", "asw"].forEach(function(param) {
-                this[param] += (effect[param] | 0) * Math.min((num | 0), (max | Infinity))
-            })
-        }
+    var bonus = { fp: 0, asw: 0 }
+    function add(effect, num, max) {
+        ["fp", "asw"].forEach(function(param) {
+            bonus[param] += (effect[param] | 0) * Math.min(num | 0, max | 0 || Infinity)
+        })
     }
     var itemNums = items.reduce(function(previous, item) {
         previous[item.slotitemId] = (previous[item.slotitemId] | 0) + 1
@@ -2143,12 +2140,12 @@ function getEquipmentBonus(date, attacker) {
     if (num = itemNums[305] + itemNums[306]) {
         if (date.after(getJstDate(2018, 8, 30, 18, 0, 0))) {
             if (ctype === 76) {
-                bonus.add({ asw: 1 }, num)
+                add({ asw: 1 }, num)
                 if (yomi === "しんよう") {
-                    bonus.add({ asw: 2 }, num)
+                    add({ asw: 2 }, num)
                 }
             } else if (["グラーフ・ツェッペリン", "アクィラ"]) {
-                bonus.add({ fp: 1 }, num)
+                add({ fp: 1 }, num)
             }
         }
     }
@@ -2156,7 +2153,7 @@ function getEquipmentBonus(date, attacker) {
     if (num = itemNums[82]) {
         if (date.after(getJstDate(2018, 8, 30, 18, 0, 0))) {
             if (ctype === 76) {
-                bonus.add({ asw: 1 }, num)
+                add({ asw: 1 }, num)
             }
         }
     }
@@ -2164,7 +2161,7 @@ function getEquipmentBonus(date, attacker) {
     if (num = itemNums[302]) {
         if (date.after(getJstDate(2018, 8, 30, 18, 0, 0))) {
             if (ctype === 76) {
-                bonus.add({ asw: 1 }, num)
+                add({ asw: 1 }, num)
             }
         }
     }
@@ -2173,7 +2170,7 @@ function getEquipmentBonus(date, attacker) {
     // GFCS Mk.37
     if (num = itemNums[307]) {
         if ([69, 83, 84].indexOf(ctype) >= 0) {
-            bonus.add({ fp: 1 }, num)
+            add({ fp: 1 }, num)
         }
     }
     // 5inch単装砲 Mk.30改+GFCS Mk.37
@@ -2181,18 +2178,18 @@ function getEquipmentBonus(date, attacker) {
     // S9 Osprey
     if (num = itemNums[304]) {
         if ([16, 4, 20, 41].indexOf(ctype) >= 0) {
-            bonus.add({ asw: 1 }, num)
+            add({ asw: 1 }, num)
         } else if (ctype === 89) {
-            bonus.add({ asw: 2 }, num)
+            add({ asw: 2 }, num)
         }
     }
     // 九九式艦爆(江草隊)
     if (num = itemNums[99]) {
         if (date.after(getJstDate(2019, 4, 30, 21, 0, 0))) {
             if (yomi === "そうりゅう") {
-                bonus.add({ fp: 4 }, num, 1)
+                add({ fp: 4 }, num, 1)
             } else if (yomi === "ひりゅう") {
-                bonus.add({ fp: 1 }, num, 1)
+                add({ fp: 1 }, num, 1)
             }
         }
     }
@@ -2200,9 +2197,9 @@ function getEquipmentBonus(date, attacker) {
     if (num = itemNums[100]) {
         if (date.after(getJstDate(2019, 4, 30, 21, 0, 0))) {
             if (shipId === 196) {
-                bonus.add({ fp: 3 }, num)
+                add({ fp: 3 }, num)
             } else if (shipId === 197) {
-                bonus.add({ fp: 6 }, num)
+                add({ fp: 6 }, num)
             }
         }
     }
@@ -2216,9 +2213,9 @@ function getEquipmentBonus(date, attacker) {
     if (num = itemNums[93]) {
         if (date.after(getJstDate(2019, 4, 30, 21, 0, 0))) {
             if (yomi === "そうりゅう") {
-                bonus.add({ fp: 1 }, num, 1)
+                add({ fp: 1 }, num, 1)
             } else if (yomi === "ひりゅう") {
-                bonus.add({ fp: 3 }, num, 1)
+                add({ fp: 3 }, num, 1)
             }
         }
     }
@@ -2226,9 +2223,9 @@ function getEquipmentBonus(date, attacker) {
     if (num = itemNums[94]) {
         if (date.after(getJstDate(2019, 4, 30, 21, 0, 0))) {
             if (shipId === 196) {
-                bonus.add({ fp: 7 }, num, 1)
+                add({ fp: 7 }, num, 1)
             } else if (shipId === 197) {
-                bonus.add({ fp: 3 }, num, 1)
+                add({ fp: 3 }, num, 1)
             }
         }
     }
@@ -2236,15 +2233,15 @@ function getEquipmentBonus(date, attacker) {
     if (num = itemNums[143]) {
         if (date.after(getJstDate(2019, 4, 30, 21, 0, 0))) {
             if (yomi === "あかぎ") {
-                bonus.add({ fp: 3 }, num, 1)
+                add({ fp: 3 }, num, 1)
             } else if (yomi === "かが") {
-                bonus.add({ fp: 2 }, num, 1)
+                add({ fp: 2 }, num, 1)
             } else if (yomi === "しょうかく") {
-                bonus.add({ fp: 2 }, num, 1)
+                add({ fp: 2 }, num, 1)
             } else if (yomi === "ずいかく") {
-                bonus.add({ fp: 2 }, num, 1)
+                add({ fp: 2 }, num, 1)
             } else if (yomi === "りゅうじょう") {
-                bonus.add({ fp: 1 }, num, 1)
+                add({ fp: 1 }, num, 1)
             }
         }
     }
@@ -2252,41 +2249,41 @@ function getEquipmentBonus(date, attacker) {
     if (num = itemNums[144]) {
         if (date.after(getJstDate(2019, 4, 30, 21, 0, 0))) {
             if (yomi === "あかぎ") {
-                bonus.add({ fp: 3 }, num, 1)
+                add({ fp: 3 }, num, 1)
             } else if (yomi === "かが") {
-                bonus.add({ fp: 2 }, num, 1)
+                add({ fp: 2 }, num, 1)
             } else if (yomi === "しょうかく") {
-                bonus.add({ fp: 2 }, num, 1)
+                add({ fp: 2 }, num, 1)
                 if ([461, 466].indexOf(shipId) >= 0) {
-                    bonus.add({ fp: 2 }, num, 1)
+                    add({ fp: 2 }, num, 1)
                 }
             } else if (yomi === "ずいかく") {
-                bonus.add({ fp: 1 }, num, 1)
+                add({ fp: 1 }, num, 1)
                 if ([462, 467].indexOf(shipId) >= 0) {
-                    bonus.add({ fp: 1 }, num, 1)
+                    add({ fp: 1 }, num, 1)
                 }
             } else if (yomi === "りゅうじょう") {
-                bonus.add({ fp: 1 }, num, 1)
+                add({ fp: 1 }, num, 1)
             }
         }
     }
     // 彗星一二型(三一号光電管爆弾搭載機)
     if (num = itemNums[320]) {
         if (shipId === 196) {
-            bonus.add({ fp: 3 }, num)
+            add({ fp: 3 }, num)
         } else if (shipId === 197) {
-            bonus.add({ fp: 3 }, num)
+            add({ fp: 3 }, num)
         } else if (shipId === 508) {
-            bonus.add({ fp: 4 }, num)
+            add({ fp: 4 }, num)
         } else if (shipId === 509) {
-            bonus.add({ fp: 4 }, num)
+            add({ fp: 4 }, num)
         }
     }
     // 12cm単装砲改二
     if (num = itemNums[293]) {
         if ([74, 77].indexOf(ctype) >= 0) {
             if (hasSurfaceRadar(items)) {
-                bonus.add({ asw: 1 }, num, 1)
+                add({ asw: 1 }, num, 1)
             }
         }
     }
@@ -2314,7 +2311,7 @@ function getEquipmentBonus(date, attacker) {
     if (num = itemNums[310]) {
         if (date.after(getJstDate(2020, 1, 14, 12, 0, 0))) {
             if ([622, 623, 624].indexOf(shipId) >= 0) {
-                bonus.add({ asw: 1 }, num)
+                add({ asw: 1 }, num)
             }
         }
     }
@@ -2329,7 +2326,7 @@ function getEquipmentBonus(date, attacker) {
     // 5inch 単装高角砲群
     if (num = itemNums[358]) {
         if ([69, 83, 84, 78].indexOf(ctype) >= 0) {
-            bonus.add({ fp: 1 }, num)
+            add({ fp: 1 }, num)
         }
     }
     // 130mm B-13連装砲
@@ -2339,10 +2336,10 @@ function getEquipmentBonus(date, attacker) {
     // 三式水中探信儀
     if (num = itemNums[47]) {
         if (date.after(getJstDate(2019, 1, 22, 12, 0, 0))) {
-                if (["あさしも", "はるかぜ", "かみかぜ", "やまかぜ", "まいかぜ", "しぐれ"].indexOf(yomi) >= 0) {
-                bonus.add({ asw: 3 }, num)
+            if (["あさしも", "はるかぜ", "かみかぜ", "やまかぜ", "まいかぜ", "しぐれ"].indexOf(yomi) >= 0) {
+                add({ asw: 3 }, num)
             } else if (["きしなみ", "いそかぜ", "はまかぜ", "うしお", "いかづち", "やまぐも"].indexOf(yomi) >= 0) {
-                bonus.add({ asw: 2 }, num)
+                add({ asw: 2 }, num)
             }
         }
     }
@@ -2352,20 +2349,20 @@ function getEquipmentBonus(date, attacker) {
     if (num = itemNums[129]) {
         if (date.after(getJstDate(2020, 3, 27, 12, 0, 0))) {
             if ([66, 28, 12, 1, 5, 10, 23, 18, 30, 38, 22, 54].indexOf(ctype) >= 0) {
-                bonus.add({ asw: 2 }, num)
+                add({ asw: 2 }, num)
             }
         }
     }
     // Re.2001 OR改
     if (num = itemNums[184]) {
         if (ctype === 68) {
-            bonus.add({ fp: 1 }, num)
+            add({ fp: 1 }, num)
         }
     }
     // Re.2001 G改
     if (num = itemNums[188]) {
         if (ctype === 68) {
-            bonus.add({ fp: 3 }, num)
+            add({ fp: 3 }, num)
         }
     }
     // Re.2005 改
@@ -2373,7 +2370,7 @@ function getEquipmentBonus(date, attacker) {
     // Re.2001 CB改
     if (num = itemNums[316]) {
         if (ctype === 68) {
-            bonus.add({ fp: 4 }, num)
+            add({ fp: 4 }, num)
         }
     }
     // Laté 298B
@@ -2389,7 +2386,7 @@ function getEquipmentBonus(date, attacker) {
             var fp = 0
             if (max >= 4) fp++
             if (max >= 10) fp++
-            bonus.add({ fp: fp }, 1)
+            add({ fp: fp }, 1)
         }
     }
     // 二式艦上偵察機
@@ -2400,16 +2397,16 @@ function getEquipmentBonus(date, attacker) {
             return previous > item.level ? previous : item.level
         }, 0)
         if (yomi === "そうりゅう") {
-            bonus.add({ fp: 3 }, num, 1)
+            add({ fp: 3 }, num, 1)
         } else if (yomi === "ひりゅう") {
-            bonus.add({ fp: 2 }, num, 1)
+            add({ fp: 2 }, num, 1)
         }
         if ([508, 509, 560].indexOf(shipId) >= 0) {
-            bonus.add({ fp: 1 }, num, 1)
+            add({ fp: 1 }, num, 1)
         }
         if (max >= 8) {
             if (shipId === 197) {
-                bonus.add({ fp: 1 }, num, 1)
+                add({ fp: 1 }, num, 1)
             }
         }
     }
@@ -2431,37 +2428,37 @@ function getEquipmentBonus(date, attacker) {
     // オ号観測機改二
     if (num = itemNums[324] + itemNums[325]) {
         if (shipId === 554) {
-            bonus.add({ asw: 2 }, num)
+            add({ asw: 2 }, num)
         } else if (shipId === 553) {
-            bonus.add({ asw: 1 }, num)
+            add({ asw: 1 }, num)
         }
     }
     // S-51J
     if (num = itemNums[326]) {
         if (shipId === 554) {
-            bonus.add({ asw: 3 }, num)
+            add({ asw: 3 }, num)
         } else if (shipId === 553) {
-            bonus.add({ asw: 2 }, num)
+            add({ asw: 2 }, num)
         }
     }
     // S-51J改
     if (num = itemNums[327]) {
         if (shipId === 554) {
-            bonus.add({ asw: 4 }, num)
+            add({ asw: 4 }, num)
         } else if (shipId === 553) {
-            bonus.add({ asw: 3 }, num)
+            add({ asw: 3 }, num)
         }
     }
     // 瑞雲改二(六三四空)
     if (num = itemNums[322]) {
         if ([554, 553].indexOf(shipId) >= 0) {
-            bonus.add({ asw: 1 }, num)
+            add({ asw: 1 }, num)
         }
     }
     // 瑞雲改二(六三四空/熟練)
     if (num = itemNums[323]) {
         if ([554, 553].indexOf(shipId) >= 0) {
-            bonus.add({ asw: 2 }, num)
+            add({ asw: 2 }, num)
         }
     }
     // 彗星一二型(六三四空/三号爆弾搭載機)
@@ -2471,37 +2468,37 @@ function getEquipmentBonus(date, attacker) {
     // 烈風改二
     if (num = itemNums[336]) {
         if ([277, 278].indexOf(shipId) >= 0) {
-            bonus.add({ fp: 1 }, num)
+            add({ fp: 1 }, num)
         } else if ([594, 599].indexOf(shipId) >= 0) {
-            bonus.add({ fp: 1 }, num)
+            add({ fp: 1 }, num)
         }
     }
     // 烈風改二(一航戦/熟練)
     if (num = itemNums[337]) {
         if ([277, 278].indexOf(shipId) >= 0) {
-            bonus.add({ fp: 1 }, num)
+            add({ fp: 1 }, num)
         } else if ([594, 599].indexOf(shipId) >= 0) {
-            bonus.add({ fp: 2 }, num)
+            add({ fp: 2 }, num)
         }
     }
     // 烈風改二戊型
     if (num = itemNums[338]) {
         if ([277, 278].indexOf(shipId) >= 0) {
-            bonus.add({ fp: 1 }, num)
+            add({ fp: 1 }, num)
         } else if (shipId === 594) {
-            bonus.add({ fp: 1 }, num)
+            add({ fp: 1 }, num)
         } else if (shipId === 599) {
-            bonus.add({ fp: 4 }, num)
+            add({ fp: 4 }, num)
         }
     }
     // 烈風改二戊型(一航戦/熟練)
     if (num = itemNums[339]) {
         if ([277, 278].indexOf(shipId) >= 0) {
-            bonus.add({ fp: 1 }, num)
+            add({ fp: 1 }, num)
         } else if (shipId === 594) {
-            bonus.add({ fp: 1 }, num)
+            add({ fp: 1 }, num)
         } else if (shipId === 599) {
-            bonus.add({ fp: 6 }, num)
+            add({ fp: 6 }, num)
         }
     }
     // 流星
@@ -2509,58 +2506,58 @@ function getEquipmentBonus(date, attacker) {
     if (num = itemNums[18] + itemNums[52]) {
         if (date.after(getJstDate(2019, 5, 20, 12, 0, 0))) {
             if ([277, 278, 156].indexOf(shipId) >= 0) {
-                bonus.add({ fp: 1 }, num)
+                add({ fp: 1 }, num)
             } else if (shipId === 594) {
-                bonus.add({ fp: 1 }, num)
+                add({ fp: 1 }, num)
             } else if (shipId === 599) {
-                bonus.add({ fp: 2 }, num)
+                add({ fp: 2 }, num)
             }
         }
     }
     // 流星改(一航戦)
     if (num = itemNums[342]) {
         if ([277, 278, 461, 466, 462, 467].indexOf(shipId) >= 0) {
-            bonus.add({ fp: 1 }, num)
+            add({ fp: 1 }, num)
         } else if (shipId === 594) {
-            bonus.add({ fp: 2 }, num)
+            add({ fp: 2 }, num)
         } else if (shipId === 599) {
-            bonus.add({ fp: 3 }, num)
+            add({ fp: 3 }, num)
         }
     }
     // 流星改(一航戦/熟練)
     if (num = itemNums[343]) {
         if ([277, 278].indexOf(shipId) >= 0) {
-            bonus.add({ fp: 2 }, num)
+            add({ fp: 2 }, num)
         } else if ([461, 466, 462, 467].indexOf(shipId) >= 0) {
-            bonus.add({ fp: 1 }, num)
+            add({ fp: 1 }, num)
         }  else if (shipId === 594) {
-            bonus.add({ fp: 3 }, num)
+            add({ fp: 3 }, num)
         } else if (shipId === 599) {
-            bonus.add({ fp: 5 }, num)
+            add({ fp: 5 }, num)
         }
     }
     // 九七式艦攻改 試製三号戊型(空六号電探改装備機)
     if (num = itemNums[344]) {
         if (shipId === 599) {
-            bonus.add({ fp: 3 }, num)
+            add({ fp: 3 }, num)
         } else if ([555, 560].indexOf(shipId) >= 0) {
-            bonus.add({ fp: 2, asw: 2 }, num)
+            add({ fp: 2, asw: 2 }, num)
         } else if (shipId === 318) {
-            bonus.add({ fp: 4, asw: 1 }, num)
+            add({ fp: 4, asw: 1 }, num)
         } else if (shipId === 282) {
-            bonus.add({ fp: 2, asw: 1 }, num)
+            add({ fp: 2, asw: 1 }, num)
         }
     }
     // 九七式艦攻改(熟練) 試製三号戊型(空六号電探改装備機)
     if (num = itemNums[345]) {
         if (shipId === 599) {
-            bonus.add({ fp: 3 }, num)
+            add({ fp: 3 }, num)
         } else if ([555, 560].indexOf(shipId) >= 0) {
-            bonus.add({ fp: 3, asw: 2 }, num)
+            add({ fp: 3, asw: 2 }, num)
         } else if (shipId === 318) {
-            bonus.add({ fp: 5, asw: 1 }, num)
+            add({ fp: 5, asw: 1 }, num)
         } else if (shipId === 282) {
-            bonus.add({ fp: 3, asw: 1 }, num)
+            add({ fp: 3, asw: 1 }, num)
         }
     }
     // 152mm/55 三連装速射砲
@@ -2571,17 +2568,17 @@ function getEquipmentBonus(date, attacker) {
     if (num = itemNums[19]) {
         if (date.after(getJstDate(2020, 3, 27, 12, 0, 0))) {
             if (yomi === "ほうしょう") {
-                bonus.add({ fp: 2, asw: 2 }, num)
+                add({ fp: 2, asw: 2 }, num)
             }
             if ([75, 76].indexOf(ctype) >= 0) {
-                bonus.add({ fp: 2, asw: 3 }, num)
+                add({ fp: 2, asw: 3 }, num)
             }
         } else if (date.after(getJstDate(2019, 8, 8, 12, 0, 0))) {
             if (yomi === "ほうしょう") {
-                bonus.add({ fp: 1, asw: 1 }, num)
+                add({ fp: 1, asw: 1 }, num)
             }
             if ([75, 76].indexOf(ctype) >= 0) {
-                bonus.add({ fp: 1, asw: 2 }, num)
+                add({ fp: 1, asw: 2 }, num)
             }
         }
     }
@@ -2589,92 +2586,92 @@ function getEquipmentBonus(date, attacker) {
     if (num = itemNums[228]) {
         if (date.after(getJstDate(2020, 3, 27, 12, 0, 0))) {
             if (yomi === "ほうしょう") {
-                bonus.add({ fp: 3, asw: 4 }, num)
+                add({ fp: 3, asw: 4 }, num)
             }
             if ([75, 76].indexOf(ctype) >= 0) {
-                bonus.add({ fp: 2, asw: 5 }, num)
+                add({ fp: 2, asw: 5 }, num)
             }
             if (stype === 7) {
-                bonus.add({ asw: 2 }, num)
+                add({ asw: 2 }, num)
             }
         } else if (date.after(getJstDate(2019, 8, 8, 12, 0, 0))) {
             if (yomi === "ほうしょう") {
-                bonus.add({ fp: 1 }, num)
+                add({ fp: 1 }, num)
             }
             if ([75, 76].indexOf(ctype) >= 0) {
-                bonus.add({ fp: 1, asw: 2 }, num)
+                add({ fp: 1, asw: 2 }, num)
             }
             if (stype === 7) {
-                bonus.add({ asw: 2 }, num)
+                add({ asw: 2 }, num)
             }
         }
     }
     // Swordfish Mk.III改(水上機型)
     if (num = itemNums[368]) {
         if (yomi === "ゴトランド") {
-            bonus.add({ asw: 3 }, num)
+            add({ asw: 3 }, num)
         }
         if (ctype === 70) {
-            bonus.add({ asw: 3 }, num)
+            add({ asw: 3 }, num)
         } else if ([72, 62].indexOf(ctype) >= 0) {
-            bonus.add({ asw: 2 }, num)
+            add({ asw: 2 }, num)
         } else if ([67, 78, 82, 88].indexOf(ctype) >= 0) {
             // 現状搭載不可
-            bonus.add({ fp: 2, asw: 2 }, num)
+            add({ fp: 2, asw: 2 }, num)
         }
     }
     // Swordfish(水上機型)
     if (num = itemNums[367]) {
         if (yomi === "ゴトランド") {
-            bonus.add({ asw: 1 }, num)
+            add({ asw: 1 }, num)
         }
         if (ctype === 70) {
-            bonus.add({ asw: 1 }, num)
+            add({ asw: 1 }, num)
         } else if ([72, 62].indexOf(ctype) >= 0) {
             // 使用箇所なし
         } else if ([78].indexOf(ctype) >= 0) { // 本来:[67, 78, 82, 88]
             // 現状搭載不可
-            bonus.add({ fp: 2 }, num)
+            add({ fp: 2 }, num)
         }
     }
     // Swordfish Mk.III改(水上機型/熟練)
     if (num = itemNums[369]) {
         if (yomi === "ゴトランド") {
-            bonus.add({ asw: 4 }, num)
+            add({ asw: 4 }, num)
         }
         if (ctype === 70) {
-            bonus.add({ asw: 3 }, num)
+            add({ asw: 3 }, num)
         } else if ([72, 62].indexOf(ctype) >= 0) {
-            bonus.add({ asw: 2 }, num)
+            add({ asw: 2 }, num)
         } else if ([78].indexOf(ctype) >= 0) { // 本来:[67, 78, 82, 88]
             // 現状搭載不可
-            bonus.add({ fp: 2, asw: 2 }, num)
+            add({ fp: 2, asw: 2 }, num)
         }
     }
     // Swordfish Mk.II改(水偵型)
     if (num = itemNums[370]) {
         if (yomi === "ゴトランド") {
-            bonus.add({ asw: 3 }, num)
+            add({ asw: 3 }, num)
         }
         if (ctype === 70) {
-            bonus.add({ asw: 3 }, num)
+            add({ asw: 3 }, num)
         } else if ([72, 62].indexOf(ctype) >= 0) {
-            bonus.add({ asw: 2 }, num)
+            add({ asw: 2 }, num)
         } else if ([78].indexOf(ctype) >= 0) { // 本来:[67, 78, 82, 88]
-            bonus.add({ fp: 2, asw: 3 }, num)
+            add({ fp: 2, asw: 3 }, num)
         }
     }
     // Fairey Seafox改
     if (num = itemNums[371]) {
         if (yomi === "ゴトランド") {
-            bonus.add({ asw: 2 }, num)
+            add({ asw: 2 }, num)
         }
         if (ctype === 70) {
-            bonus.add({ asw: 1 }, num)
+            add({ asw: 1 }, num)
         } else if (ctype === 79) {
             // 使用箇所なし
         } else if ([78].indexOf(ctype) >= 0) { // 本来:[67, 78, 82, 88]
-            bonus.add({ fp: 3, asw: 1 }, num)
+            add({ fp: 3, asw: 1 }, num)
         }
     }
     // 8inch三連装砲 Mk.9
@@ -2694,7 +2691,7 @@ function getEquipmentBonus(date, attacker) {
     if (num = itemNums[287]) {
         if (date.after(getJstDate(2020, 1, 14, 12, 0, 0))) {
             if ([488, 141, 160, 624].indexOf(shipId) >= 0) {
-                bonus.add({ asw: 1 }, num)
+                add({ asw: 1 }, num)
             }
         }
     }
@@ -2702,9 +2699,9 @@ function getEquipmentBonus(date, attacker) {
     if (num = itemNums[288]) {
         if (date.after(getJstDate(2020, 1, 14, 12, 0, 0))) {
             if ([488, 141, 160].indexOf(shipId) >= 0) {
-                bonus.add({ asw: 2 }, num)
+                add({ asw: 2 }, num)
             } else if (shipId === 624) {
-                bonus.add({ asw: 3 }, num)
+                add({ asw: 3 }, num)
             }
         }
     }
@@ -2712,19 +2709,19 @@ function getEquipmentBonus(date, attacker) {
     if (num = itemNums[149]) {
         if (date.after(getJstDate(2020, 1, 14, 12, 0, 0))) {
             if ([488, 141, 160, 622, 623].indexOf(shipId) >= 0) {
-                bonus.add({ asw: 1 }, num, 1)
+                add({ asw: 1 }, num, 1)
             } else if (shipId === 624) {
-                bonus.add({ asw: 3 }, num, 1)
+                add({ asw: 3 }, num, 1)
             }
             if (ctype === 54) {
-                bonus.add({ asw: 1 }, num, 1)
+                add({ asw: 1 }, num, 1)
             }
         }
     }
     // 一式徹甲弾改
     // if (num = itemNums[365]) {}
 
-    return { fp: bonus.fp, asw: bonus.asw }
+    return bonus
 }
 
 //#endregion
