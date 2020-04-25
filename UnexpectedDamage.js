@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.88
+var VERSION = 1.89
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -1756,7 +1756,7 @@ var getSpecialAttackBonus = function(that) {
             return 2.0 * (engagement === 4 ? 1.25 : 1.0)
         case 101: // 一斉射かッ…胸が熱いな！
             var base = attackNum < 2 ? 1.4 : 1.2
-            var secondShipBonus = function(date, secondShipId){
+            var secondShipBonus = function(date, secondShipId) {
                 if (attackNum < 2) {
                     switch (secondShipId) {
                         case 573: return 1.2  // 陸奥改二
@@ -1781,7 +1781,7 @@ var getSpecialAttackBonus = function(that) {
             return base * secondShipBonus * itemBonus
         case 102: // 長門、いい？ いくわよ！ 主砲一斉射ッ！
             var base = attackNum < 2 ? 1.4 : 1.2
-            var secondShipBonus = function(secondShipId){
+            var secondShipBonus = function(secondShipId) {
                 if (attackNum < 2) {
                     switch (secondShipId) {
                         case 275:            // 長門改
@@ -1817,7 +1817,7 @@ var getSpecialAttackBonus = function(that) {
                 }
                 return false
             }
-            var companionShipBonus = function (secondShipId, thirdShipId) {
+            var companionShipBonus = function(secondShipId, thirdShipId) {
                 switch (attackNum) {
                     case 1:
                         return isBig7(secondShipId) ? 1.1 : 1
@@ -1863,7 +1863,14 @@ var getSpecialAttackBonus = function(that) {
             }(that.items, ships[1].shipId, ships[2].shipId)
             return base * companionShipBonus * itemBonus
         case 104: // 金剛型特殊攻撃
-            return 1.9 * ([2, 4].indexOf(engagement) >= 0 ? 1.25 : 1.0)
+            var engagementBonus = (function() {
+                switch (engagement) {
+                    case 3: return 1.25
+                    case 4: return 0.75
+                }
+                return 1.0
+            })()
+            return 1.9 * engagementBonus
         case 200: return 1.35 // 瑞雲立体攻撃
         case 201: return 1.3 // 海空立体攻撃
         default: return 1.0  // それ以外
