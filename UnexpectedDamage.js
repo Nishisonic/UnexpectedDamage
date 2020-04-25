@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.87
+var VERSION = 1.88
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -430,7 +430,7 @@ AntiSubmarinePower.prototype.getSynergyBonus = function () {
  * @return {Number} 対潜火力(キャップ前)
  */
 AntiSubmarinePower.prototype.getPrecapPower = function () {
-    return this.getBasicPower() * getFormationMatchBonus(this.formation) * this.getFormationBonus() * this.getConditionBonus() * this.getSynergyBonus()
+    return this.getBasicPower() * getEngagementBonus(this.formation) * this.getFormationBonus() * this.getConditionBonus() * this.getSynergyBonus()
 }
 
 /**
@@ -449,7 +449,7 @@ AntiSubmarinePower.prototype.getPostcapPower = function () {
  */
 AntiSubmarinePower.prototype.getFormationBonus = function () {
     var CHANGE_ECHELON_BONUS_DATE = getJstDate(2019, 2, 27, 12, 0, 0)
-    switch (Number(this.formation[this.attack.friendAttack ? 0 : 1])) {
+    switch (this.formation[this.attack.friendAttack ? 0 : 1]) {
         case FORMATION.LINE_AHEAD: return 0.6
         case FORMATION.DOUBLE_LINE: return 0.8
         case FORMATION.DIAMOND: return 1.2
@@ -616,7 +616,7 @@ DayBattlePower.prototype.getImprovementBonus = function () {
  * @return {Number} 昼砲撃火力(キャップ前)
  */
 DayBattlePower.prototype.getPrecapPower = function () {
-    return this.getBasicPower() * getFormationMatchBonus(this.formation) * this.getFormationBonus() * this.getConditionBonus() + getOriginalGunPowerBonus(this.attacker)
+    return this.getBasicPower() * getEngagementBonus(this.formation) * this.getFormationBonus() * this.getConditionBonus() + getOriginalGunPowerBonus(this.attacker)
 }
 
 /**
@@ -650,7 +650,7 @@ DayBattlePower.prototype.getPostcapPower = function (noCL2) {
  */
 DayBattlePower.prototype.getFormationBonus = function () {
     var CHANGE_ECHELON_BONUS_DATE = getJstDate(2019, 2, 27, 12, 0, 0)
-    switch (Number(this.formation[this.attack.friendAttack ? 0 : 1])) {
+    switch (this.formation[this.attack.friendAttack ? 0 : 1]) {
         case FORMATION.LINE_AHEAD: return 1.0
         case FORMATION.DOUBLE_LINE: return 0.8
         case FORMATION.DIAMOND: return 0.7
@@ -869,7 +869,7 @@ TorpedoPower.prototype.getImprovementBonus = function () {
  * @return {Number} 雷撃火力(キャップ前)
  */
 TorpedoPower.prototype.getPrecapPower = function () {
-    return this.getBasicPower() * getFormationMatchBonus(this.formation) * this.getFormationBonus() * this.getConditionBonus()
+    return this.getBasicPower() * getEngagementBonus(this.formation) * this.getFormationBonus() * this.getConditionBonus()
 }
 
 /**
@@ -889,7 +889,7 @@ TorpedoPower.prototype.getPostcapPower = function () {
  * @return {Number} 倍率
  */
 TorpedoPower.prototype.getFormationBonus = function () {
-    switch (Number(this.formation[this.attack.friendAttack ? 0 : 1])) {
+    switch (this.formation[this.attack.friendAttack ? 0 : 1]) {
         case FORMATION.LINE_AHEAD: return 1.0
         case FORMATION.DOUBLE_LINE: return 0.8
         case FORMATION.DIAMOND: return 0.7
@@ -1115,7 +1115,7 @@ NightBattlePower.prototype.getImprovementBonus = function () {
  * @return {Number} 倍率
  */
 NightBattlePower.prototype.getFormationBonus = function () {
-    switch (Number(this.formation[this.attack.friendAttack ? 0 : 1])) {
+    switch (this.formation[this.attack.friendAttack ? 0 : 1]) {
         case FORMATION.VANGUARD: return this.attack.attacker < Math.floor(this.numOfAttackShips / 2) ? 0.5 : 1.0
         default: return 1.0
     }
@@ -1568,8 +1568,8 @@ var getLandBonus = function (attacker, defender) {
  * @param {[number,number,number]} formation 昼戦[自軍陣形,敵軍陣形,交戦形態]
  * @return {Number} 倍率
  */
-var getFormationMatchBonus = function (formation) {
-    switch (Number(formation[2])) {
+var getEngagementBonus = function (formation) {
+    switch (formation[2]) {
         case 1: return 1.0 // 同航戦
         case 2: return 0.8 // 反航戦
         case 3: return 1.2 // T字有利
@@ -1749,9 +1749,11 @@ var getSpecialAttackBonus = function(that) {
     var UPDATE_SPECIAL_ATTACK_BONUS_DATE = getJstDate(2019, 2, 27, 12, 0, 0)
     var ships = that.origins[that.attack.mainAttack ? "main" : "escort"]
     var attackNum = that.attack.attackNum
+    var engagement = that.formation[2]
 
     switch (Number(that.attack.attackType)) {
-        case 100: return Number(that.formation[2]) === 4 ? 2.5 : 2.0 // Nelson Touch(≠弾着攻撃)
+        case 100: // Nelson Touch
+            return 2.0 * (engagement === 4 ? 1.25 : 1.0)
         case 101: // 一斉射かッ…胸が熱いな！
             var base = attackNum < 2 ? 1.4 : 1.2
             var secondShipBonus = function(date, secondShipId){
@@ -1860,6 +1862,8 @@ var getSpecialAttackBonus = function(that) {
                 return 1
             }(that.items, ships[1].shipId, ships[2].shipId)
             return base * companionShipBonus * itemBonus
+        case 104: // 金剛型特殊攻撃
+            return 1.9 * ([2, 4].indexOf(engagement) >= 0 ? 1.25 : 1.0)
         case 200: return 1.35 // 瑞雲立体攻撃
         case 201: return 1.3 // 海空立体攻撃
         default: return 1.0  // それ以外
@@ -2720,6 +2724,10 @@ function getEquipmentBonus(date, attacker) {
     }
     // 一式徹甲弾改
     // if (num = itemNums[365]) {}
+    // 艦本新設計 増設バルジ(大型艦)
+    // if (num = itemNums[204]) {}
+    // 新型高温高圧缶
+    // if (num = itemNums[87]) {}
 
     return bonus
 }

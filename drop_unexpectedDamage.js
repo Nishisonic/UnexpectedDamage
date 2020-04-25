@@ -1,6 +1,6 @@
 /**
  * 異常ダメージ検知
- * @version 1.8.7
+ * @version 1.8.8
  * @author Nishikuma
  */
 
@@ -484,20 +484,20 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
     for (var idx in phaseList) {
         var phase = phaseList[idx]
         var json = phase.json
-        var formation = json.api_formation
+        var formation = Java.from(json.api_formation).map(Number)
         var activeDeck = json.api_active_deck
         var touchPlane = json.api_touch_plane
         if (!phase.isNight()) {
-            dayFormation = json.api_formation
+            dayFormation = formation
             dayKind = phase.kind
         } else {
-            nightFormation = json.api_formation
+            nightFormation = formation
             nightKind = phase.kind
             nightTouchPlane = json.api_touch_plane
         }
         // 払暁戦処理
         if (phase.kind === BattlePhaseKind.NIGHT_TO_DAY || phase.kind === BattlePhaseKind.COMBINED_EC_NIGHT_TO_DAY) {
-            dayFormation = nightFormation = json.api_formation
+            dayFormation = nightFormation = formation
             dayKind = nightKind = phase.kind
             nightTouchPlane = json.api_touch_plane
         }
@@ -859,7 +859,7 @@ var DetectDto = function (date, mapCell, phase, attack, power, attacker, defende
     this.kind = kind
     this.friendCombinedKind = friendCombinedKind
     this.isEnemyCombined = isEnemyCombined
-    this.formation = Java.from(formation).slice()
+    this.formation = formation
     this.touchPlane = touchPlane
     this.shouldUseSkilled = shouldUseSkilled
     this.origins = origins
