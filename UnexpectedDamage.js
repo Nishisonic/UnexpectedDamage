@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.90
+var VERSION = 1.91
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -1862,7 +1862,7 @@ var getSpecialAttackBonus = function(that) {
                 return 1
             }(that.items, ships[1].shipId, ships[2].shipId)
             return base * companionShipBonus * itemBonus
-        case 104: // 金剛型特殊攻撃
+        case 104: // 僚艦夜戦突撃
             var engagementBonus = function() {
                 switch (engagement) {
                     case 3: return 1.25

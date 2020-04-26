@@ -1,6 +1,6 @@
 /**
  * 異常ダメージ検知
- * @version 1.9.0
+ * @version 1.9.1
  * @author Nishikuma
  */
 
@@ -400,6 +400,7 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
                                 case 102: // 長門、いい？ いくわよ！ 主砲一斉射ッ！
                                     return Math.floor(didx / 2)
                                 case 103: // Colorado 特殊攻撃
+                                case 104: // 僚艦夜戦突撃
                                     return didx
                                 default:
                                     return json.api_at_list[idx]
@@ -461,6 +462,7 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
                                 case 102: // 長門、いい？ いくわよ！ 主砲一斉射ッ！
                                     return Math.floor(didx / 2)
                                 case 103: // Colorado 特殊攻撃
+                                case 104: // 僚艦夜戦突撃
                                     return didx
                                 default:
                                     return json.api_at_list[idx]
