@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.91
+var VERSION = 1.92
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -2569,6 +2569,69 @@ function getEquipmentBonus(date, attacker) {
             add({ fp: 5, asw: 1 }, num)
         } else if (shipId === 282) {
             add({ fp: 3, asw: 1 }, num)
+        }
+    }
+    // 天山一二型甲改(熟練/空六号電探改装備機)
+    if (num = itemNums[374]) {
+        if (yomi === "しょうかく") {
+            add({ fp: 3 }, num)
+        } else if (yomi === "ずいかく") {
+            add({ fp: 2 }, num)
+        } else if (yomi === "たいほう") {
+            add({ fp: 2 }, num)
+        } else if (["じゅんよう", "ひよう"].indexOf(yomi) >= 0) {
+            add({ fp: 1 }, num)
+        }
+        if ([108, 109].indexOf(shipId) >= 0) {
+            add({ fp: 1 }, num)
+        } else if ([291, 292].indexOf(shipId) >= 0) {
+            add({ fp: 1, asw: 1 }, num)
+        } else if ([296, 297].indexOf(shipId) >= 0) {
+            add({ fp: 1, asw: 1 }, num)
+        } else if ([116, 74].indexOf(shipId) >= 0) {
+            add({ fp: 1, asw: 1 }, num)
+        } else if ([117, 282, 185].indexOf(shipId) >= 0) {
+            add({ fp: 1, asw: 2 }, num)
+        } else if ([560, 555, 318].indexOf(shipId) >= 0) {
+            add({ fp: 1, asw: 3 }, num)
+        } else if ([508, 509].indexOf(shipId) >= 0) {
+            add({ fp: 1, asw: 2 }, num)
+        }
+    }
+    // 天山一二型甲改(空六号電探改装備機)
+    if (num = itemNums[373]) {
+        if (yomi === "しょうかく") {
+            add({ fp: 2 }, num)
+        } else if (yomi === "ずいかく") {
+            add({ fp: 1 }, num)
+        } else if (yomi === "たいほう") {
+            add({ fp: 1 }, num)
+        } else if (["じゅんよう", "ひよう"].indexOf(yomi) >= 0) {
+            add({ fp: 1 }, num)
+        }
+        if ([108, 109].indexOf(shipId) >= 0) {
+            add({ fp: 1 }, num)
+        } else if ([291, 292].indexOf(shipId) >= 0) {
+            add({ fp: 1 }, num)
+        } else if ([296, 297].indexOf(shipId) >= 0) {
+            add({ fp: 1 }, num)
+        } else if ([116, 74].indexOf(shipId) >= 0) {
+            add({ asw: 1 }, num)
+        } else if ([117, 282, 185].indexOf(shipId) >= 0) {
+            add({ fp: 1, asw: 1 }, num)
+        } else if ([560, 555, 318].indexOf(shipId) >= 0) {
+            add({ fp: 1, asw: 2 }, num)
+        } else if ([508, 509].indexOf(shipId) >= 0) {
+            add({ fp: 1 }, num)
+        }
+    }
+    // XF5U
+    if (num = itemNums[375]) {
+        if ([69, 83, 84].indexOf(ctype) >= 0) {
+            add({ fp: 3, asw: 3 }, num)
+        }
+        if (yomi === "かが") {
+            add({ fp: 1, asw: 1 }, num)
         }
     }
     // 152mm/55 三連装速射砲
