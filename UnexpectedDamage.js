@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.93
+var VERSION = 1.94
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -2341,10 +2341,12 @@ function getEquipmentBonus(date, attacker) {
     }
     // OS2U
     if (num = itemNums[171]) {
-        if ([65, 69, 83, 87, 84, 91, 93, 95, 99].indexOf(ctype) >= 0) {
-            if (getItemNum(items, 171, 10) > 0) {
-                add({ fp: 1 }, num, 1)
-            } 
+        if (date.after(getJstDate(2020, 5, 20, 12, 0, 0))) {
+            if ([65, 69, 83, 87, 84, 91, 93, 95, 99].indexOf(ctype) >= 0) {
+                if (getItemNum(items, 171, 10) > 0) {
+                    add({ fp: 1 }, num, 1)
+                }
+            }
         }
     }
     // 533mm五連装魚雷(後期型)
@@ -2385,12 +2387,14 @@ function getEquipmentBonus(date, attacker) {
     // if (num = itemNums[278]) {}
     // SK+SG レーダー
     if (num = itemNums[279]) {
-        if ([65, 69, 83, 87, 84, 91, 93, 95, 99].indexOf(ctype) >= 0) {
-            add({ fp: 2 }, num, 1)
-        } else if ([67, 78, 82, 88].indexOf(ctype) >= 0) {
-            add({ fp: 1 }, num, 1)
-        } else if (ctype === 96) {
-            add({ fp: 1 }, num, 1)
+        if (date.after(getJstDate(2020, 5, 20, 12, 0, 0))) {
+            if ([65, 69, 83, 87, 84, 91, 93, 95, 99].indexOf(ctype) >= 0) {
+                add({ fp: 2 }, num, 1)
+            } else if ([67, 78, 82, 88].indexOf(ctype) >= 0) {
+                add({ fp: 1 }, num, 1)
+            } else if (ctype === 96) {
+                add({ fp: 1 }, num, 1)
+            }
         }
     }
     // 130mm B-13連装砲
