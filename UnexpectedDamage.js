@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.92
+var VERSION = 1.93
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -273,13 +273,12 @@ var getItems = function (ship) {
  * 指定した装備の所持している個数を返します
  * @param {[logbook.dto.ItemDto]} items 装備
  * @param {Number} id 装備ID
+ * @param {Number} minLevel 最低改修値(default = 0)
  * @return {Number} 個数
  */
-var getItemNum = function (items, id) {
-    return items.map(function (item) {
-        return item.slotitemId
-    }).filter(function (itemid) {
-        return Array.isArray(id) ? id.indexOf(itemid) >= 0 : id === itemid
+var getItemNum = function (items, id, minLevel) {
+    return items.filter(function (item) {
+        return item.slotitemId === id && item.level >= (minLevel | 0)
     }).length
 }
 
@@ -2340,6 +2339,60 @@ function getEquipmentBonus(date, attacker) {
             add({ fp: 1 }, num)
         }
     }
+    // OS2U
+    if (num = itemNums[171]) {
+        if ([65, 69, 83, 87, 84, 91, 93, 95, 99].indexOf(ctype) >= 0) {
+            if (getItemNum(items, 171, 10) > 0) {
+                add({ fp: 1 }, num, 1)
+            } 
+        }
+    }
+    // 533mm五連装魚雷(後期型)
+    if (num = itemNums[376]) {
+        if ([65, 69, 83, 87, 84, 91, 93, 95, 99].indexOf(ctype) >= 0) {
+            add({ fp: 2 }, num)
+        } else if ([67, 78, 82, 88].indexOf(ctype) >= 0) {
+            add({ fp: 1 }, num)
+        } else if (ctype === 96) {
+            add({ fp: 1 }, num)
+        }
+    }
+    // RUR-4A Weapon Alpha改
+    if (num = itemNums[377]) {
+        if ([65, 69, 83, 87, 84, 91, 93, 95, 99].indexOf(ctype) >= 0) {
+            add({ asw: 2 }, num, 1)
+            if (shipId === 629) {
+                add({ asw: 1 }, num, 1)
+            }
+        } else if ([67, 78, 82, 88, 96].indexOf(ctype) >= 0) {
+            add({ asw: 1 }, num, 1)
+        }
+    }
+    // 対潜短魚雷(試作初期型)
+    if (num = itemNums[378]) {
+        if ([65, 69, 83, 87, 84, 91, 93, 95, 99].indexOf(ctype) >= 0) {
+            add({ asw: 3 }, num, 1)
+            if (shipId === 629) {
+                add({ asw: 1 }, num, 1)
+            }
+        } else if ([67, 78, 82, 88].indexOf(ctype) >= 0) {
+            add({ asw: 2 }, num, 1)
+        } else if (ctype === 96) {
+            add({ asw: 1 }, num, 1)
+        }
+    }
+    // SK レーダー
+    // if (num = itemNums[278]) {}
+    // SK+SG レーダー
+    if (num = itemNums[279]) {
+        if ([65, 69, 83, 87, 84, 91, 93, 95, 99].indexOf(ctype) >= 0) {
+            add({ fp: 2 }, num, 1)
+        } else if ([67, 78, 82, 88].indexOf(ctype) >= 0) {
+            add({ fp: 1 }, num, 1)
+        } else if (ctype === 96) {
+            add({ fp: 1 }, num, 1)
+        }
+    }
     // 130mm B-13連装砲
     // if (num = itemNums[282]) {}
     // 533mm 三連装魚雷
@@ -2621,6 +2674,33 @@ function getEquipmentBonus(date, attacker) {
             add({ fp: 1, asw: 1 }, num)
         } else if ([560, 555, 318].indexOf(shipId) >= 0) {
             add({ fp: 1, asw: 2 }, num)
+        } else if ([508, 509].indexOf(shipId) >= 0) {
+            add({ fp: 1 }, num)
+        }
+    }
+    // 天山一二型甲
+    if (num = itemNums[372]) {
+        if (yomi === "しょうかく") {
+            add({ fp: 1 }, num)
+        } else if (yomi === "ずいかく") {
+            add({ fp: 1 }, num)
+        } else if (yomi === "たいほう") {
+            add({ fp: 1 }, num)
+        } else if (["じゅんよう", "ひよう"].indexOf(yomi) >= 0) {
+            add({ fp: 1 }, num)
+        }
+        if ([108, 109].indexOf(shipId) >= 0) {
+            add({ fp: 1 }, num)
+        } else if ([291, 292].indexOf(shipId) >= 0) {
+            add({ fp: 1 }, num)
+        } else if ([296, 297].indexOf(shipId) >= 0) {
+            add({ fp: 1 }, num)
+        } else if ([116, 74].indexOf(shipId) >= 0) {
+            add({ asw: 1 }, num)
+        } else if ([117, 282, 185].indexOf(shipId) >= 0) {
+            add({ asw: 1 }, num)
+        } else if ([560, 555, 318].indexOf(shipId) >= 0) {
+            add({ asw: 1 }, num)
         } else if ([508, 509].indexOf(shipId) >= 0) {
             add({ fp: 1 }, num)
         }
