@@ -1,6 +1,6 @@
 /**
  * 異常ダメージ検知
- * @version 1.9.2
+ * @version 1.9.5
  * @author Nishikuma
  */
 
@@ -900,7 +900,9 @@ var detectDayBattle = function (date, mapCell, kind, friendCombinedKind, isEnemy
                 var hp = getAtkDefHp(attack, friendHp, enemyHp)
                 // 味方潜水への攻撃は検出対象から除外(敵対潜値が不明のため)
                 if (!(!attack.friendAttack && isSubMarine(ship.defender))) {
-                    var _shouldUseSkilled = shouldUseSkilled === undefined ? true : shouldUseSkilled
+                    // 特殊攻撃は熟練度の対象から外す
+                    var _shouldUseSkilled = shouldUseSkilled === undefined ? attack.attackType < 100 : shouldUseSkilled
+                    var origins = attack.friendAttack ? friends : enemies
                     var p = getDayBattlePower(date, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, attack, ship.attacker, ship.defender, hp.attacker, _shouldUseSkilled, attack.friendAttack ? friends : enemies)
                     var power = p.getPostcapPower()
                     var armor = Math.max(ship.defender.soukou + getArmorBonus(date, mapCell, ship.attacker, ship.defender), 1)
@@ -958,7 +960,7 @@ var detectDayBattle = function (date, mapCell, kind, friendCombinedKind, isEnemy
                                 unexpected[maps][index].push(inversion)
                             }
                         }
-                        result.push(new DetectDto(date, mapCell, 0, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], shouldUseSkilled === undefined ? true : shouldUseSkilled, attack.friendAttack ? friends : enemies, false, inversion))
+                        result.push(new DetectDto(date, mapCell, 0, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], _shouldUseSkilled, origins, false, inversion))
                     }
                 }
                 processingShipHpDamage(ship.defender, hp.defender, attack.damage, attack.lastAttack) // ダメージ処理
@@ -1151,7 +1153,9 @@ var detectNightBattle = function (date, mapCell, kind, friendCombinedKind, isEne
                 var hp = getAtkDefHp(attack, friendHp, enemyHp)
                 // 味方潜水への攻撃は検出対象から除外(敵対潜値が不明のため)
                 if (!(!attack.friendAttack && isSubMarine(ship.defender))) {
-                    var _shouldUseSkilled = shouldUseSkilled === undefined ? true : shouldUseSkilled
+                    // 特殊攻撃は熟練度の対象から外す
+                    var _shouldUseSkilled = shouldUseSkilled === undefined ? attack.attackType < 100 : shouldUseSkilled
+                    var origins = attack.friendAttack ? friends : enemies
                     var power = getNightBattlePower(date, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, touchPlane, attack, ship.attacker, ship.defender, hp.attacker, _shouldUseSkilled, attack.friendAttack ? friends : enemies).getPostcapPower()
                     var armor = Math.max(ship.defender.soukou + getArmorBonus(date, mapCell, ship.attacker, ship.defender), 1)
                     var minDef = armor * 0.7
@@ -1202,7 +1206,7 @@ var detectNightBattle = function (date, mapCell, kind, friendCombinedKind, isEne
                                 unexpected[maps][index].push(inversion)
                             }
                         }
-                        result.push(new DetectDto(date, mapCell, 2, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, touchPlane, shouldUseSkilled === undefined ? true : shouldUseSkilled, attack.friendAttack ? friends : enemies, false, inversion))
+                        result.push(new DetectDto(date, mapCell, 2, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, touchPlane, _shouldUseSkilled, origins, false, inversion))
                     }
                 }
                 processingShipHpDamage(ship.defender, hp.defender, attack.damage, attack.lastAttack) // ダメージ処理
@@ -1242,7 +1246,9 @@ var detectRadarShooting = function (date, mapCell, kind, friendCombinedKind, isE
                 var hp = getAtkDefHp(attack, friendHp, enemyHp)
                 // 味方潜水への攻撃は検出対象から除外(敵対潜値が不明のため)
                 if (!(!attack.friendAttack && isSubMarine(ship.defender))) {
-                    var _shouldUseSkilled = shouldUseSkilled === undefined ? true : shouldUseSkilled
+                    // 特殊攻撃は熟練度の対象から外す
+                    var _shouldUseSkilled = shouldUseSkilled === undefined ? attack.attackType < 100 : shouldUseSkilled
+                    var origins = attack.friendAttack ? friends : enemies
                     var power = getRadarShootingPower(date, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, attack, ship.attacker, ship.defender, hp.attacker, _shouldUseSkilled, attack.friendAttack ? friends : enemies).getPostcapPower()
                     var armor = Math.max(ship.defender.soukou + getArmorBonus(date, mapCell, ship.attacker, ship.defender), 1)
                     var minDef = armor * 0.7
@@ -1276,7 +1282,7 @@ var detectRadarShooting = function (date, mapCell, kind, friendCombinedKind, isE
                             inversion.minEx = Math.ceil(minPostcapPower) / power[1]
                             inversion.maxEx = Math.ceil(maxPostcapPower) / power[0]
                         }
-                        result.push(new DetectDto(date, mapCell, 2, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], shouldUseSkilled === undefined ? true : shouldUseSkilled, attack.friendAttack ? friends : enemies, true, inversion))
+                        result.push(new DetectDto(date, mapCell, 2, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], _shouldUseSkilled, origins, true, inversion))
                     }
                 }
                 processingShipHpDamage(ship.defender, hp.defender, attack.damage, attack.lastAttack) // ダメージ処理

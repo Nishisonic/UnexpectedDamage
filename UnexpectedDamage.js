@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.94
+var VERSION = 1.95
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -2878,6 +2878,32 @@ function getEquipmentBonus(date, attacker) {
     }
     // 一式徹甲弾改
     // if (num = itemNums[365]) {}
+    // 12.7cm単装高角砲改二
+    if (num = itemNums[379]) {
+        if (["ゆら", "なか", "きぬ", "いすず", "ゆうばり"].indexOf(yomi) >= 0) {
+            add({ asw: 1 }, num)
+        }
+        if ([488, 160, 487, 141].indexOf(shipId) >= 0) {
+            add({ asw: 1 }, num)
+        }
+        if ([477, 478, 624].indexOf(shipId) >= 0) {
+            add({ asw: 2 }, num)
+        }
+    }
+    // 12.7cm連装高角砲改二
+    if (num = itemNums[380]) {
+        if (["ゆら", "なか", "きぬ", "いすず", "ゆうばり"].indexOf(yomi) >= 0) {
+            add({ asw: 1 }, num)
+        }
+        if ([488, 160, 487, 141].indexOf(shipId) >= 0) {
+            add({ asw: 1 }, num)
+        }
+        if ([477, 478, 624].indexOf(shipId) >= 0) {
+            add({ asw: 2 }, num)
+        }
+    }
+    // 16inch三連装砲 Mk.6
+    // if (num = itemNums[381]) {}
     // 艦本新設計 増設バルジ(大型艦)
     // if (num = itemNums[204]) {}
     // 新型高温高圧缶
