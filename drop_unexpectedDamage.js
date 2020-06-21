@@ -1,6 +1,6 @@
 /**
  * 異常ダメージ検知
- * @version 1.9.5
+ * @version 1.9.6
  * @author Nishikuma
  */
 
@@ -901,7 +901,7 @@ var detectDayBattle = function (date, mapCell, kind, friendCombinedKind, isEnemy
                 // 味方潜水への攻撃は検出対象から除外(敵対潜値が不明のため)
                 if (!(!attack.friendAttack && isSubMarine(ship.defender))) {
                     // 特殊攻撃は熟練度の対象から外す
-                    var _shouldUseSkilled = shouldUseSkilled === undefined ? attack.attackType < 100 : shouldUseSkilled
+                    var _shouldUseSkilled = shouldUseSkilled && attack.attackType < 100
                     var origins = attack.friendAttack ? friends : enemies
                     var p = getDayBattlePower(date, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, attack, ship.attacker, ship.defender, hp.attacker, _shouldUseSkilled, attack.friendAttack ? friends : enemies)
                     var power = p.getPostcapPower()
@@ -1154,7 +1154,7 @@ var detectNightBattle = function (date, mapCell, kind, friendCombinedKind, isEne
                 // 味方潜水への攻撃は検出対象から除外(敵対潜値が不明のため)
                 if (!(!attack.friendAttack && isSubMarine(ship.defender))) {
                     // 特殊攻撃は熟練度の対象から外す
-                    var _shouldUseSkilled = shouldUseSkilled === undefined ? attack.attackType < 100 : shouldUseSkilled
+                    var _shouldUseSkilled = shouldUseSkilled && attack.attackType < 100
                     var origins = attack.friendAttack ? friends : enemies
                     var power = getNightBattlePower(date, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, touchPlane, attack, ship.attacker, ship.defender, hp.attacker, _shouldUseSkilled, attack.friendAttack ? friends : enemies).getPostcapPower()
                     var armor = Math.max(ship.defender.soukou + getArmorBonus(date, mapCell, ship.attacker, ship.defender), 1)
@@ -1247,7 +1247,7 @@ var detectRadarShooting = function (date, mapCell, kind, friendCombinedKind, isE
                 // 味方潜水への攻撃は検出対象から除外(敵対潜値が不明のため)
                 if (!(!attack.friendAttack && isSubMarine(ship.defender))) {
                     // 特殊攻撃は熟練度の対象から外す
-                    var _shouldUseSkilled = shouldUseSkilled === undefined ? attack.attackType < 100 : shouldUseSkilled
+                    var _shouldUseSkilled = shouldUseSkilled && attack.attackType < 100
                     var origins = attack.friendAttack ? friends : enemies
                     var power = getRadarShootingPower(date, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, attack, ship.attacker, ship.defender, hp.attacker, _shouldUseSkilled, attack.friendAttack ? friends : enemies).getPostcapPower()
                     var armor = Math.max(ship.defender.soukou + getArmorBonus(date, mapCell, ship.attacker, ship.defender), 1)
