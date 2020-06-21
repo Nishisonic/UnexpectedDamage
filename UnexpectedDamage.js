@@ -2904,6 +2904,12 @@ function getEquipmentBonus(date, attacker) {
     }
     // 16inch三連装砲 Mk.6
     // if (num = itemNums[381]) {}
+    // 12cm単装高角砲E型
+    if (num = itemNums[382]) {
+        if (stype === 1) {
+            add({ asw: 1 }, num)
+        }
+    }
     // 艦本新設計 増設バルジ(大型艦)
     // if (num = itemNums[204]) {}
     // 新型高温高圧缶
