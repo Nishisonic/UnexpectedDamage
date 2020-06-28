@@ -1,6 +1,6 @@
 /**
  * 異常ダメージ検知
- * @version 1.8.4
+ * @version 1.9.6
  * @author Nishikuma
  */
 
@@ -400,6 +400,7 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
                                 case 102: // 長門、いい？ いくわよ！ 主砲一斉射ッ！
                                     return Math.floor(didx / 2)
                                 case 103: // Colorado 特殊攻撃
+                                case 104: // 僚艦夜戦突撃
                                     return didx
                                 default:
                                     return json.api_at_list[idx]
@@ -461,6 +462,7 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
                                 case 102: // 長門、いい？ いくわよ！ 主砲一斉射ッ！
                                     return Math.floor(didx / 2)
                                 case 103: // Colorado 特殊攻撃
+                                case 104: // 僚艦夜戦突撃
                                     return didx
                                 default:
                                     return json.api_at_list[idx]
@@ -484,20 +486,20 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
     for (var idx in phaseList) {
         var phase = phaseList[idx]
         var json = phase.json
-        var formation = json.api_formation
+        var formation = Java.from(json.api_formation).map(Number)
         var activeDeck = json.api_active_deck
         var touchPlane = json.api_touch_plane
         if (!phase.isNight()) {
-            dayFormation = json.api_formation
+            dayFormation = formation
             dayKind = phase.kind
         } else {
-            nightFormation = json.api_formation
+            nightFormation = formation
             nightKind = phase.kind
             nightTouchPlane = json.api_touch_plane
         }
         // 払暁戦処理
         if (phase.kind === BattlePhaseKind.NIGHT_TO_DAY || phase.kind === BattlePhaseKind.COMBINED_EC_NIGHT_TO_DAY) {
-            dayFormation = nightFormation = json.api_formation
+            dayFormation = nightFormation = formation
             dayKind = nightKind = phase.kind
             nightTouchPlane = json.api_touch_plane
         }
@@ -859,7 +861,7 @@ var DetectDto = function (date, mapCell, phase, attack, power, attacker, defende
     this.kind = kind
     this.friendCombinedKind = friendCombinedKind
     this.isEnemyCombined = isEnemyCombined
-    this.formation = Java.from(formation).slice()
+    this.formation = formation
     this.touchPlane = touchPlane
     this.shouldUseSkilled = shouldUseSkilled
     this.origins = origins
@@ -898,7 +900,9 @@ var detectDayBattle = function (date, mapCell, kind, friendCombinedKind, isEnemy
                 var hp = getAtkDefHp(attack, friendHp, enemyHp)
                 // 味方潜水への攻撃は検出対象から除外(敵対潜値が不明のため)
                 if (!(!attack.friendAttack && isSubMarine(ship.defender))) {
-                    var _shouldUseSkilled = shouldUseSkilled === undefined ? true : shouldUseSkilled
+                    // 特殊攻撃は熟練度の対象から外す
+                    var _shouldUseSkilled = shouldUseSkilled && attack.attackType < 100
+                    var origins = attack.friendAttack ? friends : enemies
                     var p = getDayBattlePower(date, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, attack, ship.attacker, ship.defender, hp.attacker, _shouldUseSkilled, attack.friendAttack ? friends : enemies)
                     var power = p.getPostcapPower()
                     var armor = Math.max(ship.defender.soukou + getArmorBonus(date, mapCell, ship.attacker, ship.defender), 1)
@@ -956,7 +960,7 @@ var detectDayBattle = function (date, mapCell, kind, friendCombinedKind, isEnemy
                                 unexpected[maps][index].push(inversion)
                             }
                         }
-                        result.push(new DetectDto(date, mapCell, 0, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], shouldUseSkilled === undefined ? true : shouldUseSkilled, attack.friendAttack ? friends : enemies, false, inversion))
+                        result.push(new DetectDto(date, mapCell, 0, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], _shouldUseSkilled, origins, false, inversion))
                     }
                 }
                 processingShipHpDamage(ship.defender, hp.defender, attack.damage, attack.lastAttack) // ダメージ処理
@@ -1149,7 +1153,9 @@ var detectNightBattle = function (date, mapCell, kind, friendCombinedKind, isEne
                 var hp = getAtkDefHp(attack, friendHp, enemyHp)
                 // 味方潜水への攻撃は検出対象から除外(敵対潜値が不明のため)
                 if (!(!attack.friendAttack && isSubMarine(ship.defender))) {
-                    var _shouldUseSkilled = shouldUseSkilled === undefined ? true : shouldUseSkilled
+                    // 特殊攻撃は熟練度の対象から外す
+                    var _shouldUseSkilled = shouldUseSkilled && attack.attackType < 100
+                    var origins = attack.friendAttack ? friends : enemies
                     var power = getNightBattlePower(date, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, touchPlane, attack, ship.attacker, ship.defender, hp.attacker, _shouldUseSkilled, attack.friendAttack ? friends : enemies).getPostcapPower()
                     var armor = Math.max(ship.defender.soukou + getArmorBonus(date, mapCell, ship.attacker, ship.defender), 1)
                     var minDef = armor * 0.7
@@ -1200,7 +1206,7 @@ var detectNightBattle = function (date, mapCell, kind, friendCombinedKind, isEne
                                 unexpected[maps][index].push(inversion)
                             }
                         }
-                        result.push(new DetectDto(date, mapCell, 2, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, touchPlane, shouldUseSkilled === undefined ? true : shouldUseSkilled, attack.friendAttack ? friends : enemies, false, inversion))
+                        result.push(new DetectDto(date, mapCell, 2, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, touchPlane, _shouldUseSkilled, origins, false, inversion))
                     }
                 }
                 processingShipHpDamage(ship.defender, hp.defender, attack.damage, attack.lastAttack) // ダメージ処理
@@ -1240,7 +1246,9 @@ var detectRadarShooting = function (date, mapCell, kind, friendCombinedKind, isE
                 var hp = getAtkDefHp(attack, friendHp, enemyHp)
                 // 味方潜水への攻撃は検出対象から除外(敵対潜値が不明のため)
                 if (!(!attack.friendAttack && isSubMarine(ship.defender))) {
-                    var _shouldUseSkilled = shouldUseSkilled === undefined ? true : shouldUseSkilled
+                    // 特殊攻撃は熟練度の対象から外す
+                    var _shouldUseSkilled = shouldUseSkilled && attack.attackType < 100
+                    var origins = attack.friendAttack ? friends : enemies
                     var power = getRadarShootingPower(date, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, attack, ship.attacker, ship.defender, hp.attacker, _shouldUseSkilled, attack.friendAttack ? friends : enemies).getPostcapPower()
                     var armor = Math.max(ship.defender.soukou + getArmorBonus(date, mapCell, ship.attacker, ship.defender), 1)
                     var minDef = armor * 0.7
@@ -1274,7 +1282,7 @@ var detectRadarShooting = function (date, mapCell, kind, friendCombinedKind, isE
                             inversion.minEx = Math.ceil(minPostcapPower) / power[1]
                             inversion.maxEx = Math.ceil(maxPostcapPower) / power[0]
                         }
-                        result.push(new DetectDto(date, mapCell, 2, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], shouldUseSkilled === undefined ? true : shouldUseSkilled, attack.friendAttack ? friends : enemies, true, inversion))
+                        result.push(new DetectDto(date, mapCell, 2, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], _shouldUseSkilled, origins, true, inversion))
                     }
                 }
                 processingShipHpDamage(ship.defender, hp.defender, attack.damage, attack.lastAttack) // ダメージ処理
