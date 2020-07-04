@@ -4,6 +4,46 @@ const fs = require("fs");
 
 const dblogin = require(`${__dirname}/dblogin.json`);
 
+const unexpectedIDs = [
+  25364618,
+  25364621,
+  25364623,
+  25364629,
+  25364630,
+  25365998,
+  25365999,
+  25366001,
+  25366005,
+  25366008,
+  25366009,
+  25367430,
+  25367431,
+  25367433,
+  25367442,
+  25367443,
+  25367445,
+  25373313,
+  25373315,
+  25373318,
+  25373322,
+  25373324,
+  25373325,
+  25375321,
+  25375324,
+  25375332,
+  25375333,
+  25375338,
+  25378998,
+  25379001,
+  25379009,
+  25379909,
+  25379915,
+  25379919,
+  25367444,
+  25379006,
+  25379910,
+];
+
 async function fetchNodes() {
   // const edges = (
   //   await axios.get(
@@ -34,7 +74,7 @@ async function fetchNodes() {
       "20": ["O", "R", 4, 4],
       "21": ["R", "S", 90, 6],
       "22": ["N", "T", 5, 5],
-      "23": ["Q", "T", 5, 5]
+      "23": ["Q", "T", 5, 5],
     },
     "World 48-2": {
       "1": ["Start", "A", 90, 6],
@@ -63,7 +103,7 @@ async function fetchNodes() {
       "24": ["R", "S", -1, -1],
       "25": ["P", "T", 5, 5],
       "26": ["O", "P", 4, 4],
-      "27": ["R", "T", 5, 5]
+      "27": ["R", "T", 5, 5],
     },
     "World 48-3": {
       "1": ["C", "A", 4, 4],
@@ -91,7 +131,7 @@ async function fetchNodes() {
       "24": ["V", "W", 90, 6],
       "25": ["U", "S", 4, 4],
       "26": ["T", "O", 5, 5],
-      "27": ["V", "O", 5, 5]
+      "27": ["V", "O", 5, 5],
     },
     "World 48-4": {
       "1": ["B", "A", 10, 4],
@@ -135,7 +175,7 @@ async function fetchNodes() {
       "39": ["Z", "W", -1, -1],
       "40": ["W", "X", 4, 4],
       "41": ["Y", "X", 4, 4],
-      "42": ["Z", "X", 4, 4]
+      "42": ["Z", "X", 4, 4],
     },
   };
 
@@ -238,14 +278,15 @@ async function fetchTsunDB(map, node, edgesFromNode) {
   return client
     .query(
       // IDを指定しないと処理が終わらない
-      `SELECT (ship->>'id')::int shipid,
+      `SELECT id, (ship->>'id')::int shipid,
         (enemy->>'id')::int enemyid,
         ((damageinstance->>'actualDamage')::int / (ship->>'rAmmoMod')::real + 0.7 * ((enemy->>'armor')::double precision)) / ((ship->>'postcapPower')::double precision) lowmod,
         (((damageinstance->>'actualDamage')::int + 1) / (ship->>'rAmmoMod')::real + 0.7 * ((enemy->>'armor')::double precision) + 0.6 * FLOOR((enemy->>'armor')::double precision - 1)) / ((ship->>'postcapPower')::double precision) highmod
       FROM abnormaldamage
-      WHERE id >= 25112400
+      WHERE id >= 25112400  
       AND map = $1
       AND edgeid = ANY($2)
+      AND NOT (id = ANY($3))
       AND debuffed = false
       AND NOT (
         (ship->>'spAttackType')::int >= 100
@@ -256,7 +297,7 @@ async function fetchTsunDB(map, node, edgesFromNode) {
           AND (damageinstance->>'actualDamage')::int <= FLOOR((enemy->>'hp')::int * 0.14 - 0.08))
       )
       ORDER BY id;`,
-      [map, edgesFromNode]
+      [map, edgesFromNode, unexpectedIDs]
     )
     .then((data) => {
       console.log(
@@ -281,7 +322,7 @@ async function execute() {
   return Promise.all(
     nodes.map(async ({ map, node, edgesFromNode }) => {
       const data = await fetchTsunDB(map, node, edgesFromNode);
-      
+
       if (!data) {
         // データ取得失敗時
         return null;
