@@ -171,12 +171,12 @@ function genBattleHtml(dataLists) {
     var touchPlane = dataLists[2].length > 0 ? dataLists[2][0].touchPlane : [-1, -1]
     var html =
         '<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">' +
-        '<script src="https://momentjs.com/downloads/moment.js"></script>' +
+        '<script src="https://momentjs.com/downloads/moment.js" type="text/javascript"></script>' +
         '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">' +
-        '<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>' +
-        '<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ja.js"></script>' +
-        '<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>' +
-        '<script src="https://unpkg.com/multiple-select@1.4.0/dist/multiple-select.js"></script>' +
+        '<script src="https://cdn.jsdelivr.net/npm/flatpickr" type="text/javascript"></script>' +
+        '<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ja.js" type="text/javascript"></script>' +
+        '<script src="https://code.jquery.com/jquery-3.4.1.min.js" type="text/javascript"></script>' +
+        '<script src="https://unpkg.com/multiple-select@1.4.0/dist/multiple-select.js" type="text/javascript"></script>' +
         '<link href="https://unpkg.com/multiple-select@1.4.0/dist/multiple-select.css" rel="stylesheet">' +
         '<style type="text/css">' +
             "body {font-family:'Lucida Grande','Hiragino Kaku Gothic ProN','ヒラギノ角ゴ ProN W3',Meiryo,メイリオ,sans-serif;}" +
