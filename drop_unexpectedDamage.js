@@ -1,6 +1,6 @@
 /**
  * 異常ダメージ検知
- * @version 1.9.6
+ * @version 2.0.0
  * @author Nishikuma
  */
 
@@ -443,7 +443,7 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
         return null
     }
     // 夜戦フェーズ
-    var parseNight = function (phase, json) {
+    var parseNight = function (phase, json, friendMainAttack) {
         if (json) {
             var result = []
             for (var idx in json.api_at_eflag) {
@@ -472,7 +472,7 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
                         var damage = Math.floor(json.api_damage[idx][didx])
                         var critical = json.api_cl_list[idx][didx]
                         if (friendAttack) {
-                            result[idx][didx] = new AttackDto(phase.kind, friendAttack, attacker < friendNum, attacker % Math.max(6, friendNum), defender < enemyNum, defender % Math.max(6, enemyNum), lastAttack, damage, critical, attackType, showItem, didx)
+                            result[idx][didx] = new AttackDto(phase.kind, friendAttack, friendMainAttack, attacker % Math.max(6, friendNum), defender < enemyNum, defender % Math.max(6, enemyNum), lastAttack, damage, critical, attackType, showItem, didx)
                         } else {
                             result[idx][didx] = new AttackDto(phase.kind, friendAttack, attacker < enemyNum, attacker % Math.max(6, enemyNum), defender < friendNum, defender % Math.max(6, friendNum), lastAttack, damage, critical, attackType, showItem, didx)
                         }
@@ -489,6 +489,8 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
         var formation = Java.from(json.api_formation).map(Number)
         var activeDeck = json.api_active_deck
         var touchPlane = json.api_touch_plane
+        var friendMainAttack = !(activeDeck && Number(activeDeck[0]) === 2
+            || [BattlePhaseKind.COMBINED_MIDNIGHT, BattlePhaseKind.COMBINED_SP_MIDNIGHT].indexOf(phase.kind) >= 0)
         if (!phase.isNight()) {
             dayFormation = formation
             dayKind = phase.kind
@@ -504,9 +506,9 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
             nightTouchPlane = json.api_touch_plane
         }
         // 夜戦(払暁戦)1巡目
-        nightBattle1 = nightBattle1 ? nightBattle1 : parseNight(phase, json.api_n_hougeki1)
+        nightBattle1 = nightBattle1 ? nightBattle1 : parseNight(phase, json.api_n_hougeki1, friendMainAttack)
         // 夜戦(払暁戦)2巡目
-        nightBattle2 = nightBattle2 ? nightBattle2 : parseNight(phase, json.api_n_hougeki2)
+        nightBattle2 = nightBattle2 ? nightBattle2 : parseNight(phase, json.api_n_hougeki2, friendMainAttack)
         // 開幕対潜
         preAntiSubmarineAttack = preAntiSubmarineAttack ? preAntiSubmarineAttack : parseDay(phase, json.api_opening_taisen)
         // 開幕雷撃
@@ -521,10 +523,10 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
         torpedoAttack = torpedoAttack ? torpedoAttack : parseTorpedo(phase, phase.raigeki)
         // 友軍艦隊
         if (json.api_friendly_battle) {
-            friendlyBattle = friendlyBattle ? friendlyBattle : parseNight(phase, json.api_friendly_battle.api_hougeki)
+            friendlyBattle = friendlyBattle ? friendlyBattle : parseNight(phase, json.api_friendly_battle.api_hougeki, friendMainAttack)
         }
         // 夜戦
-        nightBattle = nightBattle ? nightBattle : parseNight(phase, json.api_hougeki)
+        nightBattle = nightBattle ? nightBattle : parseNight(phase, json.api_hougeki, friendMainAttack)
         // レーダー射撃
         radarShooting = radarShooting ? radarShooting : parseDay(phase, json.api_hougeki1)
     }
