@@ -1,6 +1,6 @@
 /**
  * 異常ダメージ検知
- * @version 1.9.7
+ * @version 1.9.8
  * @author Nishikuma
  */
 
@@ -471,8 +471,13 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
                         var defender = json.api_df_list[idx][didx]
                         var damage = Math.floor(json.api_damage[idx][didx])
                         var critical = json.api_cl_list[idx][didx]
+                        var mainAttack = [
+                            BattlePhaseKind.COMBINED_MIDNIGHT,
+                            BattlePhaseKind.COMBINED_SP_MIDNIGHT,
+                            BattlePhaseKind.COMBINED_EC_NIGHT_TO_DAY,
+                        ].indexOf(phase.kind) < 0
                         if (friendAttack) {
-                            result[idx][didx] = new AttackDto(phase.kind, friendAttack, attacker < friendNum, attacker % Math.max(6, friendNum), defender < enemyNum, defender % Math.max(6, enemyNum), lastAttack, damage, critical, attackType, showItem, didx)
+                            result[idx][didx] = new AttackDto(phase.kind, friendAttack, mainAttack, attacker % Math.max(6, friendNum), defender < enemyNum, defender % Math.max(6, enemyNum), lastAttack, damage, critical, attackType, showItem, didx)
                         } else {
                             result[idx][didx] = new AttackDto(phase.kind, friendAttack, attacker < enemyNum, attacker % Math.max(6, enemyNum), defender < friendNum, defender % Math.max(6, friendNum), lastAttack, damage, critical, attackType, showItem, didx)
                         }

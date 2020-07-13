@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 1.97
+var VERSION = 1.98
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -1420,8 +1420,10 @@ var getMultiplySlayerBonus = function (attacker, defender) {
             var a = 1
             a *= suijo ? 1.1 : 1
             a *= apShell ? 1.2 : 1
-            // 海外艦全指定
-            a *= overseasShip ? 1.1 : 1
+            // 海外艦全指定(戦艦・空母のみ)
+            if ([7, 8, 9, 10, 11, 12].indexOf(attacker.stype) >= 0) {
+                a *= overseasShip ? 1.1 : 1
+            }
             return a
         case 1705:
         case 1706:
@@ -2943,6 +2945,10 @@ function getEquipmentBonus(date, attacker) {
     // if (num = itemNums[381]) {}
     // 16inch三連装砲 Mk.6 mod.2
     // if (num = itemNums[385]) {}
+    // 6inch三連装速射砲 Mk.16
+    // if (num = itemNums[386]) {}
+    // 6inch三連装速射砲 Mk.16 mod.2
+    // if (num = itemNums[387]) {}
     // 12cm単装高角砲E型
     if (num = itemNums[382]) {
         if (stype === 1) {
