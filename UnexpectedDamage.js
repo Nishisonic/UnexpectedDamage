@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.01
+var VERSION = 2.02
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -653,7 +653,10 @@ DayBattlePower.prototype.getFormationBonus = function () {
         case FORMATION.LINE_AHEAD: return 1.0
         case FORMATION.DOUBLE_LINE: return 0.8
         case FORMATION.DIAMOND: return 0.7
-        case FORMATION.ECHELON: return CHANGE_ECHELON_BONUS_DATE.before(this.date) && !(this.friendCombinedKind === COMBINED_FLEET.NONE && this.isEnemyCombined) ? 0.75 : 0.6
+        case FORMATION.ECHELON:
+            return CHANGE_ECHELON_BONUS_DATE.before(this.date) &&
+                // 味方(梯形)→敵(連合) もしくは 敵(梯形)→味方(連合) で0.6倍 
+                !(this.isEnemyCombined ? this.friendCombinedKind === COMBINED_FLEET.NONE : this.friendCombinedKind !== COMBINED_FLEET.NONE) ? 0.75 : 0.6
         case FORMATION.LINE_ABREAST: return 0.6
         case FORMATION.VANGUARD: return this.attack.attacker < Math.floor(this.numOfAttackShips / 2) ? 0.5 : 1.0
         case FORMATION.CRUISING_FORMATION_1: return 0.8
@@ -2134,7 +2137,7 @@ function getEquipmentBonus(date, attacker) {
         return previous
     }, {})
     var num = 0
-    var US_SHIPS = [65, 69, 83, 87, 84, 91, 93, 95, 99, 102]
+    var US_SHIPS = [65, 69, 83, 87, 84, 91, 93, 95, 99, 102, 105, 106]
     var UK_SHIPS = [67, 78, 82, 88]
 
     // 北方迷彩(+北方装備)
