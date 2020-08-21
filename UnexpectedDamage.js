@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.02
+var VERSION = 2.03
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -593,6 +593,7 @@ DayBattlePower.prototype.getImprovementBonus = function () {
                     case 66:  // 8cm高角砲
                     case 220: // 8cm高角砲改＋増設機銃
                     case 275: // 10cm連装高角砲改＋増設機銃
+                    case 358: // 5inch 単装高角砲群
                         return 0.2 * item.level
                     case 12:  // 15.5cm三連装副砲
                     case 234: // 15.5cm三連装副砲改
@@ -1100,6 +1101,7 @@ NightBattlePower.prototype.getImprovementBonus = function () {
                 case 66:  // 8cm高角砲
                 case 220: // 8cm高角砲改＋増設機銃
                 case 275: // 10cm連装高角砲改＋増設機銃
+                case 358: // 5inch 単装高角砲群
                     return 0.2 * item.level
                 case 12:  // 15.5cm三連装副砲
                 case 234: // 15.5cm三連装副砲改
