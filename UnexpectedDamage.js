@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.03
+var VERSION = 2.04
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -1266,8 +1266,8 @@ function isNightCvAttack(attacker, attackerHp) {
     }).some(function (itemid) {
         // 夜間作戦航空要員 or 夜間作戦航空要員＋熟練甲板員
         return [258, 259].indexOf(itemid) >= 0
-        // Saratoga Mk.II or 赤城改二戊
-    }) || [545, 599].indexOf(attacker.shipId) >= 0) && items.some(function (item) {
+        // Saratoga Mk.II or 赤城改二戊 or 加賀改二戊
+    }) || [545, 599, 610].indexOf(attacker.shipId) >= 0) && items.some(function (item) {
         // 夜間戦闘機 or 夜間攻撃機
         return [45, 46].indexOf(item.type3) >= 0
         // 中破未満または装甲空母
@@ -2536,29 +2536,67 @@ function getEquipmentBonus(date, attacker) {
     // if (num = itemNums[317]) {}
     // 三式弾
     // if (num = itemNums[35]) {}
+    // カ号観測機
+    if (num = itemNums[326]) {
+        if (date.after(getJstDate(2020, 8, 27, 12, 0, 0))) {
+            if (shipId === 554) {
+                add({ asw: 3 }, num)
+            } else if (shipId === 553) {
+                add({ asw: 2 }, num)
+            }
+        }
+    }
     // オ号観測機改
     // オ号観測機改二
     if (num = itemNums[324] + itemNums[325]) {
-        if (shipId === 554) {
-            add({ asw: 2 }, num)
-        } else if (shipId === 553) {
-            add({ asw: 1 }, num)
+        if (date.after(getJstDate(2020, 8, 27, 12, 0, 0))) {
+            if ([554, 646].indexOf(shipId) >= 0) {
+                add({ fp: 2, asw: 3 }, num)
+            } else if (shipId === 553) {
+                add({ fp: 1, asw: 2 }, num)
+            }
+        } else {
+            if (shipId === 554) {
+                add({ asw: 2 }, num)
+            } else if (shipId === 553) {
+                add({ asw: 1 }, num)
+            }
         }
     }
     // S-51J
     if (num = itemNums[326]) {
-        if (shipId === 554) {
-            add({ asw: 3 }, num)
-        } else if (shipId === 553) {
-            add({ asw: 2 }, num)
+        if (date.after(getJstDate(2020, 8, 27, 12, 0, 0))) {
+            if (shipId === 646) {
+                add({ fp: 3, asw: 5 }, num)
+            } else if (shipId === 554) {
+                add({ fp: 3, asw: 4 }, num)
+            } else if (shipId === 553) {
+                add({ fp: 1, asw: 3 }, num)
+            }
+        } else {
+            if (shipId === 554) {
+                add({ asw: 3 }, num)
+            } else if (shipId === 553) {
+                add({ asw: 2 }, num)
+            }
         }
     }
     // S-51J改
     if (num = itemNums[327]) {
-        if (shipId === 554) {
-            add({ asw: 4 }, num)
-        } else if (shipId === 553) {
-            add({ asw: 3 }, num)
+        if (date.after(getJstDate(2020, 8, 27, 12, 0, 0))) {
+            if (shipId === 646) {
+                add({ fp: 5, asw: 6 }, num)
+            } else if (shipId === 554) {
+                add({ fp: 4, asw: 5 }, num)
+            } else if (shipId === 553) {
+                add({ fp: 2, asw: 4 }, num)
+            }
+        } else {
+            if (shipId === 554) {
+                add({ asw: 4 }, num)
+            } else if (shipId === 553) {
+                add({ asw: 3 }, num)
+            }
         }
     }
     // 瑞雲改二(六三四空)
@@ -2581,7 +2619,7 @@ function getEquipmentBonus(date, attacker) {
     if (num = itemNums[336]) {
         if ([277, 278].indexOf(shipId) >= 0) {
             add({ fp: 1 }, num)
-        } else if ([594, 599].indexOf(shipId) >= 0) {
+        } else if ([594, 599, 610, 646, 698].indexOf(shipId) >= 0) {
             add({ fp: 1 }, num)
         }
     }
@@ -2589,7 +2627,7 @@ function getEquipmentBonus(date, attacker) {
     if (num = itemNums[337]) {
         if ([277, 278].indexOf(shipId) >= 0) {
             add({ fp: 1 }, num)
-        } else if ([594, 599].indexOf(shipId) >= 0) {
+        } else if ([594, 599, 610, 646, 698].indexOf(shipId) >= 0) {
             add({ fp: 2 }, num)
         }
     }
@@ -2597,9 +2635,9 @@ function getEquipmentBonus(date, attacker) {
     if (num = itemNums[338]) {
         if ([277, 278].indexOf(shipId) >= 0) {
             add({ fp: 1 }, num)
-        } else if (shipId === 594) {
+        } else if ([594, 646, 698].indexOf(shipId) >= 0) {
             add({ fp: 1 }, num)
-        } else if (shipId === 599) {
+        } else if ([599, 610].indexOf(shipId) >= 0) {
             add({ fp: 4 }, num)
         }
     }
@@ -2607,9 +2645,9 @@ function getEquipmentBonus(date, attacker) {
     if (num = itemNums[339]) {
         if ([277, 278].indexOf(shipId) >= 0) {
             add({ fp: 1 }, num)
-        } else if (shipId === 594) {
+        } else if ([594, 646, 698].indexOf(shipId) >= 0) {
             add({ fp: 1 }, num)
-        } else if (shipId === 599) {
+        } else if ([599, 610].indexOf(shipId) >= 0) {
             add({ fp: 6 }, num)
         }
     }
@@ -2619,9 +2657,9 @@ function getEquipmentBonus(date, attacker) {
         if (date.after(getJstDate(2019, 5, 20, 12, 0, 0))) {
             if ([277, 278, 156].indexOf(shipId) >= 0) {
                 add({ fp: 1 }, num)
-            } else if (shipId === 594) {
+            } else if ([594, 646, 698].indexOf(shipId) >= 0) {
                 add({ fp: 1 }, num)
-            } else if (shipId === 599) {
+            } else if ([599, 610].indexOf(shipId) >= 0) {
                 add({ fp: 2 }, num)
             }
         }
@@ -2630,9 +2668,9 @@ function getEquipmentBonus(date, attacker) {
     if (num = itemNums[342]) {
         if ([277, 278, 461, 466, 462, 467].indexOf(shipId) >= 0) {
             add({ fp: 1 }, num)
-        } else if (shipId === 594) {
+        } else if ([594, 646, 698].indexOf(shipId) >= 0) {
             add({ fp: 2 }, num)
-        } else if (shipId === 599) {
+        } else if ([599, 610].indexOf(shipId) >= 0) {
             add({ fp: 3 }, num)
         }
     }
@@ -2642,15 +2680,15 @@ function getEquipmentBonus(date, attacker) {
             add({ fp: 2 }, num)
         } else if ([461, 466, 462, 467].indexOf(shipId) >= 0) {
             add({ fp: 1 }, num)
-        }  else if (shipId === 594) {
+        }  else if ([594, 646, 698].indexOf(shipId) >= 0) {
             add({ fp: 3 }, num)
-        } else if (shipId === 599) {
+        } else if ([599, 610].indexOf(shipId) >= 0) {
             add({ fp: 5 }, num)
         }
     }
     // 九七式艦攻改 試製三号戊型(空六号電探改装備機)
     if (num = itemNums[344]) {
-        if (shipId === 599) {
+        if ([599, 610].indexOf(shipId) >= 0) {
             add({ fp: 3 }, num)
         } else if ([555, 560].indexOf(shipId) >= 0) {
             add({ fp: 2, asw: 2 }, num)
@@ -2662,7 +2700,7 @@ function getEquipmentBonus(date, attacker) {
     }
     // 九七式艦攻改(熟練) 試製三号戊型(空六号電探改装備機)
     if (num = itemNums[345]) {
-        if (shipId === 599) {
+        if ([599, 610].indexOf(shipId) >= 0) {
             add({ fp: 3 }, num)
         } else if ([555, 560].indexOf(shipId) >= 0) {
             add({ fp: 3, asw: 2 }, num)
@@ -2834,6 +2872,25 @@ function getEquipmentBonus(date, attacker) {
         } else if (UK_SHIPS.indexOf(ctype) >= 0) {
             // 現状搭載不可
             add({ fp: 2 }, num)
+        }
+    }
+    // TBM-3W+3S
+    if (num = itemNums[389]) {
+        if ([594, 599].indexOf(shipId) >= 0) {
+            add({ fp: 2 }, num)
+        } else if ([698, 610].indexOf(shipId) >= 0) {
+            add({ fp: 3 }, num)
+        } else if (shipId === 646) {
+            add({ fp: 4, asw: 4 }, num)
+            if (items.some(function(item) { return item.type3 === 25 })) {
+                add({ fp: 3, asw: 6 }, num, 1)
+            }
+            if (itemNums[326] + itemNums[327]) {
+                add({ fp: 5, asw: 4 }, num, 1)
+            }
+        }
+        if (US_SHIPS.indexOf(ctype) >= 0) {
+            add({ fp: 2, asw: 3 }, num)
         }
     }
     // Swordfish Mk.III改(水上機型/熟練)
