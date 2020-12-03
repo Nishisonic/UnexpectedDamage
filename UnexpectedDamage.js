@@ -1568,6 +1568,8 @@ var getLandBonus = function (attacker, defender) {
     var type4RocketGroup = type4Rocket + type4RocketEx
     /** [カテゴリ]艦上爆撃機 */
     var bomber = items.filter(function (item) { return item.type2 === 7 }).length
+    /** Laté 298B */
+    var late298B = getItemNum(items, 194)
 
     var a13 = (daihatsuGroupLv / 50 + 1) * (kamishaLv / 30 + 1)
     var b13_ = ([0, 75, 110, 140, 160, 160])[wg42]
@@ -1632,6 +1634,14 @@ var getLandBonus = function (attacker, defender) {
             a13 *= m4a1dd ? 2.0 : 1
             a13 *= kamisha ? 2.8 : 1
             break
+        case 1745:
+        case 1746:
+        case 1747: // 戦艦仏棲姫
+        case 1748:
+        case 1749:
+        case 1750: // 戦艦仏棲姫-壊
+            a13 *= apShell ? 1.2 : 1
+            a13 *= suijo ? 1.1 : 1
         default: // ソフトスキン
             a13 *= type3shell ? 2.5 : 1
             a13 *= (wg42 ? 1.3 : 1) * (wg42 >= 2 ? 1.4 : 1)
@@ -2191,8 +2201,8 @@ function getEquipmentBonus(date, attacker) {
         return previous
     }, {})
     var num = 0
-    var US_SHIPS = [65, 69, 83, 87, 84, 91, 93, 95, 99, 102, 105, 106]
-    var UK_SHIPS = [67, 78, 82, 88]
+    var US_SHIPS = [65, 69, 83, 87, 84, 91, 93, 95, 99, 102, 105, 106, 107]
+    var UK_SHIPS = [67, 78, 82, 88, 108]
 
     // 北方迷彩(+北方装備)
     // if (num = itemNums[268]) {}
