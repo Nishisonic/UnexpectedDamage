@@ -55,7 +55,7 @@ async function fetchNodes() {
     await Promise.all(
       Object.keys(edges)
         .map((world) => world.replace("World ", ""))
-        .filter((map) => map.replace(/(\d+)-\d+/, "$1") >= 48)
+        .filter((map) => map.replace(/(\d+)-\d+/, "$1") >= 49)
         .map(async (map) => {
           const mapdata = (
             await axios.get(`http://kc.piro.moe/api/routing/maps/${map}`)
@@ -155,7 +155,7 @@ async function fetchTsunDB(map, node, edgesFromNode) {
         ((damageinstance->>'actualDamage')::int / (ship->>'rAmmoMod')::real + 0.7 * ((enemy->>'armor')::double precision)) / ((ship->>'postcapPower')::double precision) lowmod,
         (((damageinstance->>'actualDamage')::int + 1) / (ship->>'rAmmoMod')::real + 0.7 * ((enemy->>'armor')::double precision) + 0.6 * FLOOR((enemy->>'armor')::double precision - 1)) / ((ship->>'postcapPower')::double precision) highmod
       FROM abnormaldamage
-      WHERE id >= 25112400  
+      WHERE id >= 32711598
       AND map = $1
       AND edgeid = ANY($2)
       AND NOT (id = ANY($3))
