@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.05
+var VERSION = 2.06
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -1377,6 +1377,8 @@ var getMultiplySlayerBonus = function (attacker, defender) {
     var type4RocketGroup = type4Rocket + type4RocketEx
     /** [カテゴリ]艦上爆撃機 */
     var bomber = items.filter(function (item) { return item.type2 === 7 }).length
+    /** Laté 298B */
+    var late298B = getItemNum(items, 194)
     
     var ctype = (JSON.parse(Ship.get(attacker.shipId).json).api_ctype | 0)
     var overseasShip = [
@@ -1442,6 +1444,18 @@ var getMultiplySlayerBonus = function (attacker, defender) {
             var a = 1
             a *= suijo ? 1.15 : 1
             a *= apShell ? 1.1 : 1
+            return a
+        case 1745:
+        case 1746:
+        case 1747: // 戦艦仏棲姫
+        case 1748:
+        case 1749:
+        case 1750: // 戦艦仏棲姫-壊
+            var a = 1
+            a *= apShell ? 1.2 : 1
+            a *= late298B ? 1.3 : (suijo ? 1.1 : 1)
+            a *= (bomber ? 1.1 : 1) * (bomber >= 2 ? 1.15 : 1)
+            a *= attacker.shipInfo.flagship === "リシュリュー" ? 1.17 : 1
             return a
     }
     return 1.0
@@ -1568,8 +1582,6 @@ var getLandBonus = function (attacker, defender) {
     var type4RocketGroup = type4Rocket + type4RocketEx
     /** [カテゴリ]艦上爆撃機 */
     var bomber = items.filter(function (item) { return item.type2 === 7 }).length
-    /** Laté 298B */
-    var late298B = getItemNum(items, 194)
 
     var a13 = (daihatsuGroupLv / 50 + 1) * (kamishaLv / 30 + 1)
     var b13_ = ([0, 75, 110, 140, 160, 160])[wg42]
@@ -1634,14 +1646,6 @@ var getLandBonus = function (attacker, defender) {
             a13 *= m4a1dd ? 2.0 : 1
             a13 *= kamisha ? 2.8 : 1
             break
-        case 1745:
-        case 1746:
-        case 1747: // 戦艦仏棲姫
-        case 1748:
-        case 1749:
-        case 1750: // 戦艦仏棲姫-壊
-            a13 *= apShell ? 1.2 : 1
-            a13 *= suijo ? 1.1 : 1
         default: // ソフトスキン
             a13 *= type3shell ? 2.5 : 1
             a13 *= (wg42 ? 1.3 : 1) * (wg42 >= 2 ? 1.4 : 1)
