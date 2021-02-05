@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.07
+var VERSION = 2.08
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -2226,12 +2226,32 @@ function getEquipmentBonus(date, attacker) {
             add({ fp: fp }, 1)
         }
     }
+    // 水上偵察機
+    if (items.some(function(item) { return item.type2 === 10 })) {
+        if (shipId === 662) {
+            add({ asw: 3 }, 1)
+        }
+    }
+    // 水上爆撃機
+    if (items.some(function(item) { return item.type2 === 11 })) {
+        if (shipId === 662) {
+            add({ asw: 1 }, 1)
+        }
+    }
     // 電探
     // if (items.some(function(item) { return [12, 13].indexOf(item.type2) >= 0 })) {}
+    // オートジャイロ
+    if (items.some(function(item) { return item.type2 === 25 })) {
+        if (shipId === 662) {
+            add({ asw: 4 }, 1)
+        }
+    }
     // 探照灯
     // if (items.some(function(item) { return item.type2 === 29 })) {}
     // 大型探照灯
     // if (items.some(function(item) { return item.type2 === 42 })) {}
+    // 15.5cm三連装砲
+    // if (num = itemNums[5]) {}
     // 61cm四連装(酸素)魚雷
     // if (num = itemNums[15]) {}
     // 流星
@@ -2269,8 +2289,21 @@ function getEquipmentBonus(date, attacker) {
     // 彗星一二型甲
     // 彗星(六〇一空)
     // if (num = itemNums[24] + itemNums[57] + itemNums[111]) {}
+    // 瑞雲
+    // 試製晴嵐
+    // 瑞雲(六三四空)
+    // 瑞雲12型
+    // 瑞雲12型(六三四空)
+    // 瑞雲(六三一空)
+    // 晴嵐(六三一空)
+    // if (num = itemNums[26] + itemNums[62] + itemNums[79] + itemNums[80] + itemNums[81] + itemNums[207] + itemNums[208]) {}
     // 三式弾
     // if (num = itemNums[35]) {}
+    // 25mm連装機銃
+    // 25mm三連装機銃
+    // 25mm単装機銃
+    // 25mm三連装機銃 集中配備
+    // if (num = itemNums[39] + itemNums[40] + itemNums[49] + itemNums[131]) {}
     // 三式水中探信儀
     if (num = itemNums[47]) {
         if (date.after(getJstDate(2019, 1, 22, 12, 0, 0))) {
@@ -2395,6 +2428,8 @@ function getEquipmentBonus(date, attacker) {
             }
         }
     }
+    // 15.2cm連装砲改
+    // if (num = itemNums[139]) {}
     // 九七式艦攻(村田隊)
     if (num = itemNums[143]) {
         if (date.after(getJstDate(2019, 4, 30, 21, 0, 0))) {
@@ -2440,6 +2475,8 @@ function getEquipmentBonus(date, attacker) {
                 add({ asw: 1 }, num, 1)
             } else if (shipId === 624) {
                 add({ asw: 3 }, num, 1)
+            } else if (shipId === 662) {
+                add({ asw: 2 }, num, 1)
             }
             if (ctype === 54) {
                 add({ asw: 1 }, num, 1)
@@ -2478,6 +2515,8 @@ function getEquipmentBonus(date, attacker) {
     // if (num = itemNums[194]) {}
     // 艦本新設計 増設バルジ(大型艦)
     // if (num = itemNums[204]) {}
+    // 8cm高角砲改+増設機銃
+    // if (num = itemNums[220]) {}
     // 九六式艦戦改
     if (num = itemNums[228]) {
         if (date.after(getJstDate(2020, 3, 27, 12, 0, 0))) {
@@ -2510,8 +2549,47 @@ function getEquipmentBonus(date, attacker) {
             }
         }
     }
+    // 15.5cm三連装砲改
+    // if (num = itemNums[235]) {}
+    // 瑞雲(六三四空/熟練)
+    // 瑞雲改二(六三四空)
+    // 瑞雲改二(六三四空/熟練)
+    // if (num = itemNums[237] + itemNums[322] + itemNums[323]) {}
     // 瑞雲(六三四空/熟練)
     // if (num = itemNums[237]) {}
+    // Swordfish
+    if (num = itemNums[242]) {
+        if (date.after(getJstDate(2021, 2, 5, 12, 0, 0))) {
+            if (ctype === 78) {
+                add({ fp: 2 }, num)
+            }
+            if (yomi === "ほうしょう") {
+                add({ asw: 1 }, num)
+            }
+        }
+    }
+    // Swordfish Mk.II(熟練)
+    if (num = itemNums[243]) {
+        if (date.after(getJstDate(2021, 2, 5, 12, 0, 0))) {
+            if (ctype === 78) {
+                add({ fp: 3 }, num)
+            }
+            if (yomi === "ほうしょう") {
+                add({ asw: 2 }, num)
+            }
+        }
+    }
+    // Swordfish Mk.III(熟練)
+    if (num = itemNums[244]) {
+        if (date.after(getJstDate(2021, 2, 5, 12, 0, 0))) {
+            if (ctype === 78) {
+                add({ fp: 4 }, num)
+            }
+            if (yomi === "ほうしょう") {
+                add({ asw: 3 }, num)
+            }
+        }
+    }
     // 12.7cm連装砲C型改二
     // if (num = itemNums[266]) {}
     // 12.7cm連装砲D型改二
@@ -2546,6 +2624,8 @@ function getEquipmentBonus(date, attacker) {
         if (date.after(getJstDate(2020, 1, 14, 12, 0, 0))) {
             if ([488, 141, 160, 624, 656].indexOf(shipId) >= 0) {
                 add({ asw: 1 }, num)
+            } else if (shipId === 662) {
+                add({ asw: 3 }, num)
             }
         }
     }
@@ -2556,6 +2636,8 @@ function getEquipmentBonus(date, attacker) {
                 add({ asw: 2 }, num)
             } else if (shipId === 624) {
                 add({ asw: 3 }, num)
+            } else if (shipId === 662) {
+                add({ asw: 4 }, num)
             }
         }
     }
@@ -3127,6 +3209,8 @@ function getEquipmentBonus(date, attacker) {
     // if (num = itemNums[399]) {}
     // 533mm 三連装魚雷(53-39型)
     // if (num = itemNums[400]) {}
+    // 15.2cm連装砲改二
+    // if (num = itemNums[407]) {}
 
     return bonus
 }
