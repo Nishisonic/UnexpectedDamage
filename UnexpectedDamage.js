@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.08
+var VERSION = 2.09
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -1742,10 +1742,10 @@ var getSkilledBonus = function (date, attack, attacker, defender, attackerHp) {
     var ADD_SKILLED_DATE = getJstDate(2017, 10, 18, 12, 0, 0)
     var result = [1.0, 1.0]
     // rounds === 0 先制対潜
-    // 自軍攻撃 && クリティカル && 先制対潜ではない && (昼戦攻撃が空撃 || 夜戦攻撃が夜襲 || 夜戦攻撃艦がArk Royal(改)) && (攻撃艦が補給艦かつ防御艦が潜水艦)ではない
+    // 自軍攻撃 & クリティカル & 先制対潜ではない & (昼戦攻撃が空撃 or 夜戦攻撃が夜襲 or 夜戦攻撃艦がArk Royal(改)) & (攻撃艦が(正規空母 or 装甲空母 or 補給艦) & 防御艦が潜水艦)ではない
     if (attack.friendAttack && isCritical(attack)/* && attack.rounds !== 0*/
         && (!attack.kind.isNight() && getAttackTypeAtDay(attack, attacker, defender) === 1 || attack.kind.isNight() && (isNightCvAttack(attacker, attackerHp) || [393, 515].indexOf(attacker.shipId) >= 0))
-        && !(attacker.stype === 22 && isSubMarine(defender))) {
+        && !([11, 18, 22].indexOf(attacker.stype) >= 0 && isSubMarine(defender))) {
         var items = Java.from(attacker.item2.toArray())
         // 戦爆連合CI(熟練度は2017/10/18以降から)
         if (!attack.kind.isNight() && Number(attack.attackType) === 7 && date.after(ADD_SKILLED_DATE)) {
