@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.09
+var VERSION = 2.10
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -320,7 +320,13 @@ var AntiSubmarinePower = function (date, kind, friendCombinedKind, isEnemyCombin
      * ～2017/11/10 17:07?:100
      * 2017/11/10 17:07?～:150
      */
-    this.CAP_VALUE = getJstDate(2017, 11, 10, 17, 7, 0).before(this.date) ? 150 : 100
+    this.CAP_VALUE = 100
+    if (getJstDate(2017, 11, 10, 17, 7, 0).before(this.date)) {
+        this.CAP_VALUE = 150
+    }
+    if (getJstDate(2021, 3, 1, 12, 0, 0).before(this.date)) {
+        this.CAP_VALUE = 170
+    }
 }
 
 /**
@@ -513,7 +519,13 @@ var DayBattlePower = function (date, kind, friendCombinedKind, isEnemyCombined, 
     this.items = getItems(attacker)
     this.shouldUseSkilled = shouldUseSkilled
     this.origins = origins
-    this.CAP_VALUE = getJstDate(2017, 3, 17, 12, 0, 0).before(this.date) ? 180 : 150
+    this.CAP_VALUE = 150
+    if (getJstDate(2017, 3, 17, 12, 0, 0).before(this.date)) {
+        this.CAP_VALUE = 180
+    }
+    if (getJstDate(2021, 3, 1, 12, 0, 0).before(this.date)) {
+        this.CAP_VALUE = 220
+    }
 }
 
 /**
@@ -538,7 +550,8 @@ DayBattlePower.prototype.getBasicPower = function () {
                     // Ju87C改二(KMX搭載機)
                     // Ju87C改二(KMX搭載機/熟練)
                     // 彗星一二型(六三四空/三号爆弾搭載機)
-                    return [64, 148, 233, 277, 305, 306, 319].indexOf(item.slotitemId) >= 0
+                    // TBM-3W+3S
+                    return [64, 148, 233, 277, 305, 306, 319, 389].indexOf(item.slotitemId) >= 0
                 }).reduce(function(p, v) {
                     return p + v.param.baku
                 }, 0)
@@ -844,6 +857,9 @@ var TorpedoPower = function (date, kind, friendCombinedKind, isEnemyCombined, nu
     this.attackerHp = attackerHp
     this.items = getItems(attacker)
     this.CAP_VALUE = 150
+    if (getJstDate(2021, 3, 1, 12, 0, 0).before(this.date)) {
+        this.CAP_VALUE = 180
+    }
 }
 
 /**
@@ -1010,6 +1026,9 @@ var NightBattlePower = function (date, kind, friendCombinedKind, isEnemyCombined
     this.shouldUseSkilled = shouldUseSkilled
     this.origins = origins
     this.CAP_VALUE = 300
+    if (getJstDate(2021, 3, 1, 12, 0, 0).before(this.date)) {
+        this.CAP_VALUE = 360
+    }
 }
 
 /**
@@ -2304,6 +2323,28 @@ function getEquipmentBonus(date, attacker) {
     // 25mm単装機銃
     // 25mm三連装機銃 集中配備
     // if (num = itemNums[39] + itemNums[40] + itemNums[49] + itemNums[131]) {}
+    // 九四式爆雷投射機
+    // 三式爆雷投射機
+    // 三式爆雷投射機 集中配備
+    // 試製15cm9連装対潜噴進砲
+    if (num = itemNums[44] + itemNums[45] + itemNums[287] + itemNums[288]) {
+        if (date.after(getJstDate(2021, 3, 1, 12, 0, 0))) {
+            if (ctype === 56) {
+                add({ asw: 3 }, num)
+            }
+        }
+    }
+    // 九三式水中聴音機
+    // 三式水中探信儀
+    // 四式水中聴音機
+    // 零式水中聴音機
+    if (num = itemNums[44] + itemNums[45] + itemNums[149] + itemNums[132]) {
+        if (date.after(getJstDate(2021, 3, 1, 12, 0, 0))) {
+            if (ctype === 56) {
+                add({ asw: 2 }, num, 1)
+            }
+        }
+    }
     // 三式水中探信儀
     if (num = itemNums[47]) {
         if (date.after(getJstDate(2019, 1, 22, 12, 0, 0))) {
@@ -2416,6 +2457,10 @@ function getEquipmentBonus(date, attacker) {
     // if (num = itemNums[104]) {}
     // 13号対空電探改
     // if (num = itemNums[106]) {}
+    // Ar196改
+    // if (num = itemNums[115]) {}
+    // 紫雲
+    // if (num = itemNums[118]) {}
     // 14cm連装砲
     // if (num = itemNums[119]) {}
     // 10cm連装高角砲+高射装置
