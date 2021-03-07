@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.10
+var VERSION = 2.11
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -533,7 +533,7 @@ var DayBattlePower = function (date, kind, friendCombinedKind, isEnemyCombined, 
  * @return {Number} 昼砲撃火力(基本攻撃力)
  */
 DayBattlePower.prototype.getBasicPower = function () {
-    var landBonus = getLandBonus(this.attacker, this.defender)
+    var landBonus = getLandBonus(this.attacker, this.defender, true)
     // 空撃または陸上型かつ艦上爆撃機,艦上攻撃機,陸上攻撃機,噴式戦闘爆撃機,噴式攻撃機所持時?
     if (getAttackTypeAtDay(this.attack, this.attacker, this.defender) === 1 || isGround(this.attacker) && this.items.some(function (item) { return [7, 8, 47, 57, 58].indexOf(item.type2) >= 0 })) {
         // 空撃
@@ -557,10 +557,10 @@ DayBattlePower.prototype.getBasicPower = function () {
                 }, 0)
             }
         }
-        return 25 + Math.floor(1.5 * (((5 + this.attacker.karyoku + this.getImprovementBonus() + this.getCombinedPowerBonus()) * landBonus.a13 + landBonus.b13) * landBonus.a13_ + landBonus.b13_ + Math.floor(Math.floor(baku * 1.3) + rai) + 15))
+        return 25 + Math.floor(1.5 * (((5 + this.attacker.karyoku + this.getImprovementBonus() + this.getCombinedPowerBonus()) * landBonus.a13 + landBonus.b13) * landBonus.a13_2 + landBonus.b13_2 + Math.floor(Math.floor(baku * 1.3) + rai) + 15))
     } else {
         // 砲撃
-        return ((this.attacker.karyoku + this.getImprovementBonus() + this.getCombinedPowerBonus() + 5 + landBonus.b12) * landBonus.a13 + landBonus.b13) * landBonus.a13_ + landBonus.b13_
+        return ((this.attacker.karyoku + this.getImprovementBonus() + this.getCombinedPowerBonus() + 5 + landBonus.b12) * landBonus.a13 + landBonus.b13) * landBonus.a13_2 + landBonus.b13_2
     }
 }
 
@@ -1063,7 +1063,7 @@ NightBattlePower.prototype.getBasicPower = function () {
         }, this).reduce(function (p, c) { return p + c }, 0)
         return karyoku + nightPlaneBonus + this.getNightTouchPlaneBonus()
     } else {
-        var landBonus = getLandBonus(this.attacker, this.defender)
+        var landBonus = getLandBonus(this.attacker, this.defender, false)
         var power = 0
         // Ark Royal、Ark Royal改
         if ([393, 515].indexOf(this.attacker.shipId) >= 0) {
@@ -1081,7 +1081,7 @@ NightBattlePower.prototype.getBasicPower = function () {
         } else {
             power = this.attacker.karyoku + (useRaisou ? this.attacker.raisou : 0) + this.getImprovementBonus()
         }
-        return ((power + this.getNightTouchPlaneBonus() + landBonus.b12) * landBonus.a13 + landBonus.b13) * landBonus.a13_ + landBonus.b13_
+        return ((power + this.getNightTouchPlaneBonus() + landBonus.b12) * landBonus.a13 + landBonus.b13) * landBonus.a13_2 + landBonus.b13_2
     }
 }
 
@@ -1368,6 +1368,12 @@ var getMultiplySlayerBonus = function (attacker, defender) {
     var shikonDaihatsu = getItemNum(items, 230)
     /** M4A1 DD */
     var m4a1dd = getItemNum(items, 355)
+    /** 装甲艇(AB艇) */
+    var armoredBoat = getItemNum(items, 408)
+    /** 装甲艇(AB艇) */
+    var armedDaihatsu = getItemNum(items, 409)
+    /** 日本大発 */
+    var japanDaihatsu = daihatsu + tokuDaihatsu + rikuDaihatsu + shikonDaihatsu
     /** [カテゴリ]上陸用舟艇 */
     var daihatsuGroup = items.filter(function (item) { return item.type2 === 24 }).length
     /** [カテゴリ]上陸用舟艇[改修] */
@@ -1444,7 +1450,8 @@ var getMultiplySlayerBonus = function (attacker, defender) {
             a *= tokuDaihatsu ? 1.2 : 1
             a *= (rikuDaihatsu ? 1.3 : 1) * (rikuDaihatsu >= 2 ? 1.6 : 1)
             a *= m4a1dd ? 1.2 : 1
-            a *= (kamisha ? 1.7 : 1.0) * (kamisha >= 2 ? 1.5 : 1)
+            a *= (kamisha ? 1.7 : 1) * (kamisha >= 2 ? 1.5 : 1)
+            a *= (armedDaihatsu ? 1.5 : 1) * (armedDaihatsu >= 2 ? 1.1 : 1)
             return a
         case 1696:
         case 1697:
@@ -1557,10 +1564,11 @@ var isAnchorageWaterDemonVacationMode = function (ship) {
  * 陸上特効補正を返します
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} defender 防御艦
+ * @param {boolean} isDay 昼戦か
  * @return {{a13:Number, b12:Number, b13: Number}} 補正値
  */
-var getLandBonus = function (attacker, defender) {
-    if (!isGround(defender) && !isAnchorageWaterDemonVacationMode(defender) || isNorthernmostLandingPrincess(defender)) return {a13: 1, a13_: 1, b12: 0, b13: 0, b13_: 0}
+var getLandBonus = function (attacker, defender, isDay) {
+    if (!isGround(defender) && !isAnchorageWaterDemonVacationMode(defender) || isNorthernmostLandingPrincess(defender)) return {a13: 1, a13_2: 1, b12: 0, b13: 0, b13_2: 0}
     var items = getItems(attacker)
     /** [カテゴリ]三式弾 */
     var type3shell = items.filter(function (item) { return item.type2 === 18 }).length
@@ -1574,6 +1582,12 @@ var getLandBonus = function (attacker, defender) {
     var shikonDaihatsu = getItemNum(items, 230)
     /** M4A1 DD */
     var m4a1dd = getItemNum(items, 355)
+    /** 装甲艇(AB艇) */
+    var armoredBoat = getItemNum(items, 408)
+    /** 装甲艇(AB艇) */
+    var armedDaihatsu = getItemNum(items, 409)
+    /** 日本大発 */
+    var japanDaihatsu = daihatsu + tokuDaihatsu + rikuDaihatsu + shikonDaihatsu
     /** [カテゴリ]上陸用舟艇 */
     var daihatsuGroup = items.filter(function (item) { return item.type2 === 24 }).length
     /** [カテゴリ]上陸用舟艇[改修] */
@@ -1604,7 +1618,7 @@ var getLandBonus = function (attacker, defender) {
     var bomber = items.filter(function (item) { return item.type2 === 7 }).length
 
     var a13 = (daihatsuGroupLv / 50 + 1) * (kamishaLv / 30 + 1)
-    var b13_ = ([0, 75, 110, 140, 160, 160])[wg42]
+    var b13_2 = ([0, 75, 110, 140, 160, 160])[wg42]
         + ([0, 30, 55, 75, 90, 90])[type2Mortar]
         + ([0, 60, 110, 150, 150, 150])[type2MortarEx]
         + ([0, 55, 115, 160, 190, 190])[type4Rocket]
@@ -1628,6 +1642,9 @@ var getLandBonus = function (attacker, defender) {
             a13 *= (kamisha ? 2.4 : 1) * (kamisha >= 2 ? 1.35 : 1)
             // 艦種補正(a12/13):駆逐艦、軽巡洋艦
             a13 *= [2, 3].indexOf(attacker.stype) >= 0 ? 1.4 : 1
+            if (isDay) {
+                a13 *= armedDaihatsu ? 1.3 : 1
+            }
             break
         case 1668:
         case 1669:
@@ -1678,15 +1695,27 @@ var getLandBonus = function (attacker, defender) {
             a13 *= shikonDaihatsu ? 1.8 : 1
             a13 *= m4a1dd ? 1.1 : 1
             a13 *= (kamisha ? 1.5 : 1) * (kamisha >= 2 ? 1.2 : 1)
+            if (isDay) {
+                a13 *= (armedDaihatsu ? 1.1 : 1) * (armedDaihatsu >= 2 ? 1.1 : 1)
+            }
+            a13 *= armoredBoat ? 1.15 : 1
             break
     }
+    var a13_2 = 1.0
+    a13_2 *= m4a1dd ? 1.4 : 1
+    // 補給艦・揚陸艦でないときは弾いておく
+    if ([16, 17].indexOf(attacker.stype) < 0) {
+        // イコールは仕様
+        a13_2 *= japanDaihatsu && (armedDaihatsu === 1) ? 1.25 : 1
+    }
+
     return {
         a13: a13,
-        a13_: m4a1dd ? 1.4 : 1,
+        a13_2: a13_2,
         // 潜水艦
         b12: [13, 14].indexOf(attacker.stype) >= 0 ? 30 : 0,
         b13: (shikonDaihatsu + m4a1dd) * 25,
-        b13_: b13_
+        b13_2: b13_2
     }
 }
 

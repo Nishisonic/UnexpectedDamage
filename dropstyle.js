@@ -82,7 +82,7 @@ function create(table, data, index) {
                                 }
                             }))
                             browser = new Browser(shell, SWT.NONE)
-                            browser.setBounds(0, 0, 980, 710)
+                            browser.setBounds(0, 0, 980, 700)
                             shell.pack()
                             shell.open()
                         } else {
@@ -275,9 +275,9 @@ function genBattleHtml(dataLists) {
         '</style></head>' +
         '<body>' +
         '<header>' +
+        '<h2 style="float:left; margin-bottom: 0;">' + masterData.mapCell + '（' + sdf.format(masterData.date) + '）</h2>' +
         '<div style="clear: left;">' +
             '<div style="float: left; margin-bottom: 65px;">' +
-                '<h2 style="float:left;">' + masterData.mapCell + '（' + sdf.format(masterData.date) + '）</h2>' +
                 '<h2 style="clear:left;">会敵情報</h2>' +
                 '<div>' +
                     '<div>会敵: ' + toIntercept(masterData.formation[2]) + '</div>' +
@@ -372,57 +372,8 @@ function genBattleHtml(dataLists) {
                         '});' +
                         '$("#enemy").multipleSelect("checkAll");' +
                     '});' +
-                    'function fetchTsunDB() {' +
-                        'if ($("#local").css("display") === "none") {' +
-                            '$("#local").css("display", "inline");' +
-                            '$("#tsun").css("display", "none");' +
-                        '} else {' +
-                            '$("#local").css("display", "none");' +
-                            '$("#tsun").css("display", "inline");' +
-                        '}' +
-                        '$.ajax({' +
-                            'type: "GET",' +
-                            'url: "https://raw.githubusercontent.com/KC3Kai/KC3Kai/develop/src/data/edges.json",' +
-                            'dataType:"json",' +
-                        '}).done(function(res){' +
-                            'var map = "' + masterData.mapCell.map[0] + '-' + masterData.mapCell.map[1] + '";' +
-                            'var nodes = res["World " + map];' +
-                            'if (nodes) {' +
-                                'var node = res["World " + map][' + masterData.mapCell.map[2] + '];' +
-                                'if (node) {' +
-                                    '$.ajax({' +
-                                       'type: "GET",' +
-                                       'url: "https://nishikuma.net/UnexpectedDamage/" + map + "/" + node[1] + ".json",' +
-                                       'dataType:"json",' +
-                                    '}).done(function(res){' +
-                                        '$("#tsunMap").html(map + " " + node[1] + "マス(" + res.samples + " Samples) <span style=' + "'font-size: x-small;'" + '>" + moment(res.date).format("YYYY-MM-DD HH:mm:ss") + " 取得</span>");' +
-                                        '$("#tsunBox").html(Object.keys(res.data).sort(function(a, b){' +
-                                            'return ships[a].sortId - ships[b].sortId;' +
-                                        '}).map(function(id){' +
-                                            'var data = res.data[id];' +
-                                            'return ships[id].name + " - " + data.min + " ~ " + data.max + " (" + data.count + "x)";' +
-                                        '}).join("<br>"));' +
-                                    '}).fail(function(){' +
-                                        '$("#tsunMap").html(map + " ?マス");' +
-                                        '$("#tsunBox").html("Error");' +
-                                    '});' +
-                                '} else {' +
-                                    '$("#tsunMap").html(map + " ?マス");' +
-                                    '$("#tsunBox").html("Error");' +
-                                '}' +
-                            '} else {' +
-                                '$("#tsunMap").html(map + " ?マス");' +
-                                '$("#tsunBox").html("Error");' +
-                            '}' +
-                        '}).fail(function(){' +
-                            '$("#tsunMap").html(map + " ?マス");' +
-                            '$("#tsunBox").html("Error");' +
-                        '});' +
-                    '}' +
                 '</script>' +
                 '<div style="float: right;">' +
-                    '<h2 style="float: left; margin-right: 10px;">TsunDBで調べてみる(試験用)</h2>' +
-                    '<input type="button" value="切替" style="margin-top: 10px; cursor: pointer;" onclick="fetchTsunDB()">' +
                     '<div id="local">' +
                         '<h2 style="margin-bottom: 0">' +
                             masterData.mapCell.map[0] + '-' + masterData.mapCell.map[1] + '-' + masterData.mapCell.map[2] + ' 特効倍率(速報値) ※イベント限定 <span style="font-size: x-small;">対陸上、PT、熟練度は除外</span><br>' +
@@ -455,7 +406,7 @@ function genBattleHtml(dataLists) {
         '<h2 style="clear: both; padding: 0; margin: 2px 0 0;">異常ダメ検知攻撃一覧</h2>' +
         '<hr style="height: 1px; background-color: #BBB; border: none; margin-right:15px;"></hr>' +
         '</header>' +
-        '<div style="width:100%; height:310px;"></div>' +
+        '<div style="width:100%; height:300px;"></div>' +
         '<div style="overflow: auto; min-width:500px; border:#000000 solid 1px; width: 100%; font-size:small;">' +
         // 昼砲撃戦
         dataLists[0].map(function (data) {
@@ -600,8 +551,8 @@ function genAntiSubMarineHtml(data, power) {
  */
 function genDayBattleHtml(data, power) {
     var result = '<tr><th rowspan="8" style="padding: 0px 3px;">攻<br>撃<br>側</th><th>基本攻撃力</th><th>改修火力</th><th>連合補正</th><th>対陸上敵加算補正(b12)</th><th>対陸上敵乗算補正(a13/a13\')</th><th>対陸上敵加算補正(b13/b13\')</th></tr>'
-    var landBonus = getLandBonus(data.attacker, data.defender)
-    result += '<tr><td>' + power.getBasicPower().toFixed(2) + '</td><td>' + power.getImprovementBonus().toFixed(2) + '</td><td>' + power.getCombinedPowerBonus() + '</td><td>' + (landBonus.b12) + '</td><td>' + landBonus.a13.toFixed(3) + " / " + landBonus.a13_.toFixed(3) + '</td><td>' + landBonus.b13 + " / " + landBonus.b13_ + '</td></tr>'
+    var landBonus = getLandBonus(data.attacker, data.defender, true)
+    result += '<tr><td>' + power.getBasicPower().toFixed(2) + '</td><td>' + power.getImprovementBonus().toFixed(2) + '</td><td>' + power.getCombinedPowerBonus() + '</td><td>' + (landBonus.b12) + '</td><td>' + landBonus.a13.toFixed(3) + " / " + landBonus.a13_2.toFixed(3) + '</td><td>' + landBonus.b13 + " / " + landBonus.b13_2 + '</td></tr>'
     result += '<tr><th>キャップ前火力</th><th>交戦形態補正</th><th>攻撃側陣形補正</th><th>損傷補正</th><th>特殊砲補正</th><th></th></tr>'
     result += '<tr><td>' + power.getPrecapPower().toFixed(2) + '</td><td>' + getEngagementBonus(data.formation).toFixed(2) + '</td><td>' + power.getFormationBonus().toFixed(2) + '</td><td>' + power.getConditionBonus().toFixed(2) + '</td><td>' + getOriginalGunPowerBonus(power.attacker).toFixed(2) + '</td><td></td></tr>'
     result += '<tr><th rowspan="2">最終攻撃力</th><th>キャップ値</th><th>キャップ後火力</th><th>特殊敵乗算特効</th><th>特殊敵加算特効</th><th>特殊敵乗算特効2</th></tr>'
@@ -636,8 +587,8 @@ function genTorpedoAttackHtml(data, power) {
  */
 function genNightBattleHtml(data, power) {
     var result = '<tr><th rowspan="8" style="padding: 0px 3px;">攻<br>撃<br>側</th><th>基本攻撃力</th><th>改修火力</th><th>触接補正</th><th>対陸上敵加算補正(b12)</th><th>対陸上敵乗算補正(a13/a13\')</th><th>対陸上敵加算補正(b13/b13\')</th></tr>'
-    var landBonus = getLandBonus(data.attacker, data.defender)
-    result += '<tr><td>' + power.getBasicPower().toFixed(2) + '</td><td>' + power.getImprovementBonus().toFixed(2) + '</td><td>' + power.getNightTouchPlaneBonus() + '</td><td>' + landBonus.b12 + '</td><td>' + landBonus.a13.toFixed(3) + " / " + landBonus.a13_.toFixed(3) + '</td><td>' + landBonus.b13 + " / " + landBonus.b13_ + '</td></tr>'
+    var landBonus = getLandBonus(data.attacker, data.defender, false)
+    result += '<tr><td>' + power.getBasicPower().toFixed(2) + '</td><td>' + power.getImprovementBonus().toFixed(2) + '</td><td>' + power.getNightTouchPlaneBonus() + '</td><td>' + landBonus.b12 + '</td><td>' + landBonus.a13.toFixed(3) + " / " + landBonus.a13_2.toFixed(3) + '</td><td>' + landBonus.b13 + " / " + landBonus.b13_2 + '</td></tr>'
     result += '<tr><th>キャップ前火力</th><th>攻撃側陣形補正</th><th>夜戦特殊攻撃補正</th><th>損傷補正</th><th>特殊砲補正</th><th></th></tr>'
     result += '<tr><td>' + power.getPrecapPower().toFixed(2) + '</td><td>' + power.getFormationBonus().toFixed(2) + '</td><td>' + power.getCutinBonus().toFixed(2) + '</td><td>' + power.getConditionBonus().toFixed(2) + '</td><td>' + power.getPrecapPostMultiplyPower().toFixed(2) + '</td><td></td></tr>'
     result += '<tr><th rowspan="2">最終攻撃力</th><th>キャップ値</th><th>キャップ後火力</th><th>特殊敵乗算特効</th><th>特殊敵加算特効</th><th>特殊敵乗算特効2</th></tr>'
