@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.11
+var VERSION = 2.12
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -1354,8 +1354,6 @@ var getAmmoBonus = function (ship, origins, mapCell) {
  */
 var getMultiplySlayerBonus = function (attacker, defender) {
     var items = getItems(attacker)
-    // 陸上特効補正と同じ
-
     /** [カテゴリ]三式弾 */
     var type3shell = items.filter(function (item) { return item.type2 === 18 }).length
     /** 大発動艇 */
@@ -1370,16 +1368,16 @@ var getMultiplySlayerBonus = function (attacker, defender) {
     var m4a1dd = getItemNum(items, 355)
     /** 装甲艇(AB艇) */
     var armoredBoat = getItemNum(items, 408)
-    /** 装甲艇(AB艇) */
+    /** 武装大発 */
     var armedDaihatsu = getItemNum(items, 409)
-    /** 日本大発 */
-    var japanDaihatsu = daihatsu + tokuDaihatsu + rikuDaihatsu + shikonDaihatsu
     /** [カテゴリ]上陸用舟艇 */
     var daihatsuGroup = items.filter(function (item) { return item.type2 === 24 }).length
     /** [カテゴリ]上陸用舟艇[改修] */
     var daihatsuGroupLv = daihatsuGroup > 0 ? items.filter(function (item) { return item.type2 === 24 }).map(function (item) { return item.level }).reduce(function (p, c) { return p + c }, 0) / daihatsuGroup : 0
     /** 特二式内火艇 */
     var kamisha = getItemNum(items, 167)
+    /** 特定大発 */
+    var specialDaihatsu = daihatsu + tokuDaihatsu + rikuDaihatsu + shikonDaihatsu + kamisha
     /** [カテゴリ]特型内火艇[改修] */
     var kamishaLv = kamisha > 0 ? items.filter(function (item) { return item.slotitemId === 167 }).map(function (item) { return item.level }).reduce(function (p, c) { return p + c }, 0) / kamisha : 0
     /** [カテゴリ]水上戦闘機・水上爆撃機 */
@@ -1584,16 +1582,16 @@ var getLandBonus = function (attacker, defender, isDay) {
     var m4a1dd = getItemNum(items, 355)
     /** 装甲艇(AB艇) */
     var armoredBoat = getItemNum(items, 408)
-    /** 装甲艇(AB艇) */
+    /** 武装大発 */
     var armedDaihatsu = getItemNum(items, 409)
-    /** 日本大発 */
-    var japanDaihatsu = daihatsu + tokuDaihatsu + rikuDaihatsu + shikonDaihatsu
     /** [カテゴリ]上陸用舟艇 */
     var daihatsuGroup = items.filter(function (item) { return item.type2 === 24 }).length
     /** [カテゴリ]上陸用舟艇[改修] */
     var daihatsuGroupLv = daihatsuGroup > 0 ? items.filter(function (item) { return item.type2 === 24 }).map(function (item) { return item.level }).reduce(function (p, c) { return p + c }, 0) / daihatsuGroup : 0
     /** 特二式内火艇 */
     var kamisha = getItemNum(items, 167)
+    /** 特定大発 */
+    var specialDaihatsu = daihatsu + tokuDaihatsu + rikuDaihatsu + shikonDaihatsu + kamisha
     /** [カテゴリ]特型内火艇[改修] */
     var kamishaLv = kamisha > 0 ? items.filter(function (item) { return item.slotitemId === 167 }).map(function (item) { return item.level }).reduce(function (p, c) { return p + c }, 0) / kamisha : 0
     /** [カテゴリ]水上戦闘機・水上爆撃機 */
@@ -1616,6 +1614,8 @@ var getLandBonus = function (attacker, defender, isDay) {
     var type4RocketGroup = type4Rocket + type4RocketEx
     /** [カテゴリ]艦上爆撃機 */
     var bomber = items.filter(function (item) { return item.type2 === 7 }).length
+    /** Laté 298B */
+    var late298B = getItemNum(items, 194)
 
     var a13 = (daihatsuGroupLv / 50 + 1) * (kamishaLv / 30 + 1)
     var b13_2 = ([0, 75, 110, 140, 160, 160])[wg42]
@@ -1697,16 +1697,22 @@ var getLandBonus = function (attacker, defender, isDay) {
             a13 *= (kamisha ? 1.5 : 1) * (kamisha >= 2 ? 1.2 : 1)
             if (isDay) {
                 a13 *= (armedDaihatsu ? 1.1 : 1) * (armedDaihatsu >= 2 ? 1.1 : 1)
+                a13 *= armoredBoat ? 1.1 : 1
             }
-            a13 *= armoredBoat ? 1.15 : 1
             break
     }
-    var a13_2 = 1.0
-    a13_2 *= m4a1dd ? 1.4 : 1
-    // 補給艦・揚陸艦でないときは弾いておく
-    if ([16, 17].indexOf(attacker.stype) < 0) {
+    var a13_2 = m4a1dd ? 1.4 : 1
+    if (specialDaihatsu) {
         // イコールは仕様
-        a13_2 *= japanDaihatsu && (armedDaihatsu === 1) ? 1.25 : 1
+        if (armedDaihatsu === 1) {
+            a13_2 *= 1.2
+            b13_2 += 10
+        }
+        // 複数個ないから不明
+        if (armoredBoat) {
+            a13_2 *= 1.2
+            b13_2 += 10
+        }
     }
 
     return {
