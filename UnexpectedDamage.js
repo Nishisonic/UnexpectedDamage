@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.13
+var VERSION = 2.14
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -635,7 +635,7 @@ DayBattlePower.prototype.getImprovementBonus = function () {
  * @return {Number} 昼砲撃火力(キャップ前)
  */
 DayBattlePower.prototype.getPrecapPower = function () {
-    return this.getBasicPower() * getEngagementBonus(this.formation) * this.getFormationBonus() * this.getConditionBonus() + getOriginalGunPowerBonus(this.attacker)
+    return this.getBasicPower() * getEngagementBonus(this.formation) * this.getFormationBonus() * this.getConditionBonus() + getOriginalGunPowerBonus(this.attacker, this.date)
 }
 
 /**
@@ -1163,7 +1163,7 @@ NightBattlePower.prototype.getPrecapPower = function () {
  * @return {Number} 夜戦火力(キャップ前)
  */
 NightBattlePower.prototype.getPrecapPostMultiplyPower = function () {
-    return getOriginalGunPowerBonus(this.attacker)
+    return getOriginalGunPowerBonus(this.attacker, this.date)
 }
 
 /**
@@ -1845,9 +1845,10 @@ var isCritical = function (attack) {
 /**
  * 特殊砲補正を取得します
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} ship 艦
+ * @param {java.util.Date} date 戦闘日時
  * @return {Boolean} 特殊砲補正
  */
-var getOriginalGunPowerBonus = function (ship) {
+var getOriginalGunPowerBonus = function (ship, date) {
     var bonus = 0
     var ids = getItems(ship).map(function (item) { return item.slotitemId })
     var singleGuns = [
