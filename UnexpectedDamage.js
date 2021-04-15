@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.14
+var VERSION = 2.15
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -1376,8 +1376,12 @@ var getMultiplySlayerBonus = function (attacker, defender) {
     var daihatsuGroupLv = daihatsuGroup > 0 ? items.filter(function (item) { return item.type2 === 24 }).map(function (item) { return item.level }).reduce(function (p, c) { return p + c }, 0) / daihatsuGroup : 0
     /** 特二式内火艇 */
     var kamisha = getItemNum(items, 167)
-    /** 特定大発 */
-    var specialDaihatsu = daihatsu + tokuDaihatsu + rikuDaihatsu + shikonDaihatsu + kamisha
+    /** 大発動艇・特大発動艇・大発動艇(八九式中戦車&陸戦隊) */
+    var jpBoatA = daihatsu + tokuDaihatsu + rikuDaihatsu
+    /** 特大発動艇+戦車第11連隊・特二式内火艇 */
+    var jpBoatB = shikonDaihatsu + kamisha
+    /** 装甲艇(AB艇)・武装大発 */
+    var spBoat = armoredBoat + armedDaihatsu
     /** [カテゴリ]特型内火艇[改修] */
     var kamishaLv = kamisha > 0 ? items.filter(function (item) { return item.slotitemId === 167 }).map(function (item) { return item.level }).reduce(function (p, c) { return p + c }, 0) / kamisha : 0
     /** [カテゴリ]水上戦闘機・水上爆撃機 */
@@ -1449,7 +1453,7 @@ var getMultiplySlayerBonus = function (attacker, defender) {
             a *= (rikuDaihatsu ? 1.3 : 1) * (rikuDaihatsu >= 2 ? 1.6 : 1)
             a *= m4a1dd ? 1.2 : 1
             a *= (kamisha ? 1.7 : 1) * (kamisha >= 2 ? 1.5 : 1)
-            a *= (armedDaihatsu ? 1.5 : 1) * (armedDaihatsu >= 2 ? 1.1 : 1)
+            a *= (spBoat ? 1.5 : 1) * (spBoat >= 2 ? 1.1 : 1)
             return a
         case 1696:
         case 1697:
@@ -1518,12 +1522,22 @@ var getMultiplySlayerBonus2 = function (attacker, defender) {
     var subGun = items.filter(function (item) { return item.type2 === 4 }).length
     /** [カテゴリ]艦上爆撃機 */
     var bomber = items.filter(function (item) { return item.type2 === 7 }).length
+    /** [カテゴリ]噴式戦闘爆撃機 */
+    var jetBomber = items.filter(function (item) { return item.type2 === 57 }).length
     /** [カテゴリ]水上戦闘機・水上爆撃機 */
     var suijo = items.filter(function (item) { return [11, 45].indexOf(item.type2) >= 0 }).length
     /** [カテゴリ]機銃 */
     var aaGun = items.filter(function (item) { return item.type2 === 21 }).length
     /** [カテゴリ]水上艦要員 */
     var lookouts = items.filter(function (item) { return item.type2 === 39 }).length
+    /** 装甲艇(AB艇) */
+    var armoredBoat = getItemNum(items, 408)
+    /** 武装大発 */
+    var armedDaihatsu = getItemNum(items, 409)
+    /** 装甲艇(AB艇)・武装大発 */
+    var spBoat = armoredBoat + armedDaihatsu
+    /** max(艦上爆撃機, 噴式戦闘爆撃機) */
+    var maxBomber = Math.max(bomber, jetBomber)
 
     switch (defender.shipId) {
         case 1637:
@@ -1531,12 +1545,13 @@ var getMultiplySlayerBonus2 = function (attacker, defender) {
         case 1639:
         case 1640: // PT小鬼群
             var a = 1
-            a *= smallGun ? 1.5 * 1.4 : 1
+            a *= (smallGun ? 1.5 : 1) * (smallGun >= 2 ? 1.4 : 1)
             a *= subGun ? 1.3 : 1
-            a *= bomber ? 1.4 * 1.3 : 1
+            a *= (maxBomber ? 1.4 : 1) * (maxBomber >= 2 ? 1.3 : 1)
             a *= suijo ? 1.2 : 1
-            a *= aaGun ? 1.2 * 1.2 : 1
+            a *= (aaGun ? 1.2 : 1) * (aaGun >= 2 ? 1.2 : 1)
             a *= lookouts ? 1.1 : 1
+            a *= (spBoat ? 1.2 : 1) * (spBoat >= 2 ? 1.1 : 1)
             return a
     }
     return 1.0
@@ -1590,8 +1605,12 @@ var getLandBonus = function (attacker, defender, isDay) {
     var daihatsuGroupLv = daihatsuGroup > 0 ? items.filter(function (item) { return item.type2 === 24 }).map(function (item) { return item.level }).reduce(function (p, c) { return p + c }, 0) / daihatsuGroup : 0
     /** 特二式内火艇 */
     var kamisha = getItemNum(items, 167)
-    /** 特定大発 */
-    var specialDaihatsu = daihatsu + tokuDaihatsu + rikuDaihatsu + shikonDaihatsu + kamisha
+    /** 大発動艇・特大発動艇・大発動艇(八九式中戦車&陸戦隊) */
+    var jpBoatA = daihatsu + tokuDaihatsu + rikuDaihatsu
+    /** 特大発動艇+戦車第11連隊・特二式内火艇 */
+    var jpBoatB = shikonDaihatsu + kamisha
+    /** 装甲艇(AB艇)・武装大発 */
+    var spBoat = armoredBoat + armedDaihatsu
     /** [カテゴリ]特型内火艇[改修] */
     var kamishaLv = kamisha > 0 ? items.filter(function (item) { return item.slotitemId === 167 }).map(function (item) { return item.level }).reduce(function (p, c) { return p + c }, 0) / kamisha : 0
     /** [カテゴリ]水上戦闘機・水上爆撃機 */
@@ -1643,7 +1662,7 @@ var getLandBonus = function (attacker, defender, isDay) {
             // 艦種補正(a12/13):駆逐艦、軽巡洋艦
             a13 *= [2, 3].indexOf(attacker.stype) >= 0 ? 1.4 : 1
             if (isDay) {
-                a13 *= armedDaihatsu ? 1.3 : 1
+                a13 *= (spBoat ? 1.3 : 1) * (spBoat ? 1.2 : 1)
             }
             break
         case 1668:
@@ -1662,6 +1681,9 @@ var getLandBonus = function (attacker, defender, isDay) {
             a13 *= shikonDaihatsu ? 1.8 : 1
             a13 *= m4a1dd ? 1.8 : 1
             a13 *= (kamisha ? 2.4 : 1) * (kamisha >= 2 ? 1.35 : 1)
+            if (isDay) {
+                a13 *= (spBoat ? 1.3 : 1) * (spBoat ? 1.1 : 1)
+            }
             break
         case 1699:
         case 1700:
@@ -1696,22 +1718,23 @@ var getLandBonus = function (attacker, defender, isDay) {
             a13 *= m4a1dd ? 1.1 : 1
             a13 *= (kamisha ? 1.5 : 1) * (kamisha >= 2 ? 1.2 : 1)
             if (isDay) {
-                a13 *= (armedDaihatsu ? 1.1 : 1) * (armedDaihatsu >= 2 ? 1.1 : 1)
-                a13 *= armoredBoat ? 1.1 : 1
+                a13 *= (spBoat ? 1.1 : 1) * (spBoat ? 1.1 : 1)
             }
             break
     }
     var a13_2 = m4a1dd ? 1.4 : 1
-    if (specialDaihatsu) {
-        // イコールは仕様
-        if (armedDaihatsu === 1) {
-            a13_2 *= 1.2
-            b13_2 += 10
-        }
-        // 複数個ないから不明
-        if (armoredBoat) {
-            a13_2 *= 1.2
-            b13_2 += 10
+    // 支援上陸用舟艇シナジー
+    if (spBoat && armedDaihatsu < 2 && armoredBoat < 2 && (jpBoatA + jpBoatB)) {
+        a13_2 *= 1.2
+        b13_2 += 10
+        if (spBoat >= 2) {
+            if (jpBoatA + jpBoatB >= 2) {
+                a13_2 *= 1.2 * 1.1
+            } else if (jpBoatA) {
+                a13_2 *= 1.1
+            } else if (jpBoatB) {
+                a13_2 *= 1.2
+            }
         }
     }
 
