@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.16
+var VERSION = 2.17
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -1238,15 +1238,15 @@ NightBattlePower.prototype.getCutinBonus = function () {
             // 電探
             var radar = items.filter(function (item) { return item.type3 === 11 }).length
             // ドラム缶
-            var drum = items.filter(function (item) { return item.type2 === 25 }).length
+            var drum = items.filter(function (item) { return item.type2 === 30 }).length
             if (torpedo && radar && lookouts) {
                 return 1.2 * modelDGunBonus
             }
             if (torpedo === 2 && lookouts) {
-                return 1.5 * modelDGunBonus
+                return 1.5
             }
             if (torpedo && lookouts && drum) {
-                return 1.3 * modelDGunBonus
+                return 1.3
             }
             return 1
         default: return getSpecialAttackBonus(this)
