@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.18
+var VERSION = 2.19
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -1228,9 +1228,11 @@ NightBattlePower.prototype.getCutinBonus = function () {
             if ((kind1 + kind2 + kind3) === 2) return 1.2
             if ((kind1 + kind2 + kind3) === 3) return 1.18
             return 1.0
-        case 7:             // 駆逐カットイン(主砲/魚雷/電探)
+        case 7:             // 駆逐カットイン(主砲/魚雷/電探) 単発
+        case 11:            // 駆逐カットイン(主砲/魚雷/電探) 二発
             return 1.3 * modelDGunBonus
-        case 8:             // 駆逐カットイン(魚雷/見張員/電探)
+        case 8:             // 駆逐カットイン(魚雷/見張員/電探) 単発
+        case 12:            // 駆逐カットイン(魚雷/見張員/電探) 二発
             // API値変化(2021/05/08～)
             if (date.after(getJstDate(2021, 5, 8, 18, 0, 0))) {
                 return 1.2 * modelDGunBonus
