@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.17
+var VERSION = 2.18
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -1231,6 +1231,10 @@ NightBattlePower.prototype.getCutinBonus = function () {
         case 7:             // 駆逐カットイン(主砲/魚雷/電探)
             return 1.3 * modelDGunBonus
         case 8:             // 駆逐カットイン(魚雷/見張員/電探)
+            // API値変化(2021/05/08～)
+            if (date.after(getJstDate(2021, 5, 8, 18, 0, 0))) {
+                return 1.2 * modelDGunBonus
+            }
             // 魚雷
             var torpedo = items.filter(function (item) { return item.type2 === 5 }).length
             // 見張員
@@ -1249,6 +1253,12 @@ NightBattlePower.prototype.getCutinBonus = function () {
                 return 1.3
             }
             return 1
+        case 9:             // 駆逐カットイン(魚雷/ドラム缶/見張員) 単発
+        case 13:            // 駆逐カットイン(魚雷/ドラム缶/見張員) 二発
+            return 1.3
+        case 10:            // 駆逐カットイン(魚雷/魚雷/見張員) 単発
+        case 14:            // 駆逐カットイン(魚雷/魚雷/見張員) 二発
+            return 1.5
         default: return getSpecialAttackBonus(this)
     }
 }
@@ -1464,6 +1474,8 @@ var getMultiplySlayerBonus = function (attacker, defender) {
         case 1936:
         case 1937:
         case 1938: // 集積地棲姫II 夏季上陸mode-壊
+        case 1994: // 集積地棲姫II
+        case 1995: // 集積地棲姫II-壊
             var a = Math.pow(daihatsuGroupLv / 50 + 1, rikuDaihatsu ? 2 : 1) * (kamishaLv / 30 + 1)
             a *= (wg42 ? 1.25 : 1) * (wg42 >= 2 ? 1.3 : 1)
             a *= (type4RocketGroup ? 1.2 : 1) * (type4RocketGroup >= 2 ? 1.4 : 1)
