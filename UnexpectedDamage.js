@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.19
+var VERSION = 2.20
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -1255,12 +1255,12 @@ NightBattlePower.prototype.getCutinBonus = function () {
                 return 1.3
             }
             return 1
-        case 9:             // 駆逐カットイン(魚雷/ドラム缶/見張員) 単発
-        case 13:            // 駆逐カットイン(魚雷/ドラム缶/見張員) 二発
-            return 1.3
-        case 10:            // 駆逐カットイン(魚雷/魚雷/見張員) 単発
-        case 14:            // 駆逐カットイン(魚雷/魚雷/見張員) 二発
+        case 9:             // 駆逐カットイン(魚雷/魚雷/見張員) 単発
+        case 13:            // 駆逐カットイン(魚雷/魚雷/見張員) 二発
             return 1.5
+        case 10:            // 駆逐カットイン(魚雷/ドラム缶/見張員) 単発
+        case 14:            // 駆逐カットイン(魚雷/ドラム缶/見張員) 二発
+            return 1.3
         default: return getSpecialAttackBonus(this)
     }
 }
