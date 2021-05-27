@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.20
+var VERSION = 2.21
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -574,28 +574,29 @@ DayBattlePower.prototype.getImprovementBonus = function () {
     return this.items.map(function (item) {
         var _getimprovementBonus = function () {
             switch (item.type2) {
-                case 1: return 1        // 小口径主砲
-                case 2: return 1        // 中口径主砲
-                case 3: return 1.5      // 大口径主砲
-                case 38: return 1.5     // 大口径主砲(II)
-                case 4: return 1        // 副砲
-                case 19: return 1       // 対艦強化弾
-                case 36: return 1       // 高射装置
-                case 29: return 1       // 探照灯
-                case 42: return 1       // 大型探照灯
-                case 21: return 1       // 機銃
-                case 15:                // 爆雷(投射機)
+                case 1: return 1     // 小口径主砲
+                case 2: return 1     // 中口径主砲
+                case 3: return 1.5   // 大口径主砲
+                case 38: return 1.5  // 大口径主砲(II)
+                case 4: return 1     // 副砲
+                case 19: return 1    // 対艦強化弾
+                case 36: return 1    // 高射装置
+                case 29: return 1    // 探照灯
+                case 42: return 1    // 大型探照灯
+                case 21: return 1    // 機銃
+                case 15:             // 爆雷(投射機)
                     return [44, 45, 346].indexOf(item.slotitemId) >= 0 ? 0.75 : 0
-                case 14: return 0.75    // ソナー
-                case 40: return 0.75    // 大型ソナー
-                case 24: return 1       // 上陸用舟艇
-                case 46: return 1       // 特二式内火艇
-                case 18: return 1       // 三式弾
-                case 37: return 1       // 対地装備
-                case 7:                 // 艦上爆撃機
+                case 14: return 0.75 // ソナー
+                case 40: return 0.75 // 大型ソナー
+                case 24: return 1    // 上陸用舟艇
+                case 46: return 1    // 特二式内火艇
+                case 18: return 1    // 三式弾
+                case 37: return 1    // 対地装備
+                case 7:              // 艦上爆撃機
                     // 九九式艦爆, 九九式艦爆(江草隊), 彗星(江草隊), 九九式艦爆二二型, 九九式艦爆二二型(熟練)
                     return [23, 99, 100, 391, 392].indexOf(item.slotitemId) >= 0 ? 0.5 : 0
-                case 39: return 1       // 水上艦要員
+                case 39: return 1    // 水上艦要員
+                case 34: return 1    // 司令部施設
                 default: return 0
             }
         }
@@ -1114,6 +1115,7 @@ NightBattlePower.prototype.getImprovementBonus = function () {
                 case 37: return 1 // 対地装備
                 case 32: return 1 // 潜水艦魚雷
                 case 39: return 1 // 水上艦要員
+                case 34: return 1 // 司令部施設
                 default: return 0
             }
         }
@@ -1234,7 +1236,7 @@ NightBattlePower.prototype.getCutinBonus = function () {
         case 8:             // 駆逐カットイン(魚雷/見張員/電探) 単発
         case 12:            // 駆逐カットイン(魚雷/見張員/電探) 二発
             // API値変化(2021/05/08～)
-            if (date.after(getJstDate(2021, 5, 8, 18, 0, 0))) {
+            if (this.date.after(getJstDate(2021, 5, 8, 18, 0, 0))) {
                 return 1.2 * modelDGunBonus
             }
             // 魚雷
