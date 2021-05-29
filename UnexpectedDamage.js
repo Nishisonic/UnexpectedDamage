@@ -2341,7 +2341,7 @@ function getEquipmentBonus(date, attacker) {
     }, {})
     var num = 0
     var JP_DD_SHIPS = [66, 28, 12, 1, 5, 10, 23, 18, 30, 38, 22, 54, 101]
-    var US_SHIPS = [65, 69, 83, 87, 84, 91, 93, 95, 99, 102, 105, 106, 107]
+    var US_SHIPS = [65, 69, 83, 87, 84, 91, 93, 95, 99, 102, 105, 106, 107, 110]
     var US_CV_SHIPS = [69, 83, 84, 105]
     var UK_SHIPS = [67, 78, 82, 88, 108]
     var UK_CV_SHIPS = [78]
@@ -3441,8 +3441,16 @@ function getEquipmentBonus(date, attacker) {
             add({ asw: 2 }, num)
         }
     }
+    // 精鋭水雷戦隊 司令部
+    // if (num = itemNums[413]) {}
     // SOC Seagull
     // if (num = itemNums[414]) {}
+    // SO3C Seamew改
+    if (num = itemNums[415]) {
+        if (US_SHIPS.indexOf(shipId) >= 0) {
+            add({ asw: 1 }, num, 1)
+        }
+    }
 
     return bonus
 }
