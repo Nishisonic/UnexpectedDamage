@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.21
+var VERSION = 2.22
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -1441,12 +1441,13 @@ var getMultiplySlayerBonus = function (attacker, defender) {
     /** Laté 298B */
     var late298B = getItemNum(items, 194)
     
-    var ctype = (JSON.parse(Ship.get(attacker.shipId).json).api_ctype | 0)
+    var ship = Ship.get(attacker.shipId)
+    var ctype = ship ? (JSON.parse(ship.json).api_ctype | 0) : null
     var overseasShip = [
         47, 63, 55, 48, 57, // ドイツ
         58, 68, 64, 92, 61, 80, // イタリア
-        65, 69, 83, 87, 84, 91, 93, 95, 99, 102, // アメリカ
-        67, 78, 82, 88, // イギリス
+        65, 69, 83, 87, 84, 91, 93, 95, 99, 102, 105, 106, 107, 110, // アメリカ
+        67, 78, 82, 88, 108, // イギリス
         79, 70, // フランス
         73, 81, // ロシア
         89, // スウェーデン
