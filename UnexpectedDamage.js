@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.22
+var VERSION = 2.23
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -1442,7 +1442,7 @@ var getMultiplySlayerBonus = function (attacker, defender) {
     var late298B = getItemNum(items, 194)
     
     var ship = Ship.get(attacker.shipId)
-    var ctype = ship ? (JSON.parse(ship.json).api_ctype | 0) : null
+    var ctype = ship && ship.json ? (JSON.parse(ship.json).api_ctype | 0) : -1
     var overseasShip = [
         47, 63, 55, 48, 57, // ドイツ
         58, 68, 64, 92, 61, 80, // イタリア
@@ -2709,6 +2709,14 @@ function getEquipmentBonus(date, attacker) {
     // if (num = itemNums[189]) {}
     // Laté 298B
     // if (num = itemNums[194]) {}
+    // SBD
+    if (num = itemNums[195]) {
+        if (date.after(getJstDate(2021, 5, 31, 19, 30, 0))) {
+            if (US_CV_SHIPS.indexOf(shipId) >= 0) {
+                add({ fp: 1 }, num)
+            }
+        }
+    }
     // 艦本新設計 増設バルジ(大型艦)
     // if (num = itemNums[204]) {}
     // 強風改
@@ -3450,6 +3458,19 @@ function getEquipmentBonus(date, attacker) {
     if (num = itemNums[415]) {
         if (US_SHIPS.indexOf(shipId) >= 0) {
             add({ asw: 1 }, num, 1)
+        }
+    }
+    // SBD-5
+    if (num = itemNums[419]) {
+        if (US_CV_SHIPS.indexOf(shipId) >= 0) {
+            var fp = items.map(function(item) {
+                if (item.level >= 7) return 4
+                if (item.level >= 2) return 3
+                return 2
+            }).reduce(function(p, v) {
+                return p + v
+            }, 0)
+            add({ fp: fp }, num, 1)
         }
     }
 
