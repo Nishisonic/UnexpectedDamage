@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.24
+var VERSION = 2.25
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -2463,7 +2463,7 @@ function getEquipmentBonus(date, attacker) {
     // 三式水中探信儀
     // 四式水中聴音機
     // 零式水中聴音機
-    if (num = itemNums[44] + itemNums[45] + itemNums[149] + itemNums[132]) {
+    if (num = itemNums[46] + itemNums[47] + itemNums[149] + itemNums[132]) {
         if (date.after(getJstDate(2021, 3, 1, 12, 0, 0))) {
             if (ctype === 56) {
                 add({ asw: 2 }, num, 1)
@@ -3482,14 +3482,12 @@ function getEquipmentBonus(date, attacker) {
                 if (ctype === 84) return power + 1
                 if (ctype === 78) return power - 1
                 return power
-            }).map(function(power) {
-                if (stype === 7) return power - 2
-                return power
             }).reduce(function(p, v) {
                 return p + v + 1
             }, 0)
             add({ fp: fp }, num, 1)
-        } else if (stype === 7) {
+        }
+        if (stype === 7) {
             add({ fp: -2 }, num)
         }
     }
@@ -3502,14 +3500,12 @@ function getEquipmentBonus(date, attacker) {
                 if (ctype === 84) return power + 1
                 if (ctype === 78) return power - 1
                 return power
-            }).map(function(power) {
-                if (stype === 7) return power - 2
-                return power
             }).reduce(function(p, v) {
                 return p + v + 2
             }, 0)
             add({ fp: fp }, num, 1)
-        } else if (stype === 7) {
+        }
+        if (stype === 7) {
             add({ fp: -2 }, num)
         }
     }
