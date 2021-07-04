@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.23
+var VERSION = 2.24
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -367,8 +367,8 @@ AntiSubmarinePower.prototype.getImprovementBonus = function () {
     return this.items.map(function (item) {
         switch (item.type2) {
             case 7: // 艦上爆撃機
-                // 九九式艦爆, 九九式艦爆(江草隊), 彗星(江草隊), 九九式艦爆二二型, 九九式艦爆二二型(熟練)
-                return [23, 99, 100, 391, 392].indexOf(item.slotitemId) >= 0 ? 0.2 * item.level : 0
+                // 九九式艦爆, 九九式艦爆(江草隊), 彗星(江草隊), 九九式艦爆二二型, 九九式艦爆二二型(熟練), SB2C-3, SB2C-5
+                return [23, 99, 100, 391, 392, 420, 421].indexOf(item.slotitemId) >= 0 ? 0.2 * item.level : 0
             case 8: // 艦上攻撃機
                 return 0.2 * item.level
             case 14: // ソナー
@@ -2712,7 +2712,7 @@ function getEquipmentBonus(date, attacker) {
     // SBD
     if (num = itemNums[195]) {
         if (date.after(getJstDate(2021, 5, 31, 19, 30, 0))) {
-            if (US_CV_SHIPS.indexOf(shipId) >= 0) {
+            if (US_CV_SHIPS.indexOf(ctype) >= 0) {
                 add({ fp: 1 }, num)
             }
         }
@@ -3395,7 +3395,7 @@ function getEquipmentBonus(date, attacker) {
             }
         }
         if (US_SHIPS.indexOf(ctype) >= 0) {
-            add({ fp: (US_CV_SHIPS.indexOf(shipId) >= 0 ? 2 : 0), asw: 3 }, num)
+            add({ fp: (US_CV_SHIPS.indexOf(ctype) >= 0 ? 2 : 0), asw: 3 }, num)
         }
     }
     // 16inch三連装砲 Mk.6+GFCS
@@ -3446,7 +3446,7 @@ function getEquipmentBonus(date, attacker) {
     // if (num = itemNums[411]) {}
     // 水雷戦隊 熟練見張員
     if (num = itemNums[412]) {
-        if (JP_DD_SHIPS.indexOf(shipId) >= 0) {
+        if (JP_DD_SHIPS.indexOf(ctype) >= 0) {
             add({ asw: 2 }, num)
         }
     }
@@ -3456,13 +3456,13 @@ function getEquipmentBonus(date, attacker) {
     // if (num = itemNums[414]) {}
     // SO3C Seamew改
     if (num = itemNums[415]) {
-        if (US_SHIPS.indexOf(shipId) >= 0) {
+        if (US_SHIPS.indexOf(ctype) >= 0) {
             add({ asw: 1 }, num, 1)
         }
     }
     // SBD-5
     if (num = itemNums[419]) {
-        if (US_CV_SHIPS.indexOf(shipId) >= 0) {
+        if (US_CV_SHIPS.indexOf(ctype) >= 0) {
             var fp = items.map(function(item) {
                 if (item.level >= 7) return 4
                 if (item.level >= 2) return 3
@@ -3471,6 +3471,46 @@ function getEquipmentBonus(date, attacker) {
                 return p + v
             }, 0)
             add({ fp: fp }, num, 1)
+        }
+    }
+    // SB2C-3
+    if (num = itemNums[420]) {
+        if (US_CV_SHIPS.concat(UK_CV_SHIPS).indexOf(ctype) >= 0) {
+            var fp = items.map(function(item) {
+                return item.level >= 3 ? 1 : 0
+            }).map(function(power) {
+                if (ctype === 84) return power + 1
+                if (ctype === 78) return power - 1
+                return power
+            }).map(function(power) {
+                if (stype === 7) return power - 2
+                return power
+            }).reduce(function(p, v) {
+                return p + v + 1
+            }, 0)
+            add({ fp: fp }, num, 1)
+        } else if (stype === 7) {
+            add({ fp: -2 }, num)
+        }
+    }
+    // SB2C-5
+    if (num = itemNums[421]) {
+        if (US_CV_SHIPS.concat(UK_CV_SHIPS).indexOf(ctype) >= 0) {
+            var fp = items.map(function(item) {
+                return item.level >= 5 ? 1 : 0
+            }).map(function(power) {
+                if (ctype === 84) return power + 1
+                if (ctype === 78) return power - 1
+                return power
+            }).map(function(power) {
+                if (stype === 7) return power - 2
+                return power
+            }).reduce(function(p, v) {
+                return p + v + 2
+            }, 0)
+            add({ fp: fp }, num, 1)
+        } else if (stype === 7) {
+            add({ fp: -2 }, num)
         }
     }
 
