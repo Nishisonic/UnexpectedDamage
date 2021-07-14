@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.25
+var VERSION = 2.26
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -593,8 +593,8 @@ DayBattlePower.prototype.getImprovementBonus = function () {
                 case 18: return 1    // 三式弾
                 case 37: return 1    // 対地装備
                 case 7:              // 艦上爆撃機
-                    // 九九式艦爆, 九九式艦爆(江草隊), 彗星(江草隊), 九九式艦爆二二型, 九九式艦爆二二型(熟練)
-                    return [23, 99, 100, 391, 392].indexOf(item.slotitemId) >= 0 ? 0.5 : 0
+                    // 九九式艦爆, 九九式艦爆(江草隊), 彗星(江草隊), 九九式艦爆二二型, 九九式艦爆二二型(熟練), SB2C-3, SB2C-5
+                    return [23, 99, 100, 391, 392, 420, 421].indexOf(item.slotitemId) >= 0 ? 0.5 : 0
                 case 39: return 1    // 水上艦要員
                 case 34: return 1    // 司令部施設
                 default: return 0
