@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.26
+var VERSION = 2.27
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -541,17 +541,14 @@ DayBattlePower.prototype.getBasicPower = function () {
         var baku = this.attacker.slotParam.baku
         if (isGround(this.defender)) {
             rai = 0
-            if (getJstDate(2019, 3, 27, 12, 0, 0).before(this.date)) {
+            if (this.date.after(getJstDate(2019, 3, 27, 12, 0, 0))) {
+                var landAttacker = this.date.after(getJstDate(2021, 7, 15, 12, 0, 0)) ?
+                    // Ju87C改, 試製南山, F4U-1D, FM-2, Ju87C改二(KMX搭載機), Ju87C改二(KMX搭載機/熟練), 彗星一二型(六三四空/三号爆弾搭載機), TBM-3W+3S, 九九式艦爆二二型, 九九式艦爆二二型(熟練), 彗星一二型(三一号光電管爆弾搭載機), SB2C-3, SB2C-5
+                    [64, 148, 233, 277, 305, 306, 319, 389, 391, 392, 320, 420, 421] :
+                    // Ju87C改, 試製南山, F4U-1D, FM-2, Ju87C改二(KMX搭載機), Ju87C改二(KMX搭載機/熟練), 彗星一二型(六三四空/三号爆弾搭載機), TBM-3W+3S
+                    [64, 148, 233, 277, 305, 306, 319, 389]
                 baku = this.items.filter(function (item) {
-                    // Ju87C改
-                    // 試製南山
-                    // F4U-1D
-                    // FM-2
-                    // Ju87C改二(KMX搭載機)
-                    // Ju87C改二(KMX搭載機/熟練)
-                    // 彗星一二型(六三四空/三号爆弾搭載機)
-                    // TBM-3W+3S
-                    return [64, 148, 233, 277, 305, 306, 319, 389].indexOf(item.slotitemId) >= 0
+                    return landAttacker.indexOf(item.slotitemId) >= 0
                 }).reduce(function(p, v) {
                     return p + v.param.baku
                 }, 0)
@@ -2806,6 +2803,17 @@ function getEquipmentBonus(date, attacker) {
     // if (num = itemNums[267] + itemNums[366]) {}
     // 北方迷彩(+北方装備)
     // if (num = itemNums[268]) {}
+    // FM-2
+    if (num = itemNums[277]) {
+        if (date.after(getJstDate(2021, 7, 15, 12, 0, 0))) {
+            if (US_CV_SHIPS.indexOf(ctype) >= 0 || UK_CV_SHIPS.indexOf(ctype) >= 0) {
+                add({ fp: 1 }, num)
+                if (ctype === 83) {
+                    add({ fp: 1 }, num)
+                }
+            }
+        }
+    }
     // SK レーダー
     // if (num = itemNums[278]) {}
     // SK+SG レーダー
@@ -3507,6 +3515,18 @@ function getEquipmentBonus(date, attacker) {
         }
         if (stype === 7) {
             add({ fp: -2 }, num)
+        }
+    }
+    // FR-1 Fireball
+    if (num = itemNums[422]) {
+        if (US_CV_SHIPS.indexOf(ctype) >= 0 || UK_CV_SHIPS.indexOf(ctype) >= 0) {
+            add({ fp: 1 }, num)
+            if (ctype === 84) {
+                add({ fp: 1 }, num)
+            }
+            if (shipId === 707) {
+                add({ fp: 2 }, num)
+            }
         }
     }
 
