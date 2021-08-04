@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.28
+var VERSION = 2.29
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -1039,19 +1039,15 @@ NightBattlePower.prototype.getBasicPower = function () {
     // 夜襲
     if (isNightCvAttack(this.attacker, this.attackerHp)) {
         var karyoku = this.attacker.karyoku - this.attacker.slotParam.karyoku - getEquipmentBonus(this.date, this.attacker).fp
-        // 闇のコード
-        var callEquipmentBonusCounts = {}
+        var raisouBonus = this.date.after(getJstDate(2021, 8, 4, 12, 0, 0)) ? getEquipmentBonus(this.date, this.attacker).tp : 0
         var nightPlaneBonus = Java.from(this.attacker.item2.toArray()).map(function (item, i) {
             var slot = getOnSlot(this.attacker, this.date)[i]
             if (item !== null && slot > 0) {
-                // 闇のコード
-                var raisou = item.param.raisou + (this.date.after(getJstDate(2021, 8, 4, 12, 0, 0)) ? getEquipmentBonusForNightAttack(date, attacker, item, callEquipmentBonusCounts[item.slotitemId] | 0).tp : 0)
-                callEquipmentBonusCounts[item.slotitemId] = (callEquipmentBonusCounts[item.slotitemId] | 0) + 1
                 // 夜戦、夜攻
                 if (item.type3 === 45 || item.type3 === 46) {
                     // 夜爆出てきたらまた書き換え
                     // 火力+雷装+爆装+3*機数+0.45*(火力+雷装+爆装+対潜)*sqrt(機数)+sqrt(★)
-                    return item.param.karyoku + (useRaisou ? raisou + item.param.baku : 0) + 3 * slot + 0.45 * (item.param.karyoku + raisou + item.param.baku + item.param.taisen) * Math.sqrt(slot) + Math.sqrt(item.level)
+                    return item.param.karyoku + (useRaisou ? item.param.raisou + item.param.baku : 0) + 3 * slot + 0.45 * (item.param.karyoku + item.param.raisou + item.param.baku + item.param.taisen) * Math.sqrt(slot) + Math.sqrt(item.level)
                 } else {
                     switch (item.slotitemId) {
                         case 154: // 零戦62型(爆戦/岩井隊)
@@ -1060,13 +1056,13 @@ NightBattlePower.prototype.getBasicPower = function () {
                         case 244: // Swordfish Mk.III(熟練)
                         case 320: // 彗星一二型(三一号光電管爆弾搭載機)
                             // 火力+雷装+爆装+0.3*(火力+雷装+爆装+対潜)*sqrt(機数)+sqrt(★)
-                            return item.param.karyoku + (useRaisou ? raisou : 0) + item.param.baku + 0.3 * (item.param.karyoku + raisou + item.param.baku + item.param.taisen) * Math.sqrt(slot) + Math.sqrt(item.level)
+                            return item.param.karyoku + (useRaisou ? item.param.raisou : 0) + item.param.baku + 0.3 * (item.param.karyoku + item.param.raisou + item.param.baku + item.param.taisen) * Math.sqrt(slot) + Math.sqrt(item.level)
                     }
                 }
             }
             return 0
         }, this).reduce(function (p, c) { return p + c }, 0)
-        return karyoku + nightPlaneBonus + this.getNightTouchPlaneBonus()
+        return karyoku + raisouBonus + nightPlaneBonus + this.getNightTouchPlaneBonus()
     } else {
         var landBonus = getLandBonus(this.attacker, this.defender, false)
         var power = 0
@@ -2321,107 +2317,10 @@ function isAPshell(item) {
 }
 
 /**
- * 装備ボーナスの値を返す(夜襲用)
- * 暫定措置だが該当装備がもっと増えたらやばいかもしれない
- * @param {java.util.Date} date 戦闘日時
- * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
- * @param {number} callCount 呼出回数
- * @return {{tp: number}}
- */
-function getEquipmentBonusForNightAttack(date, attacker, item, callCount) {
-    var shipId = attacker.shipId
-    var stype = attacker.stype
-    var ctype = (JSON.parse(Ship.get(attacker.shipId).json).api_ctype | 0)
-    var yomi = attacker.shipInfo.flagship
-    var items = getItems(attacker)
-    var bonus = { tp: 0 }
-    function add(effect, max) {
-        ["tp"].forEach(function(param) {
-            bonus[param] += (effect[param] | 0) * Number((max | 0) - callCount > 0)
-        })
-    }
-    var itemNums = items.reduce(function(previous, item) {
-        previous[item.slotitemId] = (previous[item.slotitemId] | 0) + 1
-        return previous
-    }, {})
-    var num = 0
-    var JP_DD_SHIPS = [66, 28, 12, 1, 5, 10, 23, 18, 30, 38, 22, 54, 101]
-    var US_SHIPS = [65, 69, 83, 87, 84, 91, 93, 95, 99, 102, 105, 106, 107, 110]
-    var US_CV_SHIPS = [69, 83, 84, 105]
-    var UK_SHIPS = [67, 78, 82, 88, 108]
-    var UK_CV_SHIPS = [78]
-    
-    switch (item.slotitemId) {
-        case 373: // 天山一二型甲改(空六号電探改装備機)
-            if (yomi === "しょうかく") {
-                add({ tp: 2 }, 1)
-            } else if (yomi === "ずいかく") {
-                add({ tp: 2 }, 1)
-            } else if (yomi === "たいほう") {
-                add({ tp: 2 }, 1)
-            } else if (["じゅんよう", "ひよう"].indexOf(yomi) >= 0) {
-                add({ tp: 1 }, 1)
-            }
-            if ([108, 109].indexOf(shipId) >= 0) {
-                //
-            } else if ([291, 292].indexOf(shipId) >= 0) {
-                add({ tp: 1 }, 1)
-            } else if ([296, 297].indexOf(shipId) >= 0) {
-                add({ tp: 1 }, 1)
-            } else if ([116, 74].indexOf(shipId) >= 0) {
-                //
-            } else if ([117, 282, 185].indexOf(shipId) >= 0) {
-                add({ tp: 1 }, 1)
-            } else if ([560, 555, 318].indexOf(shipId) >= 0) {
-                add({ tp: 1 }, 1)
-            } else if ([508, 509].indexOf(shipId) >= 0) {
-                add({ tp: 2 }, 1)
-            } else if (shipId === 888) {
-                add({ tp: 2 }, 1)
-            } else if (shipId === 883) {
-                add({ tp: 3 }, 1)
-            }
-            break
-        case 374: // 天山一二型甲改(熟練/空六号電探改装備機)
-            if (yomi === "しょうかく") {
-                add({ tp: 3 }, 1)
-            } else if (yomi === "ずいかく") {
-                add({ tp: 3 }, 1)
-            } else if (yomi === "たいほう") {
-                add({ tp: 3 }, 1)
-            } else if (["じゅんよう", "ひよう"].indexOf(yomi) >= 0) {
-                add({ tp: 2 }, 1)
-            }
-            if ([108, 109].indexOf(shipId) >= 0) {
-                add({ tp: 1 }, 1)
-            } else if ([291, 292].indexOf(shipId) >= 0) {
-                add({ tp: 1 }, 1)
-            } else if ([296, 297].indexOf(shipId) >= 0) {
-                add({ tp: 1 }, 1)
-            } else if ([116, 74].indexOf(shipId) >= 0) {
-                //
-            } else if ([117, 282, 185].indexOf(shipId) >= 0) {
-                add({ tp: 1 }, 1)
-            } else if ([560, 555, 318].indexOf(shipId) >= 0) {
-                add({ tp: 1 }, 1)
-            } else if ([508, 509].indexOf(shipId) >= 0) {
-                add({ tp: 2 }, 1)
-            } else if (shipId === 888) {
-                add({ tp: 2 }, 1)
-            } else if (shipId === 883) {
-                add({ tp: 3 }, 1)
-            }
-            break
-    }
-
-    return bonus
-}
-
-/**
  * 装備ボーナスの値を返す
  * @param {java.util.Date} date 戦闘日時
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
- * @return {{fp: number, asw: number}}
+ * @return {{fp: number, asw: number, tp: number}}
  */
 function getEquipmentBonus(date, attacker) {
     var shipId = attacker.shipId
@@ -2429,9 +2328,9 @@ function getEquipmentBonus(date, attacker) {
     var ctype = (JSON.parse(Ship.get(attacker.shipId).json).api_ctype | 0)
     var yomi = attacker.shipInfo.flagship
     var items = getItems(attacker)
-    var bonus = { fp: 0, asw: 0 }
+    var bonus = { fp: 0, asw: 0, tp: 0 }
     function add(effect, num, max) {
-        ["fp", "asw"].forEach(function(param) {
+        ["fp", "asw", "tp"].forEach(function(param) {
             bonus[param] += (effect[param] | 0) * Math.min(num, max | 0 || Infinity)
         })
     }
@@ -3349,62 +3248,85 @@ function getEquipmentBonus(date, attacker) {
     if (num = itemNums[373]) {
         if (yomi === "しょうかく") {
             add({ fp: 2 }, num)
+            add({ tp: 2 }, num, 1)
         } else if (yomi === "ずいかく") {
             add({ fp: 1 }, num)
+            add({ tp: 2 }, num, 1)
         } else if (yomi === "たいほう") {
             add({ fp: 1 }, num)
+            add({ tp: 2 }, num, 1)
         } else if (["じゅんよう", "ひよう"].indexOf(yomi) >= 0) {
             add({ fp: 1 }, num)
+            add({ tp: 1 }, num, 1)
         }
         if ([108, 109].indexOf(shipId) >= 0) {
             add({ fp: 1 }, num)
         } else if ([291, 292].indexOf(shipId) >= 0) {
             add({ fp: 1 }, num)
+            add({ tp: 1 }, num, 1)
         } else if ([296, 297].indexOf(shipId) >= 0) {
             add({ fp: 1 }, num)
+            add({ tp: 1 }, num, 1)
         } else if ([116, 74].indexOf(shipId) >= 0) {
             add({ asw: 1 }, num)
         } else if ([117, 282, 185].indexOf(shipId) >= 0) {
             add({ fp: 1, asw: 1 }, num)
+            add({ tp: 1 }, num, 1)
         } else if ([560, 555, 318].indexOf(shipId) >= 0) {
             add({ fp: 1, asw: 2 }, num)
+            add({ tp: 1 }, num, 1)
         } else if ([508, 509].indexOf(shipId) >= 0) {
             add({ fp: 1 }, num)
+            add({ tp: 2 }, num, 1)
         } else if (shipId === 888) {
             add({ fp: 2, asw: 2 }, num)
+            add({ tp: 2 }, num, 1)
         } else if (shipId === 883) {
             add({ fp: 1, asw: 2 }, num)
+            add({ tp: 3 }, num, 1)
         }
     }
     // 天山一二型甲改(熟練/空六号電探改装備機)
     if (num = itemNums[374]) {
         if (yomi === "しょうかく") {
             add({ fp: 3 }, num)
+            add({ tp: 3 }, num, 1)
         } else if (yomi === "ずいかく") {
             add({ fp: 2 }, num)
+            add({ tp: 3 }, num, 1)
         } else if (yomi === "たいほう") {
             add({ fp: 2 }, num)
+            add({ tp: 3 }, num, 1)
         } else if (["じゅんよう", "ひよう"].indexOf(yomi) >= 0) {
             add({ fp: 1 }, num)
+            add({ tp: 2 }, num, 1)
         }
         if ([108, 109].indexOf(shipId) >= 0) {
             add({ fp: 1 }, num)
+            add({ tp: 1 }, num, 1)
         } else if ([291, 292].indexOf(shipId) >= 0) {
             add({ fp: 1, asw: 1 }, num)
+            add({ tp: 1 }, num, 1)
         } else if ([296, 297].indexOf(shipId) >= 0) {
             add({ fp: 1, asw: 1 }, num)
+            add({ tp: 1 }, num, 1)
         } else if ([116, 74].indexOf(shipId) >= 0) {
             add({ fp: 1, asw: 1 }, num)
         } else if ([117, 282, 185].indexOf(shipId) >= 0) {
             add({ fp: 1, asw: 2 }, num)
+            add({ tp: 1 }, num, 1)
         } else if ([560, 555, 318].indexOf(shipId) >= 0) {
             add({ fp: 1, asw: 3 }, num)
+            add({ tp: 1 }, num, 1)
         } else if ([508, 509].indexOf(shipId) >= 0) {
             add({ fp: 1, asw: 2 }, num)
+            add({ tp: 2 }, num, 1)
         } else if (shipId === 888) {
             add({ fp: 3, asw: 3 }, num)
+            add({ tp: 2 }, num, 1)
         } else if (shipId === 883) {
             add({ fp: 2, asw: 3 }, num)
+            add({ tp: 3 }, num, 1)
         }
     }
     // XF5U
