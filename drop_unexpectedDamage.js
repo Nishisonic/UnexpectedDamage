@@ -1,6 +1,6 @@
 /**
  * 異常ダメージ検知
- * @version 2.3.0
+ * @version 2.3.1
  * @author Nishikuma
  */
 
@@ -102,7 +102,7 @@ var isInvestiagate = function (battle) {
         // 演習は除外
         && !battle.isPractice()
         // 一期のデータは除外
-        && END_1ST_MAP_DATE.before(battle.battleDate)
+        && battle.battleDate.after(END_1ST_MAP_DATE)
         // 渦潮(弾薬減)マップ除外
         && !(MAELSTROM_MAP_LIST.some(function (map) { return map[0] === battle.mapCellDto.map[0] && map[1] === battle.mapCellDto.map[1] }))
         // 過去のイベント分は除外

@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.30
+var VERSION = 2.31
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -319,12 +319,13 @@ var AntiSubmarinePower = function (date, kind, friendCombinedKind, isEnemyCombin
      * キャップ値
      * ～2017/11/10 17:07?:100
      * 2017/11/10 17:07?～:150
+     * 2021/03/01 メンテ後:170
      */
     this.CAP_VALUE = 100
-    if (getJstDate(2017, 11, 10, 17, 7, 0).before(this.date)) {
+    if (this.date.after(getJstDate(2017, 11, 10, 17, 7, 0))) {
         this.CAP_VALUE = 150
     }
-    if (getJstDate(2021, 3, 1, 12, 0, 0).before(this.date)) {
+    if (this.date.after(getJstDate(2021, 3, 1, 12, 0, 0))) {
         this.CAP_VALUE = 170
     }
 }
@@ -358,7 +359,7 @@ AntiSubmarinePower.prototype.getBasicPower = function () {
         return prev + current
     }, 0)
     // あまりこの書き方好きじゃない
-    if (getJstDate(2021, 9, 28, 12, 0, 0).after(this.date)) {
+    if (this.date.after(getJstDate(2021, 9, 28, 12, 0, 0))) {
         taisenItem += equipmentBonus
     }
     return Math.sqrt(taisenShip) * 2 + taisenItem * 1.5 + this.getImprovementBonus() + this.getShipTypeConstant()
@@ -424,7 +425,7 @@ AntiSubmarinePower.prototype.getSynergyBonus = function () {
     // 新型シナジー
     var synergy2 = 1
     var MYSTERY_FIXED_DATE = getJstDate(2019, 8, 8, 12, 0, 0)
-    var depthCharge = MYSTERY_FIXED_DATE.after(this.date) ? [226, 227, 228] : [226, 227]
+    var depthCharge = this.date.before(MYSTERY_FIXED_DATE) ? [226, 227, 228] : [226, 227]
     if (this.items.some(function (item) { return item.slotitemId === 44 || item.slotitemId === 45 })
         && this.items.some(function (item) { return depthCharge.indexOf(item.slotitemId) >= 0 })) {
         if (this.items.some(function (item) { return item.type2 === 14 })) {
@@ -466,7 +467,7 @@ AntiSubmarinePower.prototype.getFormationBonus = function () {
         case FORMATION.LINE_AHEAD: return 0.6
         case FORMATION.DOUBLE_LINE: return 0.8
         case FORMATION.DIAMOND: return 1.2
-        case FORMATION.ECHELON: return CHANGE_ECHELON_BONUS_DATE.before(this.date) ? 1.1 : 1.0
+        case FORMATION.ECHELON: return this.date.after(CHANGE_ECHELON_BONUS_DATE) ? 1.1 : 1.0
         case FORMATION.LINE_ABREAST: return 1.3
         case FORMATION.VANGUARD: return this.attack.attacker < Math.floor(this.numOfAttackShips / 2) ? 1.0 : 0.6
         case FORMATION.CRUISING_FORMATION_1: return 1.3
@@ -525,10 +526,10 @@ var DayBattlePower = function (date, kind, friendCombinedKind, isEnemyCombined, 
     this.shouldUseSkilled = shouldUseSkilled
     this.origins = origins
     this.CAP_VALUE = 150
-    if (getJstDate(2017, 3, 17, 12, 0, 0).before(this.date)) {
+    if (this.date.after(getJstDate(2017, 3, 17, 12, 0, 0))) {
         this.CAP_VALUE = 180
     }
-    if (getJstDate(2021, 3, 1, 12, 0, 0).before(this.date)) {
+    if (this.date.after(getJstDate(2021, 3, 1, 12, 0, 0))) {
         this.CAP_VALUE = 220
     }
 }
@@ -610,7 +611,7 @@ DayBattlePower.prototype.getImprovementBonus = function () {
         // 副砲
         if (item.type2 === 4) {
             // 2017/3/17～2017/5/2
-            if (CHANGE_SUB_GUN_BONUS_DATE.before(this.date) && RECHANGE_SUB_GUN_BONUS_DATE.after(this.date)) {
+            if (this.date.after(CHANGE_SUB_GUN_BONUS_DATE) && this.date.before(RECHANGE_SUB_GUN_BONUS_DATE)) {
                 switch (item.type3) {
                     case 4: return 0.3 * item.level // (黄色)副砲
                     case 16: return 0.2 * item.level // (緑)高角副砲
@@ -683,7 +684,7 @@ DayBattlePower.prototype.getFormationBonus = function () {
         case FORMATION.DOUBLE_LINE: return 0.8
         case FORMATION.DIAMOND: return 0.7
         case FORMATION.ECHELON:
-            return CHANGE_ECHELON_BONUS_DATE.before(this.date) &&
+            return this.date.after(CHANGE_ECHELON_BONUS_DATE) &&
                 // 味方(梯形)→敵(連合) もしくは 敵(梯形)→味方(連合) で0.6倍 
                 !(this.isEnemyCombined ? this.friendCombinedKind === COMBINED_FLEET.NONE : this.friendCombinedKind !== COMBINED_FLEET.NONE) ? 0.75 : 0.6
         case FORMATION.LINE_ABREAST: return 0.6
@@ -866,7 +867,7 @@ var TorpedoPower = function (date, kind, friendCombinedKind, isEnemyCombined, nu
     this.attackerHp = attackerHp
     this.items = getItems(attacker)
     this.CAP_VALUE = 150
-    if (getJstDate(2021, 3, 1, 12, 0, 0).before(this.date)) {
+    if (this.date.after(getJstDate(2021, 3, 1, 12, 0, 0))) {
         this.CAP_VALUE = 180
     }
 }
@@ -1035,7 +1036,7 @@ var NightBattlePower = function (date, kind, friendCombinedKind, isEnemyCombined
     this.shouldUseSkilled = shouldUseSkilled
     this.origins = origins
     this.CAP_VALUE = 300
-    if (getJstDate(2021, 3, 1, 12, 0, 0).before(this.date)) {
+    if (this.date.after(getJstDate(2021, 3, 1, 12, 0, 0))) {
         this.CAP_VALUE = 360
     }
 }
@@ -1128,7 +1129,7 @@ NightBattlePower.prototype.getImprovementBonus = function () {
             }
         }
         // 2017/3/17～2017/5/2
-        if (CHANGE_SUB_GUN_BONUS_DATE.after(this.date) && RECHANGE_SUB_GUN_BONUS_DATE.before(this.date)) {
+        if (this.date.after(CHANGE_SUB_GUN_BONUS_DATE) && this.date.before(RECHANGE_SUB_GUN_BONUS_DATE)) {
             switch (item.type3) {
                 case 4: return 0.3 * item.level // 副砲
                 case 16: return 0.2 * item.level // 高角副砲
@@ -1973,7 +1974,7 @@ var getOriginalGunPowerBonus = function (ship, date) {
 var getArmorBonus = function (date, mapCell, attacker, defender) {
     // 装甲1に強制変換
     var MYSTERY_FIXED_DATE = getJstDate(2019, 8, 8, 12, 0, 0)
-    if (isSubMarine(defender) && MYSTERY_FIXED_DATE.after(date)) {
+    if (isSubMarine(defender) && date.before(MYSTERY_FIXED_DATE)) {
         // 九六式艦戦改
         var has96FighterKai = getItems(attacker).some(function (item) { return item.slotitemId === 228 })
         if (has96FighterKai) {
@@ -2016,19 +2017,19 @@ var getSpecialAttackBonus = function(that) {
                     switch (secondShipId) {
                         case 573: return 1.2  // 陸奥改二
                         case 276: return 1.15 // 陸奥改
-                        case 576: return UPDATE_SPECIAL_ATTACK_BONUS_DATE.before(date) ? 1.1 : 1.0  // Nelson改
+                        case 576: return date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE) ? 1.1 : 1.0  // Nelson改
                     }
                 } else {
                     switch (secondShipId) {
                         case 573: return 1.4  // 陸奥改二
                         case 276: return 1.35 // 陸奥改
-                        case 576: return UPDATE_SPECIAL_ATTACK_BONUS_DATE.before(date) ? 1.25 : 1.0  // Nelson改
+                        case 576: return date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE) ? 1.25 : 1.0  // Nelson改
                     }
                 }
                 return 1.0
             }(that.date, ships[1].shipId)
             var itemBonus = function(date, items) {
-                if (ADD_ITEM_BONUS_DATE.after(date)) return 1
+                if (date.before(ADD_ITEM_BONUS_DATE)) return 1
                 var surfaceRadarBonus = hasSurfaceRadar(items) ? 1.15 : 1
                 var apShellBonus = hasAPShell(items) ? 1.35 : 1
                 return surfaceRadarBonus * apShellBonus
@@ -2271,7 +2272,7 @@ function calcCombinedKind(battle) {
         // 空母数2以上だと空母機動部隊振り分け
         if (cv >= 2) return 1
         // 輸送護衛部隊追加日以降か
-        if (ADD_TRANSPORTATION_FORCE_DATE.before(date)) return 3
+        if (date.after(ADD_TRANSPORTATION_FORCE_DATE)) return 3
     }
     // 不明
     return -1
