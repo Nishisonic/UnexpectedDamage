@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.31
+var VERSION = 2.32
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -2826,7 +2826,9 @@ function getEquipmentBonus(date, attacker) {
     if (num = itemNums[271]) {
         if (date.after(getJstDate(2021, 9, 28, 12, 0, 0))) {
             if ([508, 509, 888, 883].indexOf(shipId) >= 0) {
-                var fp = items.map(function(item) {
+                var fp = items.filter(function(item) {
+                    return item.slotitemId === 271
+                }).map(function(item) {
                     if (item.level === 10) return 2
                     if (item.level >= 4) return 1
                     return 0
@@ -3528,7 +3530,9 @@ function getEquipmentBonus(date, attacker) {
     // SBD-5
     if (num = itemNums[419]) {
         if (US_CV_SHIPS.indexOf(ctype) >= 0) {
-            var fp = items.map(function(item) {
+            var fp = items.filter(function(item) {
+                return item.slotitemId === 419
+            }).map(function(item) {
                 if (item.level >= 7) return 4
                 if (item.level >= 2) return 3
                 return 2
@@ -3541,7 +3545,9 @@ function getEquipmentBonus(date, attacker) {
     // SB2C-3
     if (num = itemNums[420]) {
         if (US_CV_SHIPS.concat(UK_CV_SHIPS).indexOf(ctype) >= 0) {
-            var fp = items.map(function(item) {
+            var fp = items.filter(function(item) {
+                return item.slotitemId === 420
+            }).map(function(item) {
                 return item.level >= 3 ? 1 : 0
             }).map(function(power) {
                 if (ctype === 84) return power + 1
@@ -3559,7 +3565,9 @@ function getEquipmentBonus(date, attacker) {
     // SB2C-5
     if (num = itemNums[421]) {
         if (US_CV_SHIPS.concat(UK_CV_SHIPS).indexOf(ctype) >= 0) {
-            var fp = items.map(function(item) {
+            var fp = items.filter(function(item) {
+                return item.slotitemId === 421
+            }).map(function(item) {
                 return item.level >= 5 ? 1 : 0
             }).map(function(power) {
                 if (ctype === 84) return power + 1
@@ -3608,13 +3616,17 @@ function getEquipmentBonus(date, attacker) {
         if (UK_CV_SHIPS.indexOf(ctype) >= 0) {
             add({ fp: 2, asw: 2 }, num)
         }
-        var fp = items.map(function(item) {
+        var fp = items.filter(function(item) {
+            return item.slotitemId === 425
+        }).map(function(item) {
             if (item.level >= 4) return 1
             return 0
         }).reduce(function(p, v) {
             return p + v
         }, 0)
-        var asw = items.map(function(item) {
+        var asw = items.filter(function(item) {
+            return item.slotitemId === 425
+        }).map(function(item) {
             if (item.level === 10) return 3
             if (item.level >= 6) return 2
             if (item.level >= 2) return 1
@@ -3663,7 +3675,9 @@ function getEquipmentBonus(date, attacker) {
         if ([160, 488, 141].indexOf(shipId) >= 0) {
             add({ asw: 1 }, num)
         } else if ([145, 588, 667, 578, 476, 363].indexOf(shipId) >= 0) {
-            var asw = items.map(function(item) {
+            var asw = items.filter(function(item) {
+                return item.slotitemId === 438
+            }).map(function(item) {
                 if (item.level >= 8) return 2
                 if (item.level >= 4) return 1
                 return 0
