@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.29
+var VERSION = 2.30
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -338,7 +338,8 @@ AntiSubmarinePower.prototype.getBasicPower = function () {
     if (this.isRadarShooting) {
         return Math.sqrt(this.attacker.raisou) * 2
     }
-    var taisenShip = this.attacker.taisen - this.attacker.slotParam.taisen - getEquipmentBonus(this.date, this.attacker).asw
+    var equipmentBonus = getEquipmentBonus(this.date, this.attacker).asw
+    var taisenShip = this.attacker.taisen - this.attacker.slotParam.taisen - equipmentBonus
     var taisenItem = this.items.map(function (item) {
         switch (item.type2) {
             case 7:  // 艦上爆撃機
@@ -356,6 +357,10 @@ AntiSubmarinePower.prototype.getBasicPower = function () {
     }).reduce(function (prev, current) {
         return prev + current
     }, 0)
+    // あまりこの書き方好きじゃない
+    if (getJstDate(2021, 9, 28, 12, 0, 0).after(this.date)) {
+        taisenItem += equipmentBonus
+    }
     return Math.sqrt(taisenShip) * 2 + taisenItem * 1.5 + this.getImprovementBonus() + this.getShipTypeConstant()
 }
 
@@ -568,6 +573,7 @@ DayBattlePower.prototype.getBasicPower = function () {
 DayBattlePower.prototype.getImprovementBonus = function () {
     var CHANGE_SUB_GUN_BONUS_DATE = getJstDate(2017, 3, 17, 12, 0, 0)
     var RECHANGE_SUB_GUN_BONUS_DATE = getJstDate(2017, 5, 2, 12, 0, 0)
+    var isAirAttack = getAttackTypeAtDay(this.attack, this.attacker, this.defender) === 1
     return this.items.map(function (item) {
         var _getimprovementBonus = function () {
             switch (item.type2) {
@@ -590,8 +596,12 @@ DayBattlePower.prototype.getImprovementBonus = function () {
                 case 18: return 1    // 三式弾
                 case 37: return 1    // 対地装備
                 case 7:              // 艦上爆撃機
-                    // 九九式艦爆, 九九式艦爆(江草隊), 彗星(江草隊), 九九式艦爆二二型, 九九式艦爆二二型(熟練), SB2C-3, SB2C-5
-                    return [23, 99, 100, 391, 392, 420, 421].indexOf(item.slotitemId) >= 0 ? 0.5 : 0
+                    // 航空砲撃でなければ加算しない
+                    if (isAirAttack) {
+                        // 九九式艦爆, 九九式艦爆(江草隊), 彗星(江草隊), 九九式艦爆二二型, 九九式艦爆二二型(熟練), SB2C-3, SB2C-5
+                        return [23, 99, 100, 391, 392, 420, 421].indexOf(item.slotitemId) >= 0 ? 0.5 : 0
+                    }
+                    return 0
                 case 39: return 1    // 水上艦要員
                 case 34: return 1    // 司令部施設
                 default: return 0
@@ -1402,6 +1412,8 @@ var getMultiplySlayerBonus = function (attacker, defender) {
     var armoredBoat = getItemNum(items, 408)
     /** 武装大発 */
     var armedDaihatsu = getItemNum(items, 409)
+    /** 大発動艇(II号戦車/北アフリカ仕様) */
+    var pzKpfwII = getItemNum(items, 436)
     /** [カテゴリ]上陸用舟艇 */
     var daihatsuGroup = items.filter(function (item) { return item.type2 === 24 }).length
     /** [カテゴリ]上陸用舟艇[改修] */
@@ -1443,9 +1455,9 @@ var getMultiplySlayerBonus = function (attacker, defender) {
     var ctype = ship && ship.json ? (JSON.parse(ship.json).api_ctype | 0) : -1
     var overseasShip = [
         47, 63, 55, 48, 57, // ドイツ
-        58, 68, 64, 92, 61, 80, // イタリア
+        58, 68, 64, 92, 61, 80, 113, // イタリア
         65, 69, 83, 87, 84, 91, 93, 95, 99, 102, 105, 106, 107, 110, // アメリカ
-        67, 78, 82, 88, 108, // イギリス
+        67, 78, 82, 88, 108, 112, // イギリス
         79, 70, // フランス
         73, 81, // ロシア
         89, // スウェーデン
@@ -1634,6 +1646,8 @@ var getLandBonus = function (attacker, defender, isDay) {
     var armoredBoat = getItemNum(items, 408)
     /** 武装大発 */
     var armedDaihatsu = getItemNum(items, 409)
+    /** 大発動艇(II号戦車/北アフリカ仕様) */
+    var pzKpfwII = getItemNum(items, 436)
     /** [カテゴリ]上陸用舟艇 */
     var daihatsuGroup = items.filter(function (item) { return item.type2 === 24 }).length
     /** [カテゴリ]上陸用舟艇[改修] */
@@ -1676,7 +1690,7 @@ var getLandBonus = function (attacker, defender, isDay) {
         + ([0, 30, 55, 75, 90, 90])[type2Mortar]
         + ([0, 60, 110, 150, 150, 150])[type2MortarEx]
         + ([0, 55, 115, 160, 190, 190])[type4Rocket]
-        + ([0, 80, 170, 170, 170, 170])[type4RocketEx]
+        + ([0, 80, 170, 230, 230, 230])[type4RocketEx]
 
     switch (defender.shipId) {
         case 1665:
@@ -1697,7 +1711,7 @@ var getLandBonus = function (attacker, defender, isDay) {
             // 艦種補正(a12/13):駆逐艦、軽巡洋艦
             a13 *= [2, 3].indexOf(attacker.stype) >= 0 ? 1.4 : 1
             if (isDay) {
-                a13 *= (spBoat ? 1.3 : 1) * (spBoat ? 1.2 : 1)
+                a13 *= (spBoat ? 1.3 : 1) * (spBoat >= 2 ? 1.2 : 1)
             }
             break
         case 1668:
@@ -1717,7 +1731,7 @@ var getLandBonus = function (attacker, defender, isDay) {
             a13 *= m4a1dd ? 1.8 : 1
             a13 *= (kamisha ? 2.4 : 1) * (kamisha >= 2 ? 1.35 : 1)
             if (isDay) {
-                a13 *= (spBoat ? 1.3 : 1) * (spBoat ? 1.1 : 1)
+                a13 *= (spBoat ? 1.3 : 1) * (spBoat >= 2 ? 1.1 : 1)
             }
             break
         case 1699:
@@ -1752,8 +1766,9 @@ var getLandBonus = function (attacker, defender, isDay) {
             a13 *= shikonDaihatsu ? 1.8 : 1
             a13 *= m4a1dd ? 1.1 : 1
             a13 *= (kamisha ? 1.5 : 1) * (kamisha >= 2 ? 1.2 : 1)
+            a13 *= pzKpfwII ? 1.4 : 1
             if (isDay) {
-                a13 *= (spBoat ? 1.1 : 1) * (spBoat ? 1.1 : 1)
+                a13 *= (spBoat ? 1.1 : 1) * (spBoat >= 2 ? 1.1 : 1)
             }
             break
     }
@@ -1778,7 +1793,7 @@ var getLandBonus = function (attacker, defender, isDay) {
         a13_2: a13_2,
         // 潜水艦
         b12: [13, 14].indexOf(attacker.stype) >= 0 ? 30 : 0,
-        b13: (shikonDaihatsu + m4a1dd) * 25,
+        b13: (shikonDaihatsu + m4a1dd + pzKpfwII) * 25,
         b13_2: b13_2
     }
 }
@@ -2342,8 +2357,8 @@ function getEquipmentBonus(date, attacker) {
     var JP_DD_SHIPS = [66, 28, 12, 1, 5, 10, 23, 18, 30, 38, 22, 54, 101]
     var US_SHIPS = [65, 69, 83, 87, 84, 91, 93, 95, 99, 102, 105, 106, 107, 110]
     var US_CV_SHIPS = [69, 83, 84, 105]
-    var UK_SHIPS = [67, 78, 82, 88, 108]
-    var UK_CV_SHIPS = [78]
+    var UK_SHIPS = [67, 78, 82, 88, 108, 112]
+    var UK_CV_SHIPS = [78, 112]
 
     // 艦上偵察機
     if (items.some(function(item) { return item.type2 === 9 })) {
@@ -2619,6 +2634,8 @@ function getEquipmentBonus(date, attacker) {
             }
         }
     }
+    // プリエーゼ式水中防御隔壁
+    // if (num = itemNums[136]) {}
     // 15.2cm連装砲改
     // if (num = itemNums[139]) {}
     // 九七式艦攻(村田隊)
@@ -2804,6 +2821,21 @@ function getEquipmentBonus(date, attacker) {
     // if (num = itemNums[267] + itemNums[366]) {}
     // 北方迷彩(+北方装備)
     // if (num = itemNums[268]) {}
+    // 紫電改四
+    if (num = itemNums[271]) {
+        if (date.after(getJstDate(2021, 9, 28, 12, 0, 0))) {
+            if ([508, 509, 888, 883].indexOf(shipId) >= 0) {
+                var fp = items.map(function(item) {
+                    if (item.level === 10) return 2
+                    if (item.level >= 4) return 1
+                    return 0
+                }).reduce(function(p, v) {
+                    return p + v
+                }, 0)
+                add({ fp: fp }, num, 1)
+            }
+        }
+    }
     // FM-2
     if (num = itemNums[277]) {
         if (date.after(getJstDate(2021, 7, 15, 12, 0, 0))) {
@@ -3590,6 +3622,60 @@ function getEquipmentBonus(date, attacker) {
             return p + v
         }, 0)
         add({ fp: fp, asw: asw }, num, 1)
+    }
+    // 305mm/46 連装砲
+    // 305mm/46 三連装砲
+    // 320mm/44 連装砲
+    // 320mm/44 三連装砲
+    // if (num = itemNums[426] + itemNums[427] + itemNums[428] + itemNums[429]) {}
+    // 65mm/64 単装速射砲改
+    // if (num = itemNums[430]) {}
+    // Corsair Mk.II
+    // Corsair Mk.II(Ace)
+    if (num = itemNums[434] + itemNums[435]) {
+        if (ctype === 112) {
+            add({ fp: 1 }, num)
+        }
+        if (UK_CV_SHIPS.indexOf(ctype) >= 0) {
+            add({ fp: 1 }, num)
+        } else if (US_CV_SHIPS.indexOf(ctype) >= 0) {
+            add({ fp: 1 }, num)
+        }
+    }
+    // 試製 陣風
+    if (num = itemNums[437]) {
+        if (shipId === 285) {
+            add({ fp: 3 }, num)
+        } else if ([196, 197].indexOf(shipId) >= 0) {
+            add({ fp: 2 }, num)
+        } else if ([508, 509, 646].indexOf(shipId) >= 0) {
+            add({ fp: 2 }, num)
+        } else if ([888, 883, 553, 554].indexOf(shipId) >= 0) {
+            add({ fp: 1 }, num)
+        }
+    }
+    // 三式水中探信儀改
+    if (num = itemNums[438]) {
+        if (JP_DD_SHIPS.indexOf(ctype) >= 0) {
+            add({ asw: 1 }, num)
+        }
+        if ([160, 488, 141].indexOf(shipId) >= 0) {
+            add({ asw: 1 }, num)
+        } else if ([145, 588, 667, 578, 476, 363].indexOf(shipId) >= 0) {
+            var asw = items.map(function(item) {
+                if (item.level >= 8) return 2
+                if (item.level >= 4) return 1
+                return 0
+            }).reduce(function(p, v) {
+                return p + v
+            }, 0)
+            add({ asw: asw }, num, 1)
+        }
+        if (["うしお", "まいかぜ", "いそかぜ", "はまかぜ", "いかづち", "やまぐも", "うみかぜ", "かわかぜ", "すずかぜ"].indexOf(yomi) >= 0) {
+            add({ asw: 1 }, num)
+        } else if (["しぐれ", "やまかぜ", "かみかぜ", "はるかぜ", "みくら", "いしがき"].indexOf(yomi) >= 0) {
+            add({ asw: 1 }, num)
+        }
     }
 
     return bonus

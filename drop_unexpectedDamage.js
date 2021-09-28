@@ -1,6 +1,6 @@
 /**
  * 異常ダメージ検知
- * @version 2.2.9
+ * @version 2.3.0
  * @author Nishikuma
  */
 
@@ -346,13 +346,15 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
     // 航空戦フェーズ
     phaseList.forEach(function (phase) {
         // 航空戦全生成
+        // 基地航空隊(噴式) -> 基地航空隊 -> 友軍艦隊(昼) -> 噴式強襲航空戦 -> 航空戦1 -> 航空戦2 -> 航空支援
         var airBattleList = [
             phase.airBaseInjection,                                                 // 基地航空隊(噴式)
+            phase.support_kouku,                                                    // 友軍艦隊(昼)
             phase.airInjection,                                                     // 噴式強襲航空戦
             phase.air,                                                              // 航空戦1
             phase.air2,                                                             // 航空戦2
             { atacks: (phase.supportType === '航空支援' ? phase.support : null) },  // 航空支援
-        ].concat(Java.from(phase.airBase))                                          // 基地航空隊
+        ].concat(Java.from(phase.airBase))                                 // 基地航空隊
             // null除外
             .filter(function (battle) { return battle && battle.atacks })
 
