@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.32
+var VERSION = 2.33
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -2485,7 +2485,8 @@ function getEquipmentBonus(date, attacker) {
         }
     }
     // 三式水中探信儀
-    if (num = itemNums[47]) {
+    // 三式水中探信儀改
+    if (num = itemNums[47] + itemNums[438]) {
         if (date.after(getJstDate(2019, 1, 22, 12, 0, 0))) {
             if (["あさしも", "はるかぜ", "かみかぜ", "やまかぜ", "まいかぜ", "しぐれ"].indexOf(yomi) >= 0) {
                 add({ asw: 3 }, num)
@@ -3675,15 +3676,13 @@ function getEquipmentBonus(date, attacker) {
         if ([160, 488, 141].indexOf(shipId) >= 0) {
             add({ asw: 1 }, num)
         } else if ([145, 588, 667, 578, 476, 363].indexOf(shipId) >= 0) {
-            var asw = items.filter(function(item) {
+            var asw = Math.max.apply(null, items.filter(function(item) {
                 return item.slotitemId === 438
             }).map(function(item) {
                 if (item.level >= 8) return 2
                 if (item.level >= 4) return 1
                 return 0
-            }).reduce(function(p, v) {
-                return p + v
-            }, 0)
+            }))
             add({ asw: asw }, num, 1)
         }
         if (["うしお", "まいかぜ", "いそかぜ", "はまかぜ", "いかづち", "やまぐも", "うみかぜ", "かわかぜ", "すずかぜ"].indexOf(yomi) >= 0) {
