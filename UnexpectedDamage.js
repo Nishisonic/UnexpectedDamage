@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.34
+var VERSION = 2.35
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -2097,23 +2097,29 @@ var getSpecialAttackBonus = function(that) {
                     case 2:
                         var secondShipItems = getItems(ships[1])
                         var thirdShipItems = getItems(ships[2])
-                        if (isBig7(thirdShipId)) {
-                            if (isBig7(secondShipId) || surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems) > 1) {
-                                return surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems)
+                        // 艦これ負の遺産
+                        if (this.date.before(getJstDate(2021, 10, 15, 12, 0, 0))) {
+                            if (isBig7(thirdShipId)) {
+                                if (isBig7(secondShipId) || surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems) > 1) {
+                                    return surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems)
+                                }
+                                return surfaceRadarBonus(thirdShipItems) * apShellBonus(thirdShipItems)
                             }
-                            return surfaceRadarBonus(thirdShipItems) * apShellBonus(thirdShipItems)
-                        } else if (ships[1].item2.size() === 5) {
-                            var item = ships[1].item2.get(4)
-                            // 二番艦に5スロの艦かつ補強増設が空いている状態で、
-                            var cond = ships[1].hasSlotEx() && !ships[1].slotExItem
-                            // 5番スロットに徹甲弾もしくは水上電探を装備
-                                && (item && (isSurfaceRadar(item) || isAPshell(item)))
-                            // そして三番艦にビッグ7ではない艦を置き、何かしらの装備を載せる
-                                && thirdShipItems.length > 0
-                            if (cond) {
-                                return surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems) * (isAPshell(item) ? 1.35 : 1.15)
+                            if (ships[1].item2.size() === 5) {
+                                var item = ships[1].item2.get(4)
+                                // 二番艦に5スロの艦かつ補強増設が空いている状態で、
+                                var cond = ships[1].hasSlotEx() && !ships[1].slotExItem
+                                // 5番スロットに徹甲弾もしくは水上電探を装備
+                                    && (item && (isSurfaceRadar(item) || isAPshell(item)))
+                                // そして三番艦にビッグ7ではない艦を置き、何かしらの装備を載せる
+                                    && thirdShipItems.length > 0
+                                if (cond) {
+                                    return surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems) * (isAPshell(item) ? 1.35 : 1.15)
+                                }
                             }
+                            return 1
                         }
+                        return surfaceRadarBonus(thirdShipItems) * apShellBonus(thirdShipItems)
                 }
                 return 1
             }(that.items, ships[1].shipId, ships[2].shipId)
@@ -2948,7 +2954,7 @@ function getEquipmentBonus(date, attacker) {
         }
     }
     // Ju87C改二(KMX搭載機)
-    // Ju87C改二(KMX搭載機／熟練)
+    // Ju87C改二(KMX搭載機/熟練)
     if (num = count(305) + count(306)) {
         if (date.after(getJstDate(2018, 8, 30, 18, 0, 0))) {
             if (ctype === 76) {
@@ -3599,7 +3605,7 @@ function getEquipmentBonus(date, attacker) {
             }
         }
     }
-    // Fulmar(戦闘偵察／熟練)
+    // Fulmar(戦闘偵察/熟練)
     if (num = count(423)) {
         if (ctype === 78) {
             add({ fp: 2 }, num)
