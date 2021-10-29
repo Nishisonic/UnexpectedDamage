@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.35
+var VERSION = 2.36
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -419,23 +419,43 @@ AntiSubmarinePower.prototype.getShipTypeConstant = function () {
  * @return {Number} 対潜シナジー倍率
  */
 AntiSubmarinePower.prototype.getSynergyBonus = function () {
-    // 旧型シナジー
-    var synergy1 = (this.items.some(function (item) { return item.type3 === 18 })
-        && this.items.some(function (item) { return item.type3 === 17 })) ? 1.15 : 1
-    // 新型シナジー
-    var synergy2 = 1
     var MYSTERY_FIXED_DATE = getJstDate(2019, 8, 8, 12, 0, 0)
-    var depthCharge = this.date.before(MYSTERY_FIXED_DATE) ? [226, 227, 228] : [226, 227]
-    if (this.items.some(function (item) { return item.slotitemId === 44 || item.slotitemId === 45 })
-        && this.items.some(function (item) { return depthCharge.indexOf(item.slotitemId) >= 0 })) {
-        if (this.items.some(function (item) { return item.type2 === 14 })) {
+    var NEW_SYNERGY_DATE = getJstDate(2021, 10, 29, 12, 0, 0)
+
+    var sonar = this.items.some(function (item) { return item.type3 === 17 })
+    var depthCharge = this.items.some(function (item) { return item.type3 === 18 })
+    var depthChargeList = this.date.before(MYSTERY_FIXED_DATE) ? [226, 227, 228] : [226, 227]
+    var depthChargeProjector = this.items.some(function (item) { return item.slotitemId === 44 || item.slotitemId === 45 })
+    var spDepthCharge = this.items.some(function (item) { return depthChargeList.indexOf(item.slotitemId) >= 0 })
+    var smallSonar = this.items.some(function (item) { return item.type2 === 14 })
+    var depthCharge15 =  this.items.some(function (item) { return item.slotitemId === 288 })
+    var depthCharge17 = this.items.some(function (item) { return item.slotitemId === 377 })
+    var depthCharge18 = this.items.some(function (item) { return item.slotitemId === 379 })
+    var depthCharge20 = this.items.some(function (item) { return item.slotitemId === 378 })
+
+    // シナジー1
+    var synergy1 = sonar && depthCharge ? 1.15 : 1
+    // シナジー2
+    var synergy2 = (function (date) {
+        if (smallSonar && depthChargeProjector && spDepthCharge) {
             // 小型ソナー/爆雷投射機/爆雷シナジー
-            synergy2 = 1.25
-        } else {
-            // 爆雷投射機/爆雷シナジー
-            synergy2 = 1.1
+            return 1.25
         }
-    }
+        if (date.after(NEW_SYNERGY_DATE) && smallSonar && (depthCharge15 + depthCharge17 + depthCharge18 + depthCharge20) >= 2) {
+            // 新シナジー
+            return 1.25
+        }
+        if (depthChargeProjector && spDepthCharge) {
+            // 爆雷投射機/爆雷シナジー
+            return 1.1
+        }
+        if (date.after(NEW_SYNERGY_DATE) && (depthCharge15 + depthCharge17 + depthCharge18 + depthCharge20) >= 2) {
+            // 新シナジー
+            return 1.1
+        }
+        return 1
+    })(this.date)
+
     return synergy1 * synergy2
 }
 
@@ -3699,6 +3719,18 @@ function getEquipmentBonus(date, attacker) {
             add({ asw: 1 }, num)
         } else if (["しぐれ", "やまかぜ", "かみかぜ", "はるかぜ", "みくら", "いしがき"].indexOf(yomi) >= 0) {
             add({ asw: 1 }, num)
+        }
+    }
+    // Hedgehog(初期型)
+    if (num = count(439)) {
+        if ([1, 2, 3, 21].indexOf(stype) >= 0) {
+            add({ asw: 1 }, num, 1)
+        }
+        if (ctype === 101 && stype === 1) {
+            add({ asw: 1 }, num, 1)
+        }
+        if (US_SHIPS.indexOf(ctype) >= 0 || UK_SHIPS.indexOf(ctype) >= 0) {
+            add({ asw: 2 }, num, 1)
         }
     }
 
