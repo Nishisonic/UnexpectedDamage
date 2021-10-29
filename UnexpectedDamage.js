@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.36
+var VERSION = 2.37
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -423,38 +423,27 @@ AntiSubmarinePower.prototype.getSynergyBonus = function () {
     var NEW_SYNERGY_DATE = getJstDate(2021, 10, 29, 12, 0, 0)
 
     var sonar = this.items.some(function (item) { return item.type3 === 17 })
-    var depthCharge = this.items.some(function (item) { return item.type3 === 18 })
-    var depthChargeList = this.date.before(MYSTERY_FIXED_DATE) ? [226, 227, 228] : [226, 227]
-    var depthChargeProjector = this.items.some(function (item) { return item.slotitemId === 44 || item.slotitemId === 45 })
-    var spDepthCharge = this.items.some(function (item) { return depthChargeList.indexOf(item.slotitemId) >= 0 })
+    var depthChargeCategory = this.items.some(function (item) { return item.type3 === 18 })
+    var depthChargeProjectorList = this.date.after(NEW_SYNERGY_DATE) ? [44, 45, 288, 377] : [44, 45]
+    var depthChargeList = this.date.after(NEW_SYNERGY_DATE) ? [226, 227, 378, 379] : this.date.after(MYSTERY_FIXED_DATE) ? [226, 227] : [226, 227, 228]
+    var depthChargeProjector = this.items.some(function (item) { return depthChargeProjectorList.indexOf(item.slotitemId) >= 0 })
+    var depthCharge = this.items.some(function (item) { return depthChargeList.indexOf(item.slotitemId) >= 0 })
     var smallSonar = this.items.some(function (item) { return item.type2 === 14 })
-    var depthCharge15 =  this.items.some(function (item) { return item.slotitemId === 288 })
-    var depthCharge17 = this.items.some(function (item) { return item.slotitemId === 377 })
-    var depthCharge18 = this.items.some(function (item) { return item.slotitemId === 379 })
-    var depthCharge20 = this.items.some(function (item) { return item.slotitemId === 378 })
 
     // シナジー1
-    var synergy1 = sonar && depthCharge ? 1.15 : 1
+    var synergy1 = sonar && depthChargeCategory ? 1.15 : 1
     // シナジー2
-    var synergy2 = (function (date) {
-        if (smallSonar && depthChargeProjector && spDepthCharge) {
+    var synergy2 = (function () {
+        if (smallSonar && depthChargeProjector && depthCharge) {
             // 小型ソナー/爆雷投射機/爆雷シナジー
             return 1.25
         }
-        if (date.after(NEW_SYNERGY_DATE) && smallSonar && (depthCharge15 + depthCharge17 + depthCharge18 + depthCharge20) >= 2) {
-            // 新シナジー
-            return 1.25
-        }
-        if (depthChargeProjector && spDepthCharge) {
+        if (depthChargeProjector && depthCharge) {
             // 爆雷投射機/爆雷シナジー
             return 1.1
         }
-        if (date.after(NEW_SYNERGY_DATE) && (depthCharge15 + depthCharge17 + depthCharge18 + depthCharge20) >= 2) {
-            // 新シナジー
-            return 1.1
-        }
         return 1
-    })(this.date)
+    })()
 
     return synergy1 * synergy2
 }
