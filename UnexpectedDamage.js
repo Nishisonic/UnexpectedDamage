@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.37
+var VERSION = 2.38
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -424,7 +424,7 @@ AntiSubmarinePower.prototype.getSynergyBonus = function () {
 
     var sonar = this.items.some(function (item) { return item.type3 === 17 })
     var depthChargeCategory = this.items.some(function (item) { return item.type3 === 18 })
-    var depthChargeProjectorList = this.date.after(NEW_SYNERGY_DATE) ? [44, 45, 288, 377] : [44, 45]
+    var depthChargeProjectorList = this.date.after(NEW_SYNERGY_DATE) ? [44, 45, 287, 288, 377] : [44, 45]
     var depthChargeList = this.date.after(NEW_SYNERGY_DATE) ? [226, 227, 378, 379] : this.date.after(MYSTERY_FIXED_DATE) ? [226, 227] : [226, 227, 228]
     var depthChargeProjector = this.items.some(function (item) { return depthChargeProjectorList.indexOf(item.slotitemId) >= 0 })
     var depthCharge = this.items.some(function (item) { return depthChargeList.indexOf(item.slotitemId) >= 0 })
