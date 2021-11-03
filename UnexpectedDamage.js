@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.38
+var VERSION = 2.39
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -425,7 +425,7 @@ AntiSubmarinePower.prototype.getSynergyBonus = function () {
     var sonar = this.items.some(function (item) { return item.type3 === 17 })
     var depthChargeCategory = this.items.some(function (item) { return item.type3 === 18 })
     var depthChargeProjectorList = this.date.after(NEW_SYNERGY_DATE) ? [44, 45, 287, 288, 377] : [44, 45]
-    var depthChargeList = this.date.after(NEW_SYNERGY_DATE) ? [226, 227, 378, 379] : this.date.after(MYSTERY_FIXED_DATE) ? [226, 227] : [226, 227, 228]
+    var depthChargeList = this.date.after(NEW_SYNERGY_DATE) ? [226, 227, 378, 439] : this.date.after(MYSTERY_FIXED_DATE) ? [226, 227] : [226, 227, 228]
     var depthChargeProjector = this.items.some(function (item) { return depthChargeProjectorList.indexOf(item.slotitemId) >= 0 })
     var depthCharge = this.items.some(function (item) { return depthChargeList.indexOf(item.slotitemId) >= 0 })
     var smallSonar = this.items.some(function (item) { return item.type2 === 14 })
@@ -1343,8 +1343,8 @@ function isNightCvAttack(attacker, attackerHp) {
     }).some(function (itemid) {
         // 夜間作戦航空要員 or 夜間作戦航空要員＋熟練甲板員
         return [258, 259].indexOf(itemid) >= 0
-        // Saratoga Mk.II or 赤城改二戊 or 加賀改二戊
-    }) || [545, 599, 610].indexOf(attacker.shipId) >= 0) && items.some(function (item) {
+        // Saratoga Mk.II or 赤城改二戊 or 加賀改二戊 or 龍鳳改二戊
+    }) || [545, 599, 610, 883].indexOf(attacker.shipId) >= 0) && items.some(function (item) {
         // 夜間戦闘機 or 夜間攻撃機
         return [45, 46].indexOf(item.type3) >= 0
         // 中破未満または装甲空母
