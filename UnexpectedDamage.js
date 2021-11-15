@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.39
+var VERSION = 2.40
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -419,33 +419,35 @@ AntiSubmarinePower.prototype.getShipTypeConstant = function () {
  * @return {Number} 対潜シナジー倍率
  */
 AntiSubmarinePower.prototype.getSynergyBonus = function () {
+    var sonar = this.items.some(function (item) { return item.type3 === 17 })
+    var depthChargeCategory = this.items.some(function (item) { return item.type3 === 18 })
+
+    return sonar && depthChargeCategory ? 1.15 : 1
+}
+
+/**
+ * 対潜シナジー倍率を取得します(艦これ本体の仕様に合わせるため分離)
+ * @return {Number} 対潜シナジー倍率
+ */
+AntiSubmarinePower.prototype.getSynergyBonus2 = function () {
     var MYSTERY_FIXED_DATE = getJstDate(2019, 8, 8, 12, 0, 0)
     var NEW_SYNERGY_DATE = getJstDate(2021, 10, 29, 12, 0, 0)
 
-    var sonar = this.items.some(function (item) { return item.type3 === 17 })
-    var depthChargeCategory = this.items.some(function (item) { return item.type3 === 18 })
     var depthChargeProjectorList = this.date.after(NEW_SYNERGY_DATE) ? [44, 45, 287, 288, 377] : [44, 45]
     var depthChargeList = this.date.after(NEW_SYNERGY_DATE) ? [226, 227, 378, 439] : this.date.after(MYSTERY_FIXED_DATE) ? [226, 227] : [226, 227, 228]
     var depthChargeProjector = this.items.some(function (item) { return depthChargeProjectorList.indexOf(item.slotitemId) >= 0 })
     var depthCharge = this.items.some(function (item) { return depthChargeList.indexOf(item.slotitemId) >= 0 })
     var smallSonar = this.items.some(function (item) { return item.type2 === 14 })
 
-    // シナジー1
-    var synergy1 = sonar && depthChargeCategory ? 1.15 : 1
-    // シナジー2
-    var synergy2 = (function () {
-        if (smallSonar && depthChargeProjector && depthCharge) {
-            // 小型ソナー/爆雷投射機/爆雷シナジー
-            return 1.25
-        }
-        if (depthChargeProjector && depthCharge) {
-            // 爆雷投射機/爆雷シナジー
-            return 1.1
-        }
-        return 1
-    })()
-
-    return synergy1 * synergy2
+    if (smallSonar && depthChargeProjector && depthCharge) {
+        // 小型ソナー/爆雷投射機/爆雷シナジー
+        return 1.25
+    }
+    if (depthChargeProjector && depthCharge) {
+        // 爆雷投射機/爆雷シナジー
+        return 1.1
+    }
+    return 1
 }
 
 /**
@@ -453,7 +455,7 @@ AntiSubmarinePower.prototype.getSynergyBonus = function () {
  * @return {Number} 対潜火力(キャップ前)
  */
 AntiSubmarinePower.prototype.getPrecapPower = function () {
-    return this.getBasicPower() * getEngagementBonus(this.formation) * this.getFormationBonus() * this.getConditionBonus() * this.getSynergyBonus()
+    return this.getBasicPower() * getEngagementBonus(this.formation) * this.getFormationBonus() * this.getConditionBonus() * this.getSynergyBonus() * this.getSynergyBonus2()
 }
 
 /**
@@ -598,7 +600,7 @@ DayBattlePower.prototype.getImprovementBonus = function () {
                 case 42: return 1    // 大型探照灯
                 case 21: return 1    // 機銃
                 case 15:             // 爆雷(投射機)
-                    return [44, 45, 346].indexOf(item.slotitemId) >= 0 ? 0.75 : 0
+                    return [44, 45, 346, 439].indexOf(item.slotitemId) >= 0 ? 0.75 : 0
                 case 14: return 0.75 // ソナー
                 case 40: return 0.75 // 大型ソナー
                 case 24: return 1    // 上陸用舟艇
@@ -1178,7 +1180,7 @@ NightBattlePower.prototype.getFormationBonus = function () {
  * @return {Number} 夜戦火力(キャップ前)
  */
 NightBattlePower.prototype.getPrecapPower = function () {
-    return this.getBasicPower() * this.getFormationBonus() * this.getCutinBonus() * this.getConditionBonus() + this.getPrecapPostMultiplyPower()
+    return this.getBasicPower() * this.getFormationBonus() * this.getCutinBonus() * this.getCutinBonus2() * this.getConditionBonus() + this.getPrecapPostMultiplyPower()
 }
 
 /**
@@ -1211,16 +1213,6 @@ NightBattlePower.prototype.getPostcapPower = function () {
  * @return {Number} 倍率
  */
 NightBattlePower.prototype.getCutinBonus = function () {
-    /**
-     * 駆逐専用CI:12.7cm連装砲D型ボーナスを返します
-     * @return {Number} 倍率
-     */
-    var modelDGunBonus = function (items) {
-        var ids = items.map(function(item) { return item.slotitemId })
-        var modelD2 = ids.filter(function (id) { return id === 267 }).length
-        var modelD3 = ids.filter(function (id) { return id === 366 }).length
-        return (([1, 1.25, 1.4])[modelD2 + modelD3] || 1.4) * (1 + modelD3 * 0.05)
-    }(this.items)
     var items = Java.from(this.attack.showItem).map(function (id) { return Item.get(Number(id)) })
 
     switch (Number(this.attack.attackType)) {
@@ -1250,12 +1242,12 @@ NightBattlePower.prototype.getCutinBonus = function () {
             return 1.0
         case 7:             // 駆逐カットイン(主砲/魚雷/電探) 単発
         case 11:            // 駆逐カットイン(主砲/魚雷/電探) 二発
-            return 1.3 * modelDGunBonus
+            return 1.3
         case 8:             // 駆逐カットイン(魚雷/見張員/電探) 単発
         case 12:            // 駆逐カットイン(魚雷/見張員/電探) 二発
             // API値変化(2021/05/08～)
             if (this.date.after(getJstDate(2021, 5, 8, 18, 0, 0))) {
-                return 1.2 * modelDGunBonus
+                return 1.2
             }
             // 魚雷
             var torpedo = items.filter(function (item) { return item.type2 === 5 }).length
@@ -1266,7 +1258,7 @@ NightBattlePower.prototype.getCutinBonus = function () {
             // ドラム缶
             var drum = items.filter(function (item) { return item.type2 === 30 }).length
             if (torpedo && radar && lookouts) {
-                return 1.2 * modelDGunBonus
+                return 1.2
             }
             if (torpedo === 2 && lookouts) {
                 return 1.5
@@ -1282,6 +1274,47 @@ NightBattlePower.prototype.getCutinBonus = function () {
         case 14:            // 駆逐カットイン(魚雷/ドラム缶/見張員) 二発
             return 1.3
         default: return getSpecialAttackBonus(this)
+    }
+}
+
+/**
+ * カットイン攻撃補正を返します(艦これ本体の仕様に合わせるため分離)
+ * @return {Number} 倍率
+ */
+NightBattlePower.prototype.getCutinBonus2 = function () {
+    /**
+     * 駆逐専用CI:12.7cm連装砲D型ボーナスを返します
+     * @return {Number} 倍率
+     */
+    var modelDGunBonus = function (items) {
+        var ids = items.map(function(item) { return item.slotitemId })
+        var modelD2 = ids.filter(function (id) { return id === 267 }).length
+        var modelD3 = ids.filter(function (id) { return id === 366 }).length
+        return (([1, 1.25, 1.4])[modelD2 + modelD3] || 1.4) * (1 + modelD3 * 0.05)
+    }(this.items)
+    var items = Java.from(this.attack.showItem).map(function (id) { return Item.get(Number(id)) })
+
+    switch (Number(this.attack.attackType)) {
+        case 7:             // 駆逐カットイン(主砲/魚雷/電探) 単発
+        case 11:            // 駆逐カットイン(主砲/魚雷/電探) 二発
+            return modelDGunBonus
+        case 8:             // 駆逐カットイン(魚雷/見張員/電探) 単発
+        case 12:            // 駆逐カットイン(魚雷/見張員/電探) 二発
+            // API値変化(2021/05/08～)
+            if (this.date.after(getJstDate(2021, 5, 8, 18, 0, 0))) {
+                return modelDGunBonus
+            }
+            // 魚雷
+            var torpedo = items.filter(function (item) { return item.type2 === 5 }).length
+            // 見張員
+            var lookouts = items.filter(function (item) { return item.type2 === 39 }).length
+            // 電探
+            var radar = items.filter(function (item) { return item.type3 === 11 }).length
+            if (torpedo && radar && lookouts) {
+                return modelDGunBonus
+            }
+            return 1
+        default: return 1
     }
 }
 
