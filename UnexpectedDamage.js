@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.40
+var VERSION = 2.41
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -2407,7 +2407,7 @@ function getEquipmentBonus(date, attacker) {
     }
     var num = 0
     var JP_DD_SHIPS = [66, 28, 12, 1, 5, 10, 23, 18, 30, 38, 22, 54, 101]
-    var US_SHIPS = [65, 69, 83, 87, 84, 91, 93, 95, 99, 102, 105, 106, 107, 110]
+    var US_SHIPS = [65, 69, 83, 87, 84, 91, 93, 95, 99, 102, 105, 106, 107, 110, 114]
     var US_CV_SHIPS = [69, 83, 84, 105]
     var UK_SHIPS = [67, 78, 82, 88, 108, 112]
     var UK_CV_SHIPS = [78, 112]
@@ -2842,7 +2842,7 @@ function getEquipmentBonus(date, attacker) {
                 add({ fp: 2 }, num)
             }
             if (yomi === "ほうしょう") {
-                add({ asw: 1 }, num)
+                add({ fp: 1 }, num)
             }
         }
     }
@@ -2853,7 +2853,7 @@ function getEquipmentBonus(date, attacker) {
                 add({ fp: 3 }, num)
             }
             if (yomi === "ほうしょう") {
-                add({ asw: 2 }, num)
+                add({ fp: 2 }, num)
             }
         }
     }
@@ -2864,7 +2864,7 @@ function getEquipmentBonus(date, attacker) {
                 add({ fp: 4 }, num)
             }
             if (yomi === "ほうしょう") {
-                add({ asw: 3 }, num)
+                add({ fp: 3 }, num)
             }
         }
     }
@@ -3748,7 +3748,7 @@ function getEquipmentBonus(date, attacker) {
         if ([1, 2, 3, 21].indexOf(stype) >= 0) {
             add({ asw: 1 }, num, 1)
         }
-        if (ctype === 101 && stype === 1) {
+        if (ctype === 101 || stype === 1) {
             add({ asw: 1 }, num, 1)
         }
         if (US_SHIPS.indexOf(ctype) >= 0 || UK_SHIPS.indexOf(ctype) >= 0) {
