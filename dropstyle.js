@@ -550,9 +550,11 @@ function genAntiSubMarineHtml(data, power) {
  * @return {String} HTML
  */
 function genDayBattleHtml(data, power) {
-    var result = '<tr><th rowspan="8" style="padding: 0px 3px;">攻<br>撃<br>側</th><th>基本攻撃力</th><th>改修火力</th><th>連合補正</th><th>対陸上敵加算補正(b12)</th><th>対陸上敵乗算補正(a13/a13\')</th><th>対陸上敵加算補正(b13/b13\')</th></tr>'
+    var result = '<tr><th rowspan="8" style="padding: 0px 3px;">攻<br>撃<br>側</th><th>基本攻撃力</th><th>改修火力</th><th>連合補正</th><th>対陸上敵乗算補正</th><th>対陸上敵加算補正</th><th></th></tr>'
     var landBonus = getLandBonus(data.attacker, data.defender, true)
-    result += '<tr><td>' + power.getBasicPower().toFixed(2) + '</td><td>' + power.getImprovementBonus().toFixed(2) + '</td><td>' + power.getCombinedPowerBonus() + '</td><td>' + (landBonus.b12) + '</td><td>' + landBonus.a13.toFixed(3) + " / " + landBonus.a13_2.toFixed(3) + '</td><td>' + landBonus.b13 + " / " + landBonus.b13_2 + '</td></tr>'
+    var a = landBonus.stypeBonus.a * landBonus.basicBonus.a * landBonus.shikonBonus.a * landBonus.m4a1ddBonus.a * landBonus.issikihouBonus.a * landBonus.supportBonus.a
+    var b = ((((landBonus.stypeBonus.b * landBonus.basicBonus.a + landBonus.basicBonus.b) * landBonus.shikonBonus.a + landBonus.shikonBonus.b) * landBonus.m4a1ddBonus.a + landBonus.m4a1ddBonus.b) * landBonus.issikihouBonus.a + landBonus.issikihouBonus.b) * landBonus.supportBonus.a + landBonus.supportBonus.b
+    result += '<tr><td>' + power.getBasicPower().toFixed(2) + '</td><td>' + power.getImprovementBonus().toFixed(2) + '</td><td>' + power.getCombinedPowerBonus() + '</td><td>' + a.toFixed(3) + '</td><td>' + b + '</td><td></td></tr>'
     result += '<tr><th>キャップ前火力</th><th>交戦形態補正</th><th>攻撃側陣形補正</th><th>損傷補正</th><th>特殊砲補正</th><th></th></tr>'
     result += '<tr><td>' + power.getPrecapPower().toFixed(2) + '</td><td>' + getEngagementBonus(data.formation).toFixed(2) + '</td><td>' + power.getFormationBonus().toFixed(2) + '</td><td>' + power.getConditionBonus().toFixed(2) + '</td><td>' + getOriginalGunPowerBonus(power.attacker, data.date).toFixed(2) + '</td><td></td></tr>'
     result += '<tr><th rowspan="2">最終攻撃力</th><th>キャップ値</th><th>キャップ後火力</th><th>特殊敵乗算特効</th><th>特殊敵加算特効</th><th>特殊敵乗算特効2</th></tr>'
@@ -586,9 +588,11 @@ function genTorpedoAttackHtml(data, power) {
  * @return {String} HTML
  */
 function genNightBattleHtml(data, power) {
-    var result = '<tr><th rowspan="8" style="padding: 0px 3px;">攻<br>撃<br>側</th><th>基本攻撃力</th><th>改修火力</th><th>触接補正</th><th>対陸上敵加算補正(b12)</th><th>対陸上敵乗算補正(a13/a13\')</th><th>対陸上敵加算補正(b13/b13\')</th></tr>'
+    var result = '<tr><th rowspan="8" style="padding: 0px 3px;">攻<br>撃<br>側</th><th>基本攻撃力</th><th>改修火力</th><th>触接補正</th><th>対陸上敵乗算補正</th><th>対陸上敵加算補正</th><th></th></tr>'
     var landBonus = getLandBonus(data.attacker, data.defender, false)
-    result += '<tr><td>' + power.getBasicPower().toFixed(2) + '</td><td>' + power.getImprovementBonus().toFixed(2) + '</td><td>' + power.getNightTouchPlaneBonus() + '</td><td>' + landBonus.b12 + '</td><td>' + landBonus.a13.toFixed(3) + " / " + landBonus.a13_2.toFixed(3) + '</td><td>' + landBonus.b13 + " / " + landBonus.b13_2 + '</td></tr>'
+    var a = landBonus.stypeBonus.a * landBonus.basicBonus.a * landBonus.shikonBonus.a * landBonus.m4a1ddBonus.a * landBonus.issikihouBonus.a * landBonus.supportBonus.a
+    var b = ((((landBonus.stypeBonus.b * landBonus.basicBonus.a + landBonus.basicBonus.b) * landBonus.shikonBonus.a + landBonus.shikonBonus.b) * landBonus.m4a1ddBonus.a + landBonus.m4a1ddBonus.b) * landBonus.issikihouBonus.a + landBonus.issikihouBonus.b) * landBonus.supportBonus.a + landBonus.supportBonus.b
+    result += '<tr><td>' + power.getBasicPower().toFixed(2) + '</td><td>' + power.getImprovementBonus().toFixed(2) + '</td><td>' + power.getNightTouchPlaneBonus() + '</td><td>' + a.toFixed(3) + '</td><td>' + b + '</td><td></td></tr>'
     result += '<tr><th>キャップ前火力</th><th>攻撃側陣形補正</th><th>夜戦特殊攻撃補正</th><th>夜戦特殊攻撃補正2</th><th>損傷補正</th><th>特殊砲補正</th></tr>'
     result += '<tr><td>' + power.getPrecapPower().toFixed(2) + '</td><td>' + power.getFormationBonus().toFixed(2) + '</td><td>' + power.getCutinBonus().toFixed(2) + '</td><td>' + power.getCutinBonus2().toFixed(2) + '</td><td>' + power.getConditionBonus().toFixed(2) + '</td><td>' + power.getPrecapPostMultiplyPower().toFixed(2) + '</td></tr>'
     result += '<tr><th rowspan="2">最終攻撃力</th><th>キャップ値</th><th>キャップ後火力</th><th>特殊敵乗算特効</th><th>特殊敵加算特効</th><th>特殊敵乗算特効2</th></tr>'
