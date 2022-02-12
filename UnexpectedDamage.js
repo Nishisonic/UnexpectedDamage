@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.44
+var VERSION = 2.45
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -1771,9 +1771,9 @@ var getLandBonus = function (attacker, defender, isDay) {
     var a = (daihatsuGroupLv / 50 + 1) * (kamishaLv / 30 + 1)
     var b = ([0, 75, 110, 140, 160, 160])[wg42]
         + ([0, 30, 55, 75, 90, 90])[type2Mortar]
-        + ([0, 60, 110, 150, 150, 150])[type2MortarEx]
+        + ([0, 60, 110, 150, 180, 180])[type2MortarEx]
         + ([0, 55, 115, 160, 190, 190])[type4Rocket]
-        + ([0, 80, 170, 230, 230, 230])[type4RocketEx]
+        + ([0, 80, 170, 230, 260, 260])[type4RocketEx]
 
     switch (defender.shipId) {
         case 1665:
