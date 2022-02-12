@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.43
+var VERSION = 2.44
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -1737,8 +1737,8 @@ var getLandBonus = function (attacker, defender, isDay) {
     var kamisha = getItemNum(items, 167)
     /** 特大発動艇+一式砲戦車 */
     var issikihou = getItemNum(items, 449)
-    /** 大発動艇・特大発動艇・大発動艇(八九式中戦車&陸戦隊) */
-    var jpBoatA = daihatsu + tokuDaihatsu + rikuDaihatsu
+    /** 大発動艇・特大発動艇・大発動艇(八九式中戦車&陸戦隊)・特大発動艇+一式砲戦車 */
+    var jpBoatA = daihatsu + tokuDaihatsu + rikuDaihatsu + issikihou
     /** 特大発動艇+戦車第11連隊・特二式内火艇 */
     var jpBoatB = shikonDaihatsu + kamisha
     /** 装甲艇(AB艇)・武装大発 */
@@ -1787,7 +1787,7 @@ var getLandBonus = function (attacker, defender, isDay) {
             a *= (bomber ? 1.5 : 1) * (bomber >= 2 ? 2.0 : 1)
             a *= daihatsuGroup ? 1.8 : 1
             a *= tokuDaihatsu ? 1.15 : 1
-            a *= (rikuDaihatsu ? 1.5 : 1) * (rikuDaihatsu >= 2 ? 1.4 : 1)
+            a *= ((rikuDaihatsu + issikihou) ? 1.5 : 1) * ((rikuDaihatsu + issikihou) >= 2 ? 1.4 : 1)
             a *= m4a1dd ? 2.0 : 1
             a *= (kamisha ? 2.4 : 1) * (kamisha >= 2 ? 1.35 : 1)
             if (isDay) {
@@ -1806,7 +1806,7 @@ var getLandBonus = function (attacker, defender, isDay) {
             a *= (bomber ? 1.4 : 1) * (bomber >= 2 ? 1.75 : 1)
             a *= daihatsuGroup ? 1.8 : 1
             a *= tokuDaihatsu ? 1.15 : 1
-            a *= (rikuDaihatsu ? 1.2 : 1) * (rikuDaihatsu >= 2 ? 1.4 : 1)
+            a *= ((rikuDaihatsu + issikihou) ? 1.2 : 1) * ((rikuDaihatsu + issikihou) >= 2 ? 1.4 : 1)
             a *= m4a1dd ? 1.8 : 1
             a *= (kamisha ? 2.4 : 1) * (kamisha >= 2 ? 1.35 : 1)
             if (isDay) {
@@ -1828,7 +1828,7 @@ var getLandBonus = function (attacker, defender, isDay) {
             a *= (bomber ? 1.3 : 1) * (bomber >= 2 ? 1.2 : 1)
             a *= daihatsuGroup ? 1.7 : 1
             a *= tokuDaihatsu ? 1.2 : 1
-            a *= (rikuDaihatsu ? 1.6 : 1) * (rikuDaihatsu >= 2 ? 1.5 : 1)
+            a *= ((rikuDaihatsu + issikihou) ? 1.6 : 1) * ((rikuDaihatsu + issikihou) >= 2 ? 1.5 : 1)
             a *= m4a1dd ? 2.0 : 1
             a *= kamisha ? 2.8 : 1
             break
