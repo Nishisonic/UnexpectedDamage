@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.46
+var VERSION = 2.47
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -1492,6 +1492,8 @@ var getMultiplySlayerBonus = function (attacker, defender) {
     var daihatsuGroupLv = daihatsuGroup > 0 ? items.filter(function (item) { return item.type2 === 24 }).map(function (item) { return item.level }).reduce(function (p, c) { return p + c }, 0) / daihatsuGroup : 0
     /** 特二式内火艇 */
     var kamisha = getItemNum(items, 167)
+    /** 特大発動艇+一式砲戦車 */
+    var issikihou = getItemNum(items, 449)
     /** 大発動艇・特大発動艇・大発動艇(八九式中戦車&陸戦隊)・大発動艇(II号戦車/北アフリカ仕様)・特大発動艇+一式砲戦車 */
     var jpBoatA = daihatsu + tokuDaihatsu + rikuDaihatsu + pzKpfwII + issikihou
     /** 特大発動艇+戦車第11連隊・特二式内火艇 */
