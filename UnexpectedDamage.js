@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.45
+var VERSION = 2.46
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -1492,8 +1492,8 @@ var getMultiplySlayerBonus = function (attacker, defender) {
     var daihatsuGroupLv = daihatsuGroup > 0 ? items.filter(function (item) { return item.type2 === 24 }).map(function (item) { return item.level }).reduce(function (p, c) { return p + c }, 0) / daihatsuGroup : 0
     /** 特二式内火艇 */
     var kamisha = getItemNum(items, 167)
-    /** 大発動艇・特大発動艇・大発動艇(八九式中戦車&陸戦隊) */
-    var jpBoatA = daihatsu + tokuDaihatsu + rikuDaihatsu
+    /** 大発動艇・特大発動艇・大発動艇(八九式中戦車&陸戦隊)・大発動艇(II号戦車/北アフリカ仕様)・特大発動艇+一式砲戦車 */
+    var jpBoatA = daihatsu + tokuDaihatsu + rikuDaihatsu + pzKpfwII + issikihou
     /** 特大発動艇+戦車第11連隊・特二式内火艇 */
     var jpBoatB = shikonDaihatsu + kamisha
     /** 装甲艇(AB艇)・武装大発 */
@@ -1563,15 +1563,16 @@ var getMultiplySlayerBonus = function (attacker, defender) {
         case 1938: // 集積地棲姫II 夏季上陸mode-壊
         case 1994: // 集積地棲姫II
         case 1995: // 集積地棲姫II-壊
-            var a = Math.pow(daihatsuGroupLv / 50 + 1, rikuDaihatsu ? 2 : 1) * (kamishaLv / 30 + 1)
+            var a = Math.pow(daihatsuGroupLv / 50 + 1, (rikuDaihatsu + issikihou) ? 2 : 1) * (kamishaLv / 30 + 1)
             a *= (wg42 ? 1.25 : 1) * (wg42 >= 2 ? 1.3 : 1)
             a *= (type4RocketGroup ? 1.2 : 1) * (type4RocketGroup >= 2 ? 1.4 : 1)
             a *= (mortarGroup ? 1.15 : 1) * (mortarGroup >= 2 ? 1.2 : 1)
             a *= daihatsuGroup ? 1.7 : 1
             a *= tokuDaihatsu ? 1.2 : 1
-            a *= (rikuDaihatsu ? 1.3 : 1) * (rikuDaihatsu >= 2 ? 1.6 : 1)
+            a *= ((rikuDaihatsu + issikihou) ? 1.3 : 1) * ((rikuDaihatsu + issikihou) >= 2 ? 1.6 : 1)
             a *= m4a1dd ? 1.2 : 1
             a *= (kamisha ? 1.7 : 1) * (kamisha >= 2 ? 1.5 : 1)
+            a *= pzKpfwII ? 1.3 : 1
             a *= (spBoat ? 1.5 : 1) * (spBoat >= 2 ? 1.1 : 1)
             return a
         case 1696:
@@ -1737,8 +1738,8 @@ var getLandBonus = function (attacker, defender, isDay) {
     var kamisha = getItemNum(items, 167)
     /** 特大発動艇+一式砲戦車 */
     var issikihou = getItemNum(items, 449)
-    /** 大発動艇・特大発動艇・大発動艇(八九式中戦車&陸戦隊)・特大発動艇+一式砲戦車 */
-    var jpBoatA = daihatsu + tokuDaihatsu + rikuDaihatsu + issikihou
+    /** 大発動艇・特大発動艇・大発動艇(八九式中戦車&陸戦隊)・大発動艇(II号戦車/北アフリカ仕様)・特大発動艇+一式砲戦車 */
+    var jpBoatA = daihatsu + tokuDaihatsu + rikuDaihatsu + pzKpfwII + issikihou
     /** 特大発動艇+戦車第11連隊・特二式内火艇 */
     var jpBoatB = shikonDaihatsu + kamisha
     /** 装甲艇(AB艇)・武装大発 */
