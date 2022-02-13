@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.47
+var VERSION = 2.48
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -614,7 +614,8 @@ DayBattlePower.prototype.getImprovementBonus = function () {
                 case 42: return 1    // 大型探照灯
                 case 21: return 1    // 機銃
                 case 15:             // 爆雷(投射機)
-                    return [44, 45, 346, 439].indexOf(item.slotitemId) >= 0 ? 0.75 : 0
+                    // 爆雷は0
+                    return [226, 227].indexOf(item.slotitemId) < 0 ? 0.75 : 0
                 case 14: return 0.75 // ソナー
                 case 40: return 0.75 // 大型ソナー
                 case 24: return 1    // 上陸用舟艇
@@ -928,7 +929,6 @@ TorpedoPower.prototype.getImprovementBonus = function () {
         switch (item.type2) {
             case 5: // 魚雷
             case 21: // 機銃
-            case 32: // 潜水艦魚雷
                 return 1.2 * Math.sqrt(item.level)
             default:
                 return 0
@@ -1248,11 +1248,21 @@ NightBattlePower.prototype.getCutinBonus = function () {
         case 1: return 1.2  // 連撃
         case 2: return 1.3  // カットイン(主砲/魚雷)
         case 3:
-            if (Java.from(this.attack.showItem).filter(function (id) { return [213, 214, 383, 443].indexOf(Number(id)) >= 0 }).length
-                && Java.from(this.attack.showItem).filter(function (id) { return [210, 211, 384].indexOf(Number(id)) >= 0 }).length) {
+            // 後期型艦首魚雷(6門)
+            // 熟練聴音員＋後期型艦首魚雷(6門)
+            // 後期型53cm艦首魚雷(8門)
+            // 21inch艦首魚雷発射管6門(後期型)
+            // 潜水艦後部魚雷発射管4門(後期型)
+            var lateTorpedo = [213, 214, 383, 441, 443]
+            // 潜水艦搭載電探&水防式望遠鏡
+            // 潜水艦搭載電探&逆探(E27)
+            // 後期型潜水艦搭載電探＆逆探
+            var ssRadar = [210, 211, 384]
+            if (Java.from(this.attack.showItem).filter(function (id) { return lateTorpedo.indexOf(Number(id)) >= 0 }).length
+                && Java.from(this.attack.showItem).filter(function (id) { return ssRadar.indexOf(Number(id)) >= 0 }).length) {
                 return 1.75  // カットイン(後魚/潜電)
             }
-            if (Java.from(this.attack.showItem).filter(function (id) { return [213, 214, 383, 443].indexOf(Number(id)) >= 0 }).length >= 2) {
+            if (Java.from(this.attack.showItem).filter(function (id) { return lateTorpedo.indexOf(Number(id)) >= 0 }).length >= 2) {
                 return 1.6  // カットイン(後魚/後魚)
             }
             return 1.5      // カットイン(魚雷/魚雷)
