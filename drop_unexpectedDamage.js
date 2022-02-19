@@ -1,6 +1,6 @@
 /**
  * 異常ダメージ検知
- * @version 2.4.9
+ * @version 2.5.0
  * @author Nishikuma
  */
 
@@ -951,7 +951,7 @@ var detectDayBattle = function (date, mapCell, kind, friendCombinedKind, isEnemy
                         }
                         if (mapCell.map[0] >= 22 && attack.friendAttack) {
                             // 割合ダメージ等ではない&(敵が陸上型またはPT小鬼群または熟練度補正攻撃ではない)
-                            if (!covered && !(isGround(ship.defender) || isPT(ship.defender) || skilled[0] > 1)) {
+                            if (!covered && !(isGround(ship.defender) || isPtImpPack(ship.defender) || skilled[0] > 1)) {
                                 var maps = JSON.stringify(Java.from(mapCell.map))
                                 var index = ship.attacker.shipId + "_" + ship.attacker.friendlyName.replace(/\(.*\)$/, "") + "_" + ship.defender.shipId + "_" + ship.defender.friendlyName.replace(/\(.*\)$/, "")
 
@@ -1038,7 +1038,7 @@ var detectTorpedoAttack = function (date, mapCell, kind, friendCombinedKind, isE
                 }
                 if (mapCell.map[0] >= 22) {
                     // 割合ダメージ等ではない&(敵がPT小鬼群ではない)
-                    if (!covered && !isPT(ship.defender)) {
+                    if (!covered && !isPtImpPack(ship.defender)) {
                         var maps = JSON.stringify(Java.from(mapCell.map))
                         var index = ship.attacker.shipId + "_" + ship.attacker.friendlyName.replace(/\(.*\)$/, "") + "_" + ship.defender.shipId + "_" + ship.defender.friendlyName.replace(/\(.*\)$/, "")
 
@@ -1197,7 +1197,7 @@ var detectNightBattle = function (date, mapCell, kind, friendCombinedKind, isEne
                             // 熟練度
                             var skilled = getSkilledBonus(date, attack, ship.attacker, ship.defender, hp.attacker)
                             // 割合ダメージ等ではない&(敵が陸上型またはPT小鬼群または熟練度補正攻撃ではない)
-                            if (!covered && !(isGround(ship.defender) || isPT(ship.defender) || skilled[0] > 1)) {
+                            if (!covered && !(isGround(ship.defender) || isPtImpPack(ship.defender) || skilled[0] > 1)) {
                                 var maps = JSON.stringify(Java.from(mapCell.map))
                                 var index = ship.attacker.shipId + "_" + ship.attacker.friendlyName.replace(/\(.*\)$/, "") + "_" + ship.defender.shipId + "_" + ship.defender.friendlyName.replace(/\(.*\)$/, "")
 

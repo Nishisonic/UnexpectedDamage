@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.49
+var VERSION = 2.50
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -37,6 +37,41 @@ var isAkakari = AppConstants.NAME.indexOf("赤仮") >= 0
 //#endregion
 
 //#region 艦これ計算部分
+
+//#region 定数箇所
+/** ドイツ艦 */
+var GERMAN_SHIPS = [47, 63, 55, 48, 57]
+/** イタリア艦 */
+var ITALIAN_SHIPS = [58, 68, 64, 92, 61, 80, 113]
+/** アメリカ艦 */
+var AMERICAN_SHIPS = [65, 69, 83, 87, 84, 91, 93, 95, 99, 102, 105, 106, 107, 110, 114]
+/** イギリス艦 */
+var BRITISH_SHIPS = [67, 78, 82, 88, 108, 112]
+/** フランス艦 */
+var FRENCH_SHIPS = [79, 70]
+/** ロシア艦 */
+var RUSSIAN_SHIPS = [73, 81]
+/** スウェーデン艦 */
+var SWEDISH_SHIPS = [89]
+/** オランダ艦 */
+var DUTCH_SHIPS = [98]
+/** オーストラリア艦 */
+var AUSTRALIAN_SHIPS = [96]
+/** 海外艦 */
+var OVERSEA_SHIPS = [].concat(
+    GERMAN_SHIPS,
+    ITALIAN_SHIPS,
+    AMERICAN_SHIPS,
+    BRITISH_SHIPS,
+    FRENCH_SHIPS,
+    RUSSIAN_SHIPS,
+    SWEDISH_SHIPS,
+    DUTCH_SHIPS,
+    AUSTRALIAN_SHIPS
+)
+/** 日本駆逐艦 */
+var JAPANESE_DD_SHIPS = [66, 28, 12, 1, 5, 10, 23, 18, 30, 38, 22, 54, 101]
+//#endregion
 
 /**
  * 昼戦火力算出
@@ -253,7 +288,7 @@ var isGround = function (ship) {
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} ship 艦
  * @return {boolean} PT小鬼群か
  */
-var isPT = function (ship) {
+var isPtImpPack = function (ship) {
     return [1637, 1638, 1639, 1640].indexOf(ship.shipId) >= 0
 }
 
@@ -568,7 +603,7 @@ DayBattlePower.prototype.getBasicPower = function () {
     // 空撃または陸上型かつ艦上爆撃機,艦上攻撃機,陸上攻撃機,噴式戦闘爆撃機,噴式攻撃機所持時?
     if (getAttackTypeAtDay(this.attack, this.attacker, this.defender) === 1 || isGround(this.attacker) && this.items.some(function (item) { return [7, 8, 47, 57, 58].indexOf(item.type2) >= 0 })) {
         // 空撃
-        var rai = this.date.after(getJstDate(2021, 8, 4, 12, 0, 0)) ? this.attacker.raisou : this.attacker.slotParam.raig
+        var rai = this.attacker.slotParam.raig + (this.date.after(getJstDate(2021, 8, 4, 12, 0, 0)) ? getEquipmentBonus(this.date, this.attacker).maxTp : 0)
         var baku = this.attacker.slotParam.baku
         if (isGround(this.defender)) {
             rai = 0
@@ -1138,7 +1173,7 @@ NightBattlePower.prototype.getBasicPower = function () {
         } else {
             power = this.attacker.karyoku + (useRaisou ? this.attacker.raisou : 0) + this.getImprovementBonus()
         }
-        return ((((((power + this.getNightTouchPlaneBonus()) * landBonus.stypeBonus.a + landBonus.stypeBonus.b) * landBonus.basicBonus.a + landBonus.basicBonus.b) * landBonus.shikonBonus.a + landBonus.shikonBonus.b) * landBonus.m4a1ddBonus.a + landBonus.m4a1ddBonus.b) * landBonus.issikihouBonus.a + landBonus.issikihouBonus.b) * landBonus.supportBonus.a + landBonus.supportBonus.b
+        return ((((((power + this.getNightTouchPlaneBonus()) * landBonus.stypeBonus.a + landBonus.stypeBonus.b) * landBonus.basicBonus.a) * landBonus.shikonBonus.a + landBonus.shikonBonus.b) * landBonus.m4a1ddBonus.a + landBonus.m4a1ddBonus.b) * landBonus.issikihouBonus.a + landBonus.issikihouBonus.b) * landBonus.supportBonus.a + landBonus.supportBonus.b + landBonus.basicBonus.b
     }
 }
 
@@ -1405,7 +1440,7 @@ function getOnSlot(attacker, date) {
     if (isAkakari) {
         try {
             AkakariSyutsugekiLogReader = Java.type("logbook.builtinscript.akakariLog.AkakariSyutsugekiLogReader")
-            var json = AkakariSyutsugekiLogReader.shipAfterBattle(date, attacker.id) || AkakariSyutsugekiLogReader.shipEndPort(date, attacker.id)
+            var json = AkakariSyutsugekiLogReader.shipAfterBattle(date, attacker.shipId) || AkakariSyutsugekiLogReader.shipEndPort(date, attacker.shipId)
             if (json) {
                 return JSON.parse(json.get("api_onslot"))
             }
@@ -1549,45 +1584,13 @@ var getMultiplySlayerBonus = function (attacker, defender) {
     
     var ship = Ship.get(attacker.shipId)
     var ctype = ship && ship.json ? (JSON.parse(ship.json).api_ctype | 0) : -1
-    var overseasShip = [
-        47, 63, 55, 48, 57, // ドイツ
-        58, 68, 64, 92, 61, 80, 113, // イタリア
-        65, 69, 83, 87, 84, 91, 93, 95, 99, 102, 105, 106, 107, 110, 114, // アメリカ
-        67, 78, 82, 88, 108, 112, // イギリス
-        79, 70, // フランス
-        73, 81, // ロシア
-        89, // スウェーデン
-        98, // オランダ
-        96, // オーストラリア
-    ].indexOf(ctype) >= 0
+    var overseasShip = OVERSEA_SHIPS.indexOf(ctype) >= 0
 
-    switch (defender.shipId) {
-        case 1637:
-        case 1638:
-        case 1639:
-        case 1640: // PT小鬼群
+    switch (true) {
+        case isPtImpPack(defender): // PT小鬼群
             return 0.35
-        case 1653:
-        case 1654:
-        case 1655: // 集積地棲姫
-        case 1656:
-        case 1657:
-        case 1658: // 集積地棲姫-壊
-        case 1809:
-        case 1810:
-        case 1811: // 集積地棲姫 バカンスmode
-        case 1812:
-        case 1813:
-        case 1814: // 集積地棲姫 バカンスmode-壊
-        case 1933:
-        case 1934:
-        case 1935: // 集積地棲姫II 夏季上陸mode
-        case 1936:
-        case 1937:
-        case 1938: // 集積地棲姫II 夏季上陸mode-壊
-        case 1994: // 集積地棲姫II
-        case 1995: // 集積地棲姫II-壊
-            var a = Math.pow(daihatsuGroupLv / 50 + 1, (rikuDaihatsu + issikihou) ? 2 : 1) * (kamishaLv / 30 + 1)
+        case isSupplyDepotPrincess(defender): // 集積地棲姫
+            var a = Math.pow(daihatsuGroupLv / 50 + 1, !!(rikuDaihatsu + issikihou) + !!(pzKpfwII) + 1) * (kamishaLv / 30 + 1)
             a *= (wg42 ? 1.25 : 1) * (wg42 >= 2 ? 1.3 : 1)
             a *= (type4RocketGroup ? 1.2 : 1) * (type4RocketGroup >= 2 ? 1.4 : 1)
             a *= (mortarGroup ? 1.15 : 1) * (mortarGroup >= 2 ? 1.2 : 1)
@@ -1599,9 +1602,7 @@ var getMultiplySlayerBonus = function (attacker, defender) {
             a *= pzKpfwII ? 1.3 : 1
             a *= (spBoat ? 1.5 : 1) * (spBoat >= 2 ? 1.1 : 1)
             return a
-        case 1696:
-        case 1697:
-        case 1698: // 戦艦夏姫
+        case isBattleshipSummerPrincess(defender): // 戦艦夏姫
             var a = 1
             a *= suijo ? 1.1 : 1
             a *= apShell ? 1.2 : 1
@@ -1610,19 +1611,12 @@ var getMultiplySlayerBonus = function (attacker, defender) {
                 a *= overseasShip ? 1.1 : 1
             }
             return a
-        case 1705:
-        case 1706:
-        case 1707: // 重巡夏姫
+        case isHeavyCrusierSummerPrincess(defender): // 重巡夏姫
             var a = 1
             a *= suijo ? 1.15 : 1
             a *= apShell ? 1.1 : 1
             return a
-        case 1745:
-        case 1746:
-        case 1747: // 戦艦仏棲姫
-        case 1748:
-        case 1749:
-        case 1750: // 戦艦仏棲姫-壊
+        case isFrenchBattleshipPrincess(defender): // 戦艦仏棲姫-壊
             var a = 1
             a *= apShell ? 1.2 : 1
             a *= late298B ? 1.3 : 1
@@ -1641,11 +1635,8 @@ var getMultiplySlayerBonus = function (attacker, defender) {
  * @return {Number} 倍率
  */
 var getAddSlayerBonus = function (attacker, defender) {
-    switch (defender.shipId) {
-        case 1637:
-        case 1638:
-        case 1639:
-        case 1640: // PT小鬼群
+    switch (true) {
+        case isPtImpPack(defender): // PT小鬼群
             return 15
     }
     return 0
@@ -1683,11 +1674,8 @@ var getMultiplySlayerBonus2 = function (attacker, defender) {
     /** max(艦上爆撃機, 噴式戦闘爆撃機) */
     var maxBomber = Math.max(bomber, jetBomber)
 
-    switch (defender.shipId) {
-        case 1637:
-        case 1638:
-        case 1639:
-        case 1640: // PT小鬼群
+    switch (true) {
+        case isPtImpPack(defender): // PT小鬼群
             var a = 1
             a *= (smallGun ? 1.5 : 1) * (smallGun >= 2 ? 1.4 : 1)
             a *= subGun ? 1.3 : 1
@@ -1714,7 +1702,87 @@ var isNorthernmostLandingPrincess = function (ship) {
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} ship 艦
  */
 var isAnchorageWaterDemonVacationMode = function (ship) {
-    return [1815, 1816, 1817, 1818, 1819, 1820].indexOf(ship.shipId) >= 0
+    return [
+        1815, 1816, 1817,
+        1818, 1819, 1820
+    ].indexOf(ship.shipId) >= 0
+}
+
+/**
+ * 集積地棲姫か
+ * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} ship 艦
+ */
+var isSupplyDepotPrincess = function (ship) {
+    return [
+        1653, 1654, 1655,       // 集積地棲姫
+        1656, 1657, 1658,       // 集積地棲姫-壊
+        1809, 1810, 1811,       // 集積地棲姫 バカンスmode
+        1812, 1813, 1814,       // 集積地棲姫 バカンスmode-壊
+        1921, 1922, 1923,       // 集積地棲姫II
+        1924, 1925, 1926,       // 集積地棲姫II-壊
+        1933, 1934, 1935,       // 集積地棲姫II 夏季上陸mode
+        1936, 1937, 1938,       // 集積地棲姫II 夏季上陸mode-壊
+        1994,                   // 集積地棲姫II
+        1995,                   // 集積地棲姫II-壊
+        2015, 2016, 2017, 2018, // 集積地棲姫II バカンスmode
+        2019, 2020, 2021, 2022, // 集積地棲姫II バカンスmode-壊
+    ].indexOf(ship.shipId) >= 0
+}
+
+/**
+ * 港湾夏姫か
+ * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} ship 艦
+ */
+var isHarbourSummerPrincess = function (ship) {
+    return [
+        1699, 1700, 1701,   // 港湾夏姫
+        1702, 1703, 1704,   // 港湾夏姫-壊
+        2023, 2024, 2025,   // 港湾夏姫II
+        2026, 2027, 2028,   // 港湾夏姫II-壊
+    ].indexOf(ship.shipId) >= 0
+}
+
+/**
+ * 戦艦夏姫か
+ * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} ship 艦
+ */
+var isBattleshipSummerPrincess = function (ship) {
+    return [1696, 1697, 1698].indexOf(ship.shipId) >= 0
+}
+
+/**
+ * 重巡夏姫か
+ * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} ship 艦
+ */
+var isHeavyCrusierSummerPrincess = function (ship) {
+    return [1705, 1706, 1707].indexOf(ship.shipId) >= 0
+}
+
+/**
+ * 戦艦仏棲姫か
+ * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} ship 艦
+ */
+var isFrenchBattleshipPrincess = function (ship) {
+    return [
+        1745, 1746, 1747,   // 戦艦仏棲姫
+        1748, 1749, 1750,   // 戦艦仏棲姫-壊 
+    ].indexOf(ship.shipId) >= 0
+}
+
+/**
+ * 砲台小鬼か
+ * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} ship 艦
+ */
+var isArtilleryImp = function (ship) {
+    return [1665, 1666, 1667].indexOf(ship.shipId) >= 0
+}
+
+/**
+ * 離島棲姫か
+ * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} ship 艦
+ */
+var isIsolatedIslandPrincess = function (ship) {
+    return [1668, 1669, 1670, 1671, 1672].indexOf(ship.shipId) >= 0
 }
 
 /**
@@ -1800,10 +1868,8 @@ var getLandBonus = function (attacker, defender, isDay) {
         + ([0, 55, 115, 160, 190, 190])[type4Rocket]
         + ([0, 80, 170, 230, 260, 260])[type4RocketEx]
 
-    switch (defender.shipId) {
-        case 1665:
-        case 1666:
-        case 1667: // 砲台小鬼
+    switch (true) {
+        case isArtilleryImp(defender): // 砲台小鬼
             a *= apShell ? 1.85 : 1
             a *= (wg42 ? 1.6 : 1) * (wg42 >= 2 ? 1.7 : 1)
             a *= (type4RocketGroup ? 1.5 : 1) * (type4RocketGroup >= 2 ? 1.8 : 1)
@@ -1819,11 +1885,7 @@ var getLandBonus = function (attacker, defender, isDay) {
                 a *= (spBoat ? 1.3 : 1) * (spBoat >= 2 ? 1.2 : 1)
             }
             break
-        case 1668:
-        case 1669:
-        case 1670:
-        case 1671:
-        case 1672: // 離島棲姫
+        case isIsolatedIslandPrincess(defender): // 離島棲姫
             a *= type3shell ? 1.75 : 1
             a *= (wg42 ? 1.4 : 1) * (wg42 >= 2 ? 1.5 : 1)
             a *= (type4RocketGroup ? 1.3 : 1) * (type4RocketGroup >= 2 ? 1.65 : 1)
@@ -1838,12 +1900,7 @@ var getLandBonus = function (attacker, defender, isDay) {
                 a *= (spBoat ? 1.3 : 1) * (spBoat >= 2 ? 1.1 : 1)
             }
             break
-        case 1699:
-        case 1700:
-        case 1701: // 港湾夏姫
-        case 1702:
-        case 1703:
-        case 1704: // 港湾夏姫-壊
+        case isHarbourSummerPrincess(defender): // 港湾夏姫
             a *= type3shell ? 1.75 : 1
             a *= apShell ? 1.3 : 1
             a *= (wg42 ? 1.4 : 1) * (wg42 >= 2 ? 1.2 : 1)
@@ -2465,7 +2522,7 @@ function isAPshell(item) {
  * 装備ボーナスの値を返す
  * @param {java.util.Date} date 戦闘日時
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
- * @return {{fp: number, asw: number, tp: number}}
+ * @return {{fp: number, asw: number, tp: number, maxTp: number}}
  */
 function getEquipmentBonus(date, attacker) {
     var shipId = attacker.shipId
@@ -2473,11 +2530,15 @@ function getEquipmentBonus(date, attacker) {
     var ctype = (JSON.parse(Ship.get(attacker.shipId).json).api_ctype | 0)
     var yomi = attacker.shipInfo.flagship
     var items = getItems(attacker)
-    var bonus = { fp: 0, asw: 0, tp: 0 }
+    var bonus = { fp: 0, asw: 0, tp: 0, maxTp: 0 }
     function add(effect, num, max) {
         ["fp", "asw", "tp"].forEach(function(param) {
             bonus[param] += (effect[param] | 0) * Math.min(num, max | 0 || Infinity)
         })
+        // tp(雑)
+        if (num > 0) {
+            bonus["maxTp"] += Math.max(bonus["maxTp"], (effect["tp"] | 0))
+        }
     }
     var itemNums = items.reduce(function(previous, item) {
         previous[item.slotitemId] = (previous[item.slotitemId] | 0) + 1
@@ -2487,13 +2548,6 @@ function getEquipmentBonus(date, attacker) {
         return itemNums[slotitemId] | 0
     }
     var num = 0
-    var JP_DD_SHIPS = [66, 28, 12, 1, 5, 10, 23, 18, 30, 38, 22, 54, 101]
-    var US_SHIPS = [65, 69, 83, 87, 84, 91, 93, 95, 99, 102, 105, 106, 107, 110, 114]
-    var US_CV_SHIPS = [69, 83, 84, 105]
-    var UK_SHIPS = [67, 78, 82, 88, 108, 112]
-    var UK_CV_SHIPS = [78, 112]
-    var DE_SHIPS = [47, 63, 55, 48, 57]
-    var IT_SHIPS = [58, 68, 64, 92, 61, 80, 113]
 
     // 艦上偵察機
     if (items.some(function(item) { return item.type2 === 9 })) {
@@ -2714,7 +2768,7 @@ function getEquipmentBonus(date, attacker) {
                 if (item.level >= 7) return 1
                 return 0
             }))
-            if (DE_SHIPS.indexOf(shipId) >= 0 || IT_SHIPS.indexOf(shipId) >= 0) {
+            if (GERMAN_SHIPS.indexOf(shipId) >= 0 || ITALIAN_SHIPS.indexOf(shipId) >= 0) {
                 fp += items.some(function(item) {
                     return item.slotitemId === 84 && item.level === 10
                 }) ? 1 : 0
@@ -2851,7 +2905,7 @@ function getEquipmentBonus(date, attacker) {
     // OS2U
     if (num = count(171)) {
         if (date.after(getJstDate(2020, 5, 20, 12, 0, 0))) {
-            if (US_CV_SHIPS.indexOf(ctype) >= 0) {
+            if (AMERICAN_SHIPS.indexOf(ctype) >= 0) {
                 if (getItemNum(items, 171, 10) > 0) {
                     add({ fp: 1 }, num, 1)
                 }
@@ -2881,7 +2935,7 @@ function getEquipmentBonus(date, attacker) {
     // SBD
     if (num = count(195)) {
         if (date.after(getJstDate(2021, 5, 31, 19, 30, 0))) {
-            if (US_CV_SHIPS.indexOf(ctype) >= 0) {
+            if (AMERICAN_SHIPS.indexOf(ctype) >= 0) {
                 add({ fp: 1 }, num)
             }
         }
@@ -2995,7 +3049,7 @@ function getEquipmentBonus(date, attacker) {
     // FM-2
     if (num = count(277)) {
         if (date.after(getJstDate(2021, 7, 15, 12, 0, 0))) {
-            if (US_CV_SHIPS.indexOf(ctype) >= 0 || UK_CV_SHIPS.indexOf(ctype) >= 0) {
+            if (AMERICAN_SHIPS.indexOf(ctype) >= 0 || BRITISH_SHIPS.indexOf(ctype) >= 0) {
                 add({ fp: 1 }, num)
                 if (ctype === 83) {
                     add({ fp: 1 }, num)
@@ -3008,9 +3062,9 @@ function getEquipmentBonus(date, attacker) {
     // SK+SG レーダー
     if (num = count(279)) {
         if (date.after(getJstDate(2020, 5, 20, 12, 0, 0))) {
-            if (US_CV_SHIPS.indexOf(ctype) >= 0) {
+            if (AMERICAN_SHIPS.indexOf(ctype) >= 0) {
                 add({ fp: 2 }, num, 1)
-            } else if (UK_CV_SHIPS.indexOf(ctype) >= 0) {
+            } else if (BRITISH_SHIPS.indexOf(ctype) >= 0) {
                 add({ fp: 1 }, num, 1)
             } else if (ctype === 96) {
                 add({ fp: 1 }, num, 1)
@@ -3111,7 +3165,7 @@ function getEquipmentBonus(date, attacker) {
     }
     // GFCS Mk.37
     if (num = count(307)) {
-        if (US_CV_SHIPS.indexOf(ctype) >= 0) {
+        if (AMERICAN_SHIPS.indexOf(ctype) >= 0) {
             add({ fp: 1 }, num)
         }
     }
@@ -3329,7 +3383,7 @@ function getEquipmentBonus(date, attacker) {
     // if (num = count(356) + count(357)) {}
     // 5inch 単装高角砲群
     if (num = count(358)) {
-        if (US_CV_SHIPS.indexOf(ctype) >= 0 || UK_CV_SHIPS.indexOf(ctype) >= 0) {
+        if (AMERICAN_SHIPS.indexOf(ctype) >= 0 || BRITISH_SHIPS.indexOf(ctype) >= 0) {
             add({ fp: 1 }, num)
         }
     }
@@ -3354,7 +3408,7 @@ function getEquipmentBonus(date, attacker) {
             add({ asw: 1 }, num)
         } else if ([72, 62].indexOf(ctype) >= 0) {
             // 使用箇所なし
-        } else if (UK_CV_SHIPS.indexOf(ctype) >= 0) {
+        } else if (BRITISH_SHIPS.indexOf(ctype) >= 0) {
             // 現状搭載不可
             add({ fp: 2 }, num)
         }
@@ -3368,9 +3422,9 @@ function getEquipmentBonus(date, attacker) {
             add({ asw: 3 }, num)
         } else if ([72, 62].indexOf(ctype) >= 0) {
             add({ asw: 2 }, num)
-        } else if (UK_SHIPS.indexOf(ctype) >= 0) {
+        } else if (BRITISH_SHIPS.indexOf(ctype) >= 0) {
             // 現状搭載不可
-            add({ fp: (UK_CV_SHIPS.indexOf(ctype) >= 0 ? 2 : 0), asw: 2 }, num)
+            add({ fp: (BRITISH_SHIPS.indexOf(ctype) >= 0 ? 2 : 0), asw: 2 }, num)
         }
     }
     // Swordfish Mk.III改(水上機型/熟練)
@@ -3382,7 +3436,7 @@ function getEquipmentBonus(date, attacker) {
             add({ asw: 3 }, num)
         } else if ([72, 62].indexOf(ctype) >= 0) {
             add({ asw: 2 }, num)
-        } else if (UK_SHIPS.indexOf(ctype) >= 0) {
+        } else if (BRITISH_SHIPS.indexOf(ctype) >= 0) {
             // 現状搭載不可
             add({ fp: 2, asw: 2 }, num)
         }
@@ -3396,7 +3450,7 @@ function getEquipmentBonus(date, attacker) {
             add({ asw: 3 }, num)
         } else if ([72, 62].indexOf(ctype) >= 0) {
             add({ asw: 2 }, num)
-        } else if (UK_SHIPS.indexOf(ctype) >= 0) {
+        } else if (BRITISH_SHIPS.indexOf(ctype) >= 0) {
             add({ fp: 2, asw: 3 }, num)
         }
     }
@@ -3409,7 +3463,7 @@ function getEquipmentBonus(date, attacker) {
             add({ asw: 1 }, num)
         } else if (ctype === 79) {
             // 使用箇所なし
-        } else if (UK_SHIPS.indexOf(ctype) >= 0) {
+        } else if (BRITISH_SHIPS.indexOf(ctype) >= 0) {
             add({ fp: 3, asw: 1 }, num)
         }
     }
@@ -3426,10 +3480,12 @@ function getEquipmentBonus(date, attacker) {
             add({ asw: 1 }, num)
         } else if ([560, 555, 318].indexOf(shipId) >= 0) {
             add({ asw: 1 }, num)
+            add({ tp: 1 }, num, 1)
         } else if ([508, 509].indexOf(shipId) >= 0) {
             add({ fp: 1 }, num)
         } else if ([883, 888].indexOf(shipId) >= 0) {
             add({ fp: 2, asw: 1 }, num)
+            add({ tp: 2 }, num, 1)
         }
     }
     // 天山一二型甲改(空六号電探改装備機)
@@ -3519,7 +3575,7 @@ function getEquipmentBonus(date, attacker) {
     }
     // XF5U
     if (num = count(375)) {
-        if (US_CV_SHIPS.indexOf(ctype) >= 0) {
+        if (AMERICAN_SHIPS.indexOf(ctype) >= 0) {
             add({ fp: 3, asw: 3 }, num)
         }
         if (yomi === "かが") {
@@ -3530,23 +3586,23 @@ function getEquipmentBonus(date, attacker) {
     // if (num = count(376)) {}
     // RUR-4A Weapon Alpha改
     if (num = count(377)) {
-        if (US_SHIPS.indexOf(ctype) >= 0) {
+        if (AMERICAN_SHIPS.indexOf(ctype) >= 0) {
             add({ asw: 2 }, num, 1)
             if (shipId === 629) {
                 add({ asw: 1 }, num, 1)
             }
-        } else if (UK_SHIPS.concat([96]).indexOf(ctype) >= 0) {
+        } else if (BRITISH_SHIPS.indexOf(ctype) >= 0 || AUSTRALIAN_SHIPS.indexOf(ctype) >= 0) {
             add({ asw: 1 }, num, 1)
         }
     }
     // 対潜短魚雷(試作初期型)
     if (num = count(378)) {
-        if (US_SHIPS.indexOf(ctype) >= 0) {
+        if (AMERICAN_SHIPS.indexOf(ctype) >= 0) {
             add({ asw: 3 }, num, 1)
             if (shipId === 629) {
                 add({ asw: 1 }, num, 1)
             }
-        } else if (UK_SHIPS.indexOf(ctype) >= 0) {
+        } else if (BRITISH_SHIPS.indexOf(ctype) >= 0) {
             add({ asw: 2 }, num, 1)
         } else if (ctype === 96) {
             add({ asw: 1 }, num, 1)
@@ -3614,8 +3670,8 @@ function getEquipmentBonus(date, attacker) {
                 add({ fp: 5, asw: 4 }, num, 1)
             }
         }
-        if (US_SHIPS.indexOf(ctype) >= 0) {
-            add({ fp: (US_CV_SHIPS.indexOf(ctype) >= 0 ? 2 : 0), asw: 3 }, num)
+        if (AMERICAN_SHIPS.indexOf(ctype) >= 0) {
+            add({ fp: (AMERICAN_SHIPS.indexOf(ctype) >= 0 ? 2 : 0), asw: 3 }, num)
         }
     }
     // 16inch三連装砲 Mk.6+GFCS
@@ -3666,7 +3722,7 @@ function getEquipmentBonus(date, attacker) {
     // if (num = count(411)) {}
     // 水雷戦隊 熟練見張員
     if (num = count(412)) {
-        if (JP_DD_SHIPS.indexOf(ctype) >= 0) {
+        if (JAPANESE_DD_SHIPS.indexOf(ctype) >= 0) {
             add({ asw: 2 }, num)
         }
     }
@@ -3676,13 +3732,13 @@ function getEquipmentBonus(date, attacker) {
     // if (num = count(414)) {}
     // SO3C Seamew改
     if (num = count(415)) {
-        if (US_SHIPS.indexOf(ctype) >= 0) {
+        if (AMERICAN_SHIPS.indexOf(ctype) >= 0) {
             add({ asw: 1 }, num, 1)
         }
     }
     // SBD-5
     if (num = count(419)) {
-        if (US_CV_SHIPS.indexOf(ctype) >= 0) {
+        if (AMERICAN_SHIPS.indexOf(ctype) >= 0) {
             var fp = items.filter(function(item) {
                 return item.slotitemId === 419
             }).map(function(item) {
@@ -3697,7 +3753,7 @@ function getEquipmentBonus(date, attacker) {
     }
     // SB2C-3
     if (num = count(420)) {
-        if (US_CV_SHIPS.concat(UK_CV_SHIPS).indexOf(ctype) >= 0) {
+        if (AMERICAN_SHIPS.indexOf(ctype) >= 0 || BRITISH_SHIPS.indexOf(ctype) >= 0) {
             var fp = items.filter(function(item) {
                 return item.slotitemId === 420
             }).map(function(item) {
@@ -3717,7 +3773,7 @@ function getEquipmentBonus(date, attacker) {
     }
     // SB2C-5
     if (num = count(421)) {
-        if (US_CV_SHIPS.concat(UK_CV_SHIPS).indexOf(ctype) >= 0) {
+        if (AMERICAN_SHIPS.indexOf(ctype) >= 0 || BRITISH_SHIPS.indexOf(ctype) >= 0) {
             var fp = items.filter(function(item) {
                 return item.slotitemId === 421
             }).map(function(item) {
@@ -3737,7 +3793,7 @@ function getEquipmentBonus(date, attacker) {
     }
     // FR-1 Fireball
     if (num = count(422)) {
-        if (US_CV_SHIPS.indexOf(ctype) >= 0 || UK_CV_SHIPS.indexOf(ctype) >= 0) {
+        if (AMERICAN_SHIPS.indexOf(ctype) >= 0 || BRITISH_SHIPS.indexOf(ctype) >= 0) {
             add({ fp: 1 }, num)
             if (ctype === 84) {
                 add({ fp: 1 }, num)
@@ -3752,42 +3808,52 @@ function getEquipmentBonus(date, attacker) {
         if (ctype === 78) {
             add({ fp: 2 }, num)
         }
-        if (UK_CV_SHIPS.indexOf(ctype) >= 0) {
+        if (BRITISH_SHIPS.indexOf(ctype) >= 0) {
             add({ fp: 2 }, num)
-        } else if (US_CV_SHIPS.indexOf(ctype) >= 0) {
+        } else if (AMERICAN_SHIPS.indexOf(ctype) >= 0) {
             add({ fp: 1 }, num)
         }
     }
     // Barracuda Mk.II
     if (num = count(424)) {
-        if (UK_CV_SHIPS.indexOf(ctype) >= 0) {
-            add({ fp: 2 }, num)
+        if (BRITISH_SHIPS.indexOf(ctype) >= 0) {
+            add({ fp: 2, tp: 3 }, num)
+            var fp = items.filter(function(item) {
+                return item.slotitemId === 424
+            }).map(function(item) {
+                if (item.level >= 6) return 2
+                if (item.level >= 2) return 1
+                return 0
+            }).reduce(function(p, v) {
+                return p + v
+            }, 0)
+            add({ fp: fp }, num, 1)
         }
     }
     // Barracuda Mk.III
     if (num = count(425)) {
-        if (UK_CV_SHIPS.indexOf(ctype) >= 0) {
+        if (BRITISH_SHIPS.indexOf(ctype) >= 0) {
             add({ fp: 2, asw: 2 }, num)
+            var fp = items.filter(function(item) {
+                return item.slotitemId === 425
+            }).map(function(item) {
+                if (item.level >= 4) return 1
+                return 0
+            }).reduce(function(p, v) {
+                return p + v
+            }, 0)
+            var asw = items.filter(function(item) {
+                return item.slotitemId === 425
+            }).map(function(item) {
+                if (item.level === 10) return 3
+                if (item.level >= 6) return 2
+                if (item.level >= 2) return 1
+                return 0
+            }).reduce(function(p, v) {
+                return p + v
+            }, 0)
+            add({ fp: fp, asw: asw }, num, 1)
         }
-        var fp = items.filter(function(item) {
-            return item.slotitemId === 425
-        }).map(function(item) {
-            if (item.level >= 4) return 1
-            return 0
-        }).reduce(function(p, v) {
-            return p + v
-        }, 0)
-        var asw = items.filter(function(item) {
-            return item.slotitemId === 425
-        }).map(function(item) {
-            if (item.level === 10) return 3
-            if (item.level >= 6) return 2
-            if (item.level >= 2) return 1
-            return 0
-        }).reduce(function(p, v) {
-            return p + v
-        }, 0)
-        add({ fp: fp, asw: asw }, num, 1)
     }
     // 305mm/46 連装砲
     // 305mm/46 三連装砲
@@ -3802,9 +3868,9 @@ function getEquipmentBonus(date, attacker) {
         if (ctype === 112) {
             add({ fp: 1 }, num)
         }
-        if (UK_CV_SHIPS.indexOf(ctype) >= 0) {
+        if (BRITISH_SHIPS.indexOf(ctype) >= 0) {
             add({ fp: 1 }, num)
-        } else if (US_CV_SHIPS.indexOf(ctype) >= 0) {
+        } else if (AMERICAN_SHIPS.indexOf(ctype) >= 0) {
             add({ fp: 1 }, num)
         }
     }
@@ -3822,7 +3888,7 @@ function getEquipmentBonus(date, attacker) {
     }
     // 三式水中探信儀改
     if (num = count(438)) {
-        if (JP_DD_SHIPS.indexOf(ctype) >= 0) {
+        if (JAPANESE_DD_SHIPS.indexOf(ctype) >= 0) {
             add({ asw: 1 }, num)
         }
         if ([160, 488, 141].indexOf(shipId) >= 0) {
@@ -3851,7 +3917,7 @@ function getEquipmentBonus(date, attacker) {
         if (ctype === 101 || stype === 1) {
             add({ asw: 1 }, num, 1)
         }
-        if (US_SHIPS.indexOf(ctype) >= 0 || UK_SHIPS.indexOf(ctype) >= 0) {
+        if (AMERICAN_SHIPS.indexOf(ctype) >= 0 || BRITISH_SHIPS.indexOf(ctype) >= 0) {
             add({ asw: 2 }, num, 1)
         }
     }
