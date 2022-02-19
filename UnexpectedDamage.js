@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.50
+var VERSION = 2.51
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -657,27 +657,6 @@ DayBattlePower.prototype.getImprovementBonus = function () {
                 case 46: return 1    // 特二式内火艇
                 case 18: return 1    // 三式弾
                 case 37: return 1    // 対地装備
-                case 7:              // 艦上爆撃機
-                    // 航空砲撃でなければ加算しない
-                    if (isAirAttack) {
-                        // 爆戦、「彗星一二型(三一号光電管爆弾搭載機)」は改修効果が異なる
-                        return [
-                            23,  // 九九式艦爆
-                            24,  // 彗星
-                            57,  // 彗星一二型甲
-                            99,  // 九九式艦爆(江草隊)
-                            100, // 彗星(江草隊)
-                            148, // 試製南山
-                            195, // SBD
-                            248, // Skua
-                            391, // 九九式艦爆二二型
-                            392, // 九九式艦爆二二型(熟練)
-                            419, // SBD-5
-                            420, // SB2C-3
-                            421  // SB2C-5
-                        ].indexOf(item.slotitemId) >= 0 ? 0.5 : 0
-                    }
-                    return 0
                 case 39: return 1    // 水上艦要員
                 case 34: return 1    // 司令部施設
                 default: return 0
@@ -705,9 +684,33 @@ DayBattlePower.prototype.getImprovementBonus = function () {
                         return 0.3 * item.level
                 }
             }
+        }
         // 艦上攻撃機
-        } else if (item.type2 === 8) {
+        if (item.type2 === 8) {
             return 0.2 * item.level
+        }
+        // 艦上爆撃機
+        if (item.type2 === 7) {
+            // 航空砲撃でなければ加算しない
+            if (isAirAttack) {
+                // 爆戦、「彗星一二型(三一号光電管爆弾搭載機)」は改修効果が異なる
+                return [
+                    23,  // 九九式艦爆
+                    24,  // 彗星
+                    57,  // 彗星一二型甲
+                    99,  // 九九式艦爆(江草隊)
+                    100, // 彗星(江草隊)
+                    148, // 試製南山
+                    195, // SBD
+                    248, // Skua
+                    391, // 九九式艦爆二二型
+                    392, // 九九式艦爆二二型(熟練)
+                    419, // SBD-5
+                    420, // SB2C-3
+                    421  // SB2C-5
+                ].indexOf(item.slotitemId) >= 0 ? 0.5 : 0
+            }
+            return 0
         }
         return _getimprovementBonus() * Math.sqrt(item.level)
     }, this).reduce(function (prev, current) {
