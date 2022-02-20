@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.53
+var VERSION = 2.54
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -608,7 +608,7 @@ DayBattlePower.prototype.getBasicPower = function () {
     // 空撃または陸上型かつ艦上爆撃機,艦上攻撃機,陸上攻撃機,噴式戦闘爆撃機,噴式攻撃機所持時?
     if (getAttackTypeAtDay(this.attack, this.attacker, this.defender) === 1 || isGround(this.attacker) && this.items.some(function (item) { return [7, 8, 47, 57, 58].indexOf(item.type2) >= 0 })) {
         // 空撃
-        var rai = this.attacker.slotParam.raig + (this.date.after(getJstDate(2021, 8, 4, 12, 0, 0)) ? getEquipmentBonus(this.date, this.attacker).maxTp : 0)
+        var rai = this.attacker.slotParam.raig + (this.date.after(getJstDate(2021, 8, 4, 12, 0, 0)) ? getEquipmentBonus(this.date, this.attacker).tp : 0)
         var baku = this.attacker.slotParam.baku
         if (isGround(this.defender)) {
             rai = 0
@@ -2527,7 +2527,7 @@ function isAPshell(item) {
  * 装備ボーナスの値を返す
  * @param {java.util.Date} date 戦闘日時
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
- * @return {{fp: number, asw: number, tp: number, maxTp: number}}
+ * @return {{fp: number, asw: number, tp: number}}
  */
 function getEquipmentBonus(date, attacker) {
     var shipId = attacker.shipId
@@ -2535,14 +2535,15 @@ function getEquipmentBonus(date, attacker) {
     var ctype = (JSON.parse(Ship.get(attacker.shipId).json).api_ctype | 0)
     var yomi = attacker.shipInfo.flagship
     var items = getItems(attacker)
-    var bonus = { fp: 0, asw: 0, tp: 0, maxTp: 0 }
+    var bonus = { fp: 0, asw: 0, tp: 0 }
     function add(effect, num, max) {
-        ["fp", "asw", "tp"].forEach(function(param) {
+        // 火力・対潜
+        ["fp", "asw"].forEach(function(param) {
             bonus[param] += (effect[param] | 0) * Math.min(num, max | 0 || Infinity)
         })
-        // tp(雑)
-        if (num > 0) {
-            bonus["maxTp"] += Math.max(bonus["maxTp"], (effect["tp"] | 0))
+        // 雷装
+        if (num > 0 && effect.tp) {
+            bonus.tp = Math.min(bonus.tp || Infinity, effect.tp)
         }
     }
     var itemNums = items.reduce(function(previous, item) {
