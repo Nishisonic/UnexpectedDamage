@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.51
+var VERSION = 2.52
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -33,6 +33,11 @@ var EXECUTABLE_FILE = [
 var data_prefix = "damage_"
 
 var isAkakari = AppConstants.NAME.indexOf("赤仮") >= 0
+
+// 赤仮用
+if (isAkakari) {
+    AkakariSyutsugekiLogReader = Java.type("logbook.builtinscript.akakariLog.AkakariSyutsugekiLogReader")
+}
 
 //#endregion
 
@@ -1441,13 +1446,10 @@ NightBattlePower.prototype.getNightTouchPlaneBonus = function () {
  */
 function getOnSlot(attacker, date) {
     if (isAkakari) {
-        try {
-            AkakariSyutsugekiLogReader = Java.type("logbook.builtinscript.akakariLog.AkakariSyutsugekiLogReader")
-            var json = AkakariSyutsugekiLogReader.shipAfterBattle(date, attacker.shipId) || AkakariSyutsugekiLogReader.shipEndPort(date, attacker.shipId)
-            if (json) {
-                return JSON.parse(json.get("api_onslot"))
-            }
-        } catch (e) { }
+        var json = AkakariSyutsugekiLogReader.shipAfterBattle(date, attacker.id)
+        if (json) {
+            return JSON.parse(json.get("api_onslot"))
+        }
     }
     return attacker.onSlot
 }
@@ -2281,7 +2283,7 @@ var getSpecialAttackBonus = function(that) {
                         var secondShipItems = getItems(ships[1])
                         var thirdShipItems = getItems(ships[2])
                         // 艦これ負の遺産
-                        if (this.date.before(getJstDate(2021, 10, 15, 12, 0, 0))) {
+                        if (that.date.before(getJstDate(2021, 10, 15, 12, 0, 0))) {
                             if (isBig7(thirdShipId)) {
                                 if (isBig7(secondShipId) || surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems) > 1) {
                                     return surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems)

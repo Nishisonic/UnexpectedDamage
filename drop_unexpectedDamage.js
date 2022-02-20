@@ -1,6 +1,6 @@
 /**
  * 異常ダメージ検知
- * @version 2.5.1
+ * @version 2.5.2
  * @author Nishikuma
  */
 
@@ -38,6 +38,7 @@ function header() {
 
 function begin() {
     updateFile()
+    loadAkakariLogIfNeeded()
     setTmpData("ini", false)
     setTmpData("unexpected", {})
 }
@@ -64,6 +65,23 @@ function body(battle) {
 
 function end() {
     setTmpData("ini", true)
+}
+
+/**
+ * 赤仮の出撃ログを本体より先に読み込む
+ */
+function loadAkakariLogIfNeeded() {
+    if (!isAkakari) return
+
+    try {
+        ApplicationMain = Java.type("logbook.gui.ApplicationMain")
+        AkakariSyutsugekiLogReader = Java.type("logbook.builtinscript.akakariLog.AkakariSyutsugekiLogReader")
+        ApplicationMain.logPrint("赤仮出撃ログの読み込み中<<UnexpectedDamage>>")
+        AkakariSyutsugekiLogReader.loadAllStartPortDate()
+        ApplicationMain.logPrint("赤仮出撃ログの読み込み完了<<UnexpectedDamage>>")
+    } catch (e) { 
+        ApplicationMain.logPrint("赤仮出撃ログの読み込み失敗<<UnexpectedDamage>>")
+    }
 }
 
 /**
