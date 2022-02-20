@@ -1,6 +1,6 @@
 /**
  * 異常ダメージ検知
- * @version 2.5.2
+ * @version 2.5.3
  * @author Nishikuma
  */
 
@@ -73,14 +73,31 @@ function end() {
 function loadAkakariLogIfNeeded() {
     if (!isAkakari) return
 
+    ApplicationMain = Java.type("logbook.gui.ApplicationMain")
+    AkakariSyutsugekiLogReader = Java.type("logbook.builtinscript.akakariLog.AkakariSyutsugekiLogReader")
+
     try {
-        ApplicationMain = Java.type("logbook.gui.ApplicationMain")
-        AkakariSyutsugekiLogReader = Java.type("logbook.builtinscript.akakariLog.AkakariSyutsugekiLogReader")
+        if(AkakariSyutsugekiLogReader.needConvert()) {
+            ApplicationMain.logPrint("赤仮出撃ログのコンバート開始<<UnexpectedDamage>>")
+            AkakariSyutsugekiLogReader.convertAllOldLog()
+            ApplicationMain.logPrint("赤仮出撃ログのコンバート完了<<UnexpectedDamage>>")
+        }
+    } catch (e) { 
+        ApplicationMain.logPrint("赤仮出撃ログのコンバートに失敗しました<<UnexpectedDamage>>")
+    }
+    try {
+        ApplicationMain.logPrint("赤仮出撃ログの圧縮開始<<UnexpectedDamage>>")
+        AkakariSyutsugekiLogReader.allRawLogToZstdLog()
+        ApplicationMain.logPrint("赤仮出撃ログの圧縮完了<<UnexpectedDamage>>")
+    } catch (e){
+        ApplicationMain.logPrint("赤仮出撃ログの圧縮に失敗しました<<UnexpectedDamage>>")
+    }
+    try {
         ApplicationMain.logPrint("赤仮出撃ログの読み込み中<<UnexpectedDamage>>")
         AkakariSyutsugekiLogReader.loadAllStartPortDate()
         ApplicationMain.logPrint("赤仮出撃ログの読み込み完了<<UnexpectedDamage>>")
-    } catch (e) { 
-        ApplicationMain.logPrint("赤仮出撃ログの読み込み失敗<<UnexpectedDamage>>")
+    } catch (e) {
+        ApplicationMain.logPrint("赤仮出撃ログの読み込みに失敗しました<<UnexpectedDamage>>")
     }
 }
 
