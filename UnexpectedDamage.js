@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.54
+var VERSION = 2.55
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -1144,9 +1144,9 @@ NightBattlePower.prototype.getBasicPower = function () {
             if (item !== null && slot > 0) {
                 // 夜戦、夜攻
                 if (item.type3 === 45 || item.type3 === 46) {
-                    // 夜爆出てきたらまた書き換え
-                    // 火力+雷装+爆装+3*機数+0.45*(火力+雷装+爆装+対潜)*sqrt(機数)+sqrt(★)
-                    return item.param.karyoku + (useRaisou ? item.param.raisou + item.param.baku : 0) + 3 * slot + 0.45 * (item.param.karyoku + item.param.raisou + item.param.baku + item.param.taisen) * Math.sqrt(slot) + Math.sqrt(item.level)
+                    // 夜爆出てきたらまた書き換え(TBM-3S+3Wの爆装は直接加算されない)
+                    // 火力+雷装+3*機数+0.45*(火力+雷装+爆装+対潜)*sqrt(機数)+sqrt(★)
+                    return item.param.karyoku + (useRaisou ? item.param.raisou : 0) + 3 * slot + 0.45 * (item.param.karyoku + item.param.raisou + item.param.baku + item.param.taisen) * Math.sqrt(slot) + Math.sqrt(item.level)
                 } else {
                     switch (item.slotitemId) {
                         case 154: // 零戦62型(爆戦/岩井隊)
