@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.55
+var VERSION = 2.56
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -45,15 +45,15 @@ if (isAkakari) {
 
 //#region 定数箇所
 /** ドイツ艦 */
-var GERMAN_SHIPS = [47, 63, 55, 48, 57]
+var GERMAN_SHIPS = [47, 48, 55, 57, 63]
 /** イタリア艦 */
-var ITALIAN_SHIPS = [58, 68, 64, 92, 61, 80, 113]
+var ITALIAN_SHIPS = [58, 61, 64, 68, 80, 92, 113]
 /** アメリカ艦 */
-var AMERICAN_SHIPS = [65, 69, 83, 87, 84, 91, 93, 95, 99, 102, 105, 106, 107, 110, 114]
+var AMERICAN_SHIPS = [65, 69, 83, 84, 87, 91, 93, 95, 99, 102, 105, 106, 107, 110, 114]
 /** イギリス艦 */
 var BRITISH_SHIPS = [67, 78, 82, 88, 108, 112]
 /** フランス艦 */
-var FRENCH_SHIPS = [79, 70]
+var FRENCH_SHIPS = [70, 79]
 /** ロシア艦 */
 var RUSSIAN_SHIPS = [73, 81]
 /** スウェーデン艦 */
@@ -713,7 +713,7 @@ DayBattlePower.prototype.getImprovementBonus = function () {
                     419, // SBD-5
                     420, // SB2C-3
                     421  // SB2C-5
-                ].indexOf(item.slotitemId) >= 0 ? 0.5 : 0
+                ].indexOf(item.slotitemId) >= 0 ? 0.2 * item.level : 0
             }
             return 0
         }
