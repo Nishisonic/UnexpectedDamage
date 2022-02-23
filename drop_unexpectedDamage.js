@@ -1,6 +1,6 @@
 /**
  * 異常ダメージ検知
- * @version 2.5.6
+ * @version 2.5.7
  * @author Nishikuma
  */
 
@@ -970,7 +970,7 @@ var detectDayBattle = function (date, mapCell, kind, friendCombinedKind, isEnemy
                         var skilled = getSkilledBonus(date, attack, ship.attacker, ship.defender, hp.attacker)
 
                         if (!isSubMarine(ship.defender) && p.isAPshellBonusTarget() && isCritical(attack)) {
-                            var power2 = p.getPostcapPower(true)
+                            var power2 = p.getPostcapPower(false, true)
                             // [[[キャップ後攻撃力] * 弾着観測射撃 * 戦爆連合カットイン攻撃 * イベント特効 * 徹甲弾補正] * クリティカル補正]
                             inversion.minEx = Math.ceil(Math.ceil(minPostcapPower) / getCriticalBonus(attack)) / power2[1] / skilled[1]
                             inversion.maxEx = Math.ceil(Math.ceil(maxPostcapPower) / getCriticalBonus(attack)) / power2[0] / skilled[0]

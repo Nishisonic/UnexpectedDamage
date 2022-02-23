@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.56
+var VERSION = 2.57
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -372,11 +372,15 @@ var AntiSubmarinePower = function (date, kind, friendCombinedKind, isEnemyCombin
 
 /**
  * 対潜火力(基本攻撃力)を返します
- * @return {Number} 対潜火力(基本攻撃力)
+ * @param {Boolean} formulaMode 計算式モード
+ * @return {Number|String} 対潜火力(基本攻撃力)
  */
-AntiSubmarinePower.prototype.getBasicPower = function () {
+AntiSubmarinePower.prototype.getBasicPower = function (formulaMode) {
     // レーダー射撃戦専用処理
     if (this.isRadarShooting) {
+        if (formulaMode) {
+            return "sqrt(" + this.attacker.raisou + ")*2" 
+        }
         return Math.sqrt(this.attacker.raisou) * 2
     }
     var equipmentBonus = getEquipmentBonus(this.date, this.attacker).asw
@@ -401,6 +405,9 @@ AntiSubmarinePower.prototype.getBasicPower = function () {
     // あまりこの書き方好きじゃない
     if (this.date.after(getJstDate(2021, 9, 28, 12, 0, 0))) {
         taisenItem += equipmentBonus
+    }
+    if (formulaMode) {
+        return "sqrt(" + taisenShip + ")*2+" + taisenItem + "*1.5+" + this.getImprovementBonus() + "+" + this.getShipTypeConstant()
     }
     return Math.sqrt(taisenShip) * 2 + taisenItem * 1.5 + this.getImprovementBonus() + this.getShipTypeConstant()
 }
@@ -506,19 +513,27 @@ AntiSubmarinePower.prototype.getSynergyBonus2 = function () {
 
 /**
  * 対潜火力(キャップ前)を返します
- * @return {Number} 対潜火力(キャップ前)
+ * @param {Boolean} formulaMode 計算式モード
+ * @return {Number|String} 対潜火力(キャップ前)
  */
-AntiSubmarinePower.prototype.getPrecapPower = function () {
+AntiSubmarinePower.prototype.getPrecapPower = function (formulaMode) {
+    if (formulaMode) {
+        return "(" + this.getBasicPower() + ")*" + getEngagementBonus(this.formation) + "*" + this.getFormationBonus() + "*" + this.getConditionBonus() + "*" + this.getSynergyBonus() + "*" + this.getSynergyBonus2()
+    }
     return this.getBasicPower() * getEngagementBonus(this.formation) * this.getFormationBonus() * this.getConditionBonus() * this.getSynergyBonus() * this.getSynergyBonus2()
 }
 
 /**
  * 対潜火力(キャップ後)を返します
- * @return {[Number,Number]} 対潜火力(キャップ後)
+ * @param {Boolean} formulaMode 計算式モード
+ * @return {[Number,Number]|String} 対潜火力(キャップ後)
  */
-AntiSubmarinePower.prototype.getPostcapPower = function () {
+AntiSubmarinePower.prototype.getPostcapPower = function (formulaMode) {
     var v = Math.floor(getPostcapValue(this.getPrecapPower(), this.CAP_VALUE)) * getCriticalBonus(this.attack)
     var s = this.shouldUseSkilled ? getSkilledBonus(this.date, this.attack, this.attacker, this.defender, this.attackerHp) : [1.0, 1.0]
+    if (formulaMode) {
+        return "int(int(" + getPostcapValue(this.getPrecapPower(), this.CAP_VALUE) + ")*" + getCriticalBonus(this.attack) + "*" + s[0] + ")"
+    }
     return [Math.floor(v * s[0]), Math.floor(v * s[1])]
 }
 
@@ -601,9 +616,10 @@ var DayBattlePower = function (date, kind, friendCombinedKind, isEnemyCombined, 
 
 /**
  * 昼砲撃火力(基本攻撃力)を返します
- * @return {Number} 昼砲撃火力(基本攻撃力)
+ * @param {Boolean} formulaMode 計算式モード
+ * @return {Number|String} 昼砲撃火力(基本攻撃力)
  */
-DayBattlePower.prototype.getBasicPower = function () {
+DayBattlePower.prototype.getBasicPower = function (formulaMode) {
     var landBonus = getLandBonus(this.attacker, this.defender, true)
     // 空撃または陸上型かつ艦上爆撃機,艦上攻撃機,陸上攻撃機,噴式戦闘爆撃機,噴式攻撃機所持時?
     if (getAttackTypeAtDay(this.attack, this.attacker, this.defender) === 1 || isGround(this.attacker) && this.items.some(function (item) { return [7, 8, 47, 57, 58].indexOf(item.type2) >= 0 })) {
@@ -625,9 +641,15 @@ DayBattlePower.prototype.getBasicPower = function () {
                 }, 0)
             }
         }
+        if (formulaMode) {
+            return "25+int(1.5*(((((((5+" + this.attacker.karyoku + "+" + this.getImprovementBonus() + "+" + this.getCombinedPowerBonus() + ")*" + landBonus.stypeBonus.a + "+" + landBonus.stypeBonus.b + ")*" + landBonus.basicBonus.a + "*" + landBonus.shikonBonus.a + "+" + landBonus.shikonBonus.b + ")*" + landBonus.m4a1ddBonus.a + "+" + landBonus.m4a1ddBonus.b + ")*" + landBonus.issikihouBonus.a + "+" + landBonus.issikihouBonus.b + ")*" + landBonus.supportBonus.a + "+" + landBonus.supportBonus.b + "+" + landBonus.basicBonus.b + ")+int(int(" + baku  + "*1.3)+" + rai + ")+15))"
+        }
         return 25 + Math.floor(1.5 * (((((((5 + this.attacker.karyoku + this.getImprovementBonus() + this.getCombinedPowerBonus()) * landBonus.stypeBonus.a + landBonus.stypeBonus.b) * landBonus.basicBonus.a * landBonus.shikonBonus.a + landBonus.shikonBonus.b) * landBonus.m4a1ddBonus.a + landBonus.m4a1ddBonus.b) * landBonus.issikihouBonus.a + landBonus.issikihouBonus.b) * landBonus.supportBonus.a + landBonus.supportBonus.b + landBonus.basicBonus.b) + Math.floor(Math.floor(baku * 1.3) + rai) + 15))
     } else {
         // 砲撃
+        if (formulaMode) {
+            return "(((((" + this.attacker.karyoku + "+" + this.getImprovementBonus() + "+" + this.getCombinedPowerBonus() + "+5)*" + landBonus.stypeBonus.a + "+" + landBonus.stypeBonus.b + ")*" + landBonus.basicBonus.a + "*" + landBonus.shikonBonus.a + "+" + landBonus.shikonBonus.b + ")*" + landBonus.m4a1ddBonus.a + "+" + landBonus.m4a1ddBonus.b + ")*" + landBonus.issikihouBonus.a + "+" + landBonus.issikihouBonus.b + ")*" + landBonus.supportBonus.a + "+" + landBonus.supportBonus.b + "+" + landBonus.basicBonus.b
+        }
         return (((((this.attacker.karyoku + this.getImprovementBonus() + this.getCombinedPowerBonus() + 5) * landBonus.stypeBonus.a + landBonus.stypeBonus.b) * landBonus.basicBonus.a * landBonus.shikonBonus.a + landBonus.shikonBonus.b) * landBonus.m4a1ddBonus.a + landBonus.m4a1ddBonus.b) * landBonus.issikihouBonus.a + landBonus.issikihouBonus.b) * landBonus.supportBonus.a + landBonus.supportBonus.b + landBonus.basicBonus.b
     }
 }
@@ -725,33 +747,47 @@ DayBattlePower.prototype.getImprovementBonus = function () {
 
 /**
  * 昼砲撃火力(キャップ前)を返します
- * @return {Number} 昼砲撃火力(キャップ前)
+ * @param {Boolean} formulaMode 計算式モード
+ * @return {Number|String} 昼砲撃火力(キャップ前)
  */
-DayBattlePower.prototype.getPrecapPower = function () {
+DayBattlePower.prototype.getPrecapPower = function (formulaMode) {
+    if (formulaMode) {
+        return "(" + this.getBasicPower() + ")*" + getEngagementBonus(this.formation) + "*" + this.getFormationBonus() + "*" + this.getConditionBonus() + "+" + getOriginalGunPowerBonus(this.attacker, this.date)
+    }
     return this.getBasicPower() * getEngagementBonus(this.formation) * this.getFormationBonus() * this.getConditionBonus() + getOriginalGunPowerBonus(this.attacker, this.date)
 }
 
 /**
  * 昼砲撃火力(キャップ後)を返します
+ * @param {Boolean} formulaMode 計算式モード
  * @param {Boolean} noCL2 クリティカル前の昼砲撃火力値を返すか(デフォルト=false)
- * @return {[Number,Number]} 昼砲撃火力(キャップ後)
+ * @return {[Number,Number]|String} 昼砲撃火力(キャップ後)
  */
-DayBattlePower.prototype.getPostcapPower = function (noCL2) {
+DayBattlePower.prototype.getPostcapPower = function (formulaMode, noCL2) {
     // サイレント修正(Twitterで確認した限りでは17/9/9が最古=>17夏イベ?)以降、集積地棲姫特効のキャップ位置が変化(a5→a6)
     // 17夏以降に登場したPT小鬼群の特効位置もa6に変化?(乗算と加算組み合わせているっぽいので詳細不明)
     // A = [([キャップ後攻撃力] * 乗算特効補正 + 加算特効補正) * 乗算特効補正2] * 弾着観測射撃 * 戦爆連合カットイン攻撃
     var value = Math.floor((Math.floor(getPostcapValue(this.getPrecapPower(), this.CAP_VALUE)) * getMultiplySlayerBonus(this.attacker, this.defender) + getAddSlayerBonus(this.attacker, this.defender)) * getMultiplySlayerBonus2(this.attacker, this.defender)) * this.getSpottingBonus() * this.getUnifiedBombingBonus()
+    var str = "int((int(" + getPostcapValue(this.getPrecapPower(), this.CAP_VALUE) + ")*" + getMultiplySlayerBonus(this.attacker, this.defender) + "+" + getAddSlayerBonus(this.attacker, this.defender) + ")*" + getMultiplySlayerBonus2(this.attacker, this.defender) + ")*" + this.getSpottingBonus() + "*" + this.getUnifiedBombingBonus()
     // 徹甲弾補正判定
     if (this.isAPshellBonusTarget()) {
         // A = [A * 徹甲弾補正]
         value = Math.floor(value * this.getAPshellBonus())
+        str = "int((" + str + ")*" + this.getAPshellBonus() + ")"
     }
     // クリティカル判定
     if (!noCL2 && isCritical(this.attack)) {
         // A = [A * クリティカル補正 * 熟練度補正]
         value *= getCriticalBonus(this.attack)
+        str = "(" + str + ")*" + getCriticalBonus(this.attack)
         var skilled = this.shouldUseSkilled ? getSkilledBonus(this.date, this.attack, this.attacker, this.defender, this.attackerHp) : [1.0, 1.0]
+        if (formulaMode) {
+            return "int((" + str + ")*" + skilled[0] + ")"
+        }
         return [Math.floor(value * skilled[0]), Math.floor(value * skilled[1])]
+    }
+    if (formulaMode) {
+        return str
     }
     return [value, value]
 }
@@ -957,9 +993,13 @@ var TorpedoPower = function (date, kind, friendCombinedKind, isEnemyCombined, nu
 
 /**
  * 雷撃火力(基本攻撃力)を返します
- * @return {Number} 雷撃火力(基本攻撃力)
+ * @param {Boolean} formulaMode 計算式モード
+ * @return {Number|String} 雷撃火力(基本攻撃力)
  */
-TorpedoPower.prototype.getBasicPower = function () {
+TorpedoPower.prototype.getBasicPower = function (formulaMode) {
+    if (formulaMode) {
+        return this.attacker.raisou + "+" + this.getImprovementBonus() + "+" + this.getCombinedPowerBonus() + "+5"
+    }
     return this.attacker.raisou + this.getImprovementBonus() + this.getCombinedPowerBonus() + 5
 }
 
@@ -988,21 +1028,29 @@ TorpedoPower.prototype.getImprovementBonus = function () {
 
 /**
  * 雷撃火力(キャップ前)を返します
- * @return {Number} 雷撃火力(キャップ前)
+ * @param {Boolean} formulaMode 計算式モード
+ * @return {Number|String} 雷撃火力(キャップ前)
  */
-TorpedoPower.prototype.getPrecapPower = function () {
+TorpedoPower.prototype.getPrecapPower = function (formulaMode) {
+    if (formulaMode) {
+        return "(" + this.getBasicPower() + ")*" + getEngagementBonus(this.formation) + "*" + this.getFormationBonus() + "*" + this.getConditionBonus()
+    }
     return this.getBasicPower() * getEngagementBonus(this.formation) * this.getFormationBonus() * this.getConditionBonus()
 }
 
 /**
  * 雷撃火力(キャップ後)を返します
- * @return {[Number,Number]} 雷撃火力(キャップ後)
+ * @param {Boolean} formulaMode 計算式モード
+ * @return {[Number,Number]|String} 雷撃火力(キャップ後)
  */
-TorpedoPower.prototype.getPostcapPower = function () {
+TorpedoPower.prototype.getPostcapPower = function (formulaMode) {
     var result = [0, 0]
     var value = getPostcapValue(this.getPrecapPower(), this.CAP_VALUE)
     var critical = getCriticalBonus(this.attack)
     result[0] = result[1] = Math.floor((Math.floor(value) * getMultiplySlayerBonus(this.attacker, this.defender) + getAddSlayerBonus(this.attacker, this.defender)) * getMultiplySlayerBonus2(this.attacker, this.defender) * critical)
+    if (formulaMode) {
+        return "int((int(" + value + ")*" + getMultiplySlayerBonus(this.attacker, this.defender) + "+" + getAddSlayerBonus(this.attacker, this.defender) + ")*" + getMultiplySlayerBonus2(this.attacker, this.defender) + "*" + critical + ")"
+    }
     return result
 }
 
@@ -1131,9 +1179,10 @@ var NightBattlePower = function (date, kind, friendCombinedKind, isEnemyCombined
 
 /**
  * 夜戦火力(基本攻撃力)を返します
- * @return {Number} 夜戦火力(基本攻撃力)
+ * @param {Boolean} formulaMode 計算式モード
+ * @return {Number|String} 夜戦火力(基本攻撃力)
  */
-NightBattlePower.prototype.getBasicPower = function () {
+NightBattlePower.prototype.getBasicPower = function (formulaMode) {
     var useRaisou = !isGround(this.defender) || isNorthernmostLandingPrincess(this.defender) || this.items.length === 0
     // 夜襲
     if (isNightCvAttack(this.attacker, this.attackerHp)) {
@@ -1161,6 +1210,9 @@ NightBattlePower.prototype.getBasicPower = function () {
             }
             return 0
         }, this).reduce(function (p, c) { return p + c }, 0)
+        if (formulaMode) {
+            return karyoku + "+" + raisouBonus + "+" + nightPlaneBonus + "+" + this.getNightTouchPlaneBonus()
+        }
         return karyoku + raisouBonus + nightPlaneBonus + this.getNightTouchPlaneBonus()
     } else {
         var landBonus = getLandBonus(this.attacker, this.defender, false)
@@ -1180,6 +1232,9 @@ NightBattlePower.prototype.getBasicPower = function () {
                 }).reduce(function (p, c) { return p + c }, 0)
         } else {
             power = this.attacker.karyoku + (useRaisou ? this.attacker.raisou : 0) + this.getImprovementBonus()
+        }
+        if (formulaMode) {
+            return "((((((" + power + "+" + this.getNightTouchPlaneBonus() + ")*" + landBonus.stypeBonus.a + "+" + landBonus.stypeBonus.b + ")*" + landBonus.basicBonus.a + ")*" + landBonus.shikonBonus.a + "+" + landBonus.shikonBonus.b + ")*" + landBonus.m4a1ddBonus.a + "+" + landBonus.m4a1ddBonus.b + ")*" + landBonus.issikihouBonus.a + "+" + landBonus.issikihouBonus.b + ")*" + landBonus.supportBonus.a + "+" + landBonus.supportBonus.b + "+" + landBonus.basicBonus.b
         }
         return ((((((power + this.getNightTouchPlaneBonus()) * landBonus.stypeBonus.a + landBonus.stypeBonus.b) * landBonus.basicBonus.a) * landBonus.shikonBonus.a + landBonus.shikonBonus.b) * landBonus.m4a1ddBonus.a + landBonus.m4a1ddBonus.b) * landBonus.issikihouBonus.a + landBonus.issikihouBonus.b) * landBonus.supportBonus.a + landBonus.supportBonus.b + landBonus.basicBonus.b
     }
@@ -1261,9 +1316,13 @@ NightBattlePower.prototype.getFormationBonus = function () {
 
 /**
  * 夜戦火力(キャップ前)を返します
- * @return {Number} 夜戦火力(キャップ前)
+ * @param {Boolean} formulaMode 計算式モード
+ * @return {Number|String} 夜戦火力(キャップ前)
  */
-NightBattlePower.prototype.getPrecapPower = function () {
+NightBattlePower.prototype.getPrecapPower = function (formulaMode) {
+    if (formulaMode) {
+        return "(" + this.getBasicPower() + ")" + "*" + this.getFormationBonus() + "*" + this.getCutinBonus() + "*" + this.getCutinBonus2() + "*" + this.getConditionBonus() + "+" + this.getPrecapPostMultiplyPower()
+    }
     return this.getBasicPower() * this.getFormationBonus() * this.getCutinBonus() * this.getCutinBonus2() * this.getConditionBonus() + this.getPrecapPostMultiplyPower()
 }
 
@@ -1277,17 +1336,28 @@ NightBattlePower.prototype.getPrecapPostMultiplyPower = function () {
 
 /**
  * 夜戦火力(キャップ後)を返します
- * @return {[Number,Number]} 夜戦火力(キャップ後)
+ * @param {Boolean} formulaMode 計算式モード
+ * @return {[Number,Number]|String} 夜戦火力(キャップ後)
  */
-NightBattlePower.prototype.getPostcapPower = function () {
+NightBattlePower.prototype.getPostcapPower = function (formulaMode) {
     // A = [([キャップ後攻撃力] * 乗算特効補正 + 加算特効補正) * 乗算特効補正2]
     var value = Math.floor((Math.floor(getPostcapValue(this.getPrecapPower(), this.CAP_VALUE)) * getMultiplySlayerBonus(this.attacker, this.defender) + getAddSlayerBonus(this.attacker, this.defender)) * getMultiplySlayerBonus2(this.attacker, this.defender))
+    var str = "int((int(" + getPostcapValue(this.getPrecapPower(), this.CAP_VALUE) + ")*" + getMultiplySlayerBonus(this.attacker, this.defender) + "+" + getAddSlayerBonus(this.attacker, this.defender) + ")*" + getMultiplySlayerBonus2(this.attacker, this.defender) + ")"
     // クリティカル判定
     if (isCritical(this.attack)) {
         // A = [A * クリティカル補正 * 熟練度補正]
         value *= getCriticalBonus(this.attack)
+        if (formulaMode) {
+            str = "(" + str + ")*" + getCriticalBonus(this.attack)
+        }
         var skilled = this.shouldUseSkilled ? getSkilledBonus(this.date, this.attack, this.attacker, this.defender, this.attackerHp) : [1.0, 1.0]
+        if (formulaMode) {
+            return "int((" + str + ")*" + skilled[0] + ")"
+        }
         return [Math.floor(value * skilled[0]), Math.floor(value * skilled[1])]
+    }
+    if (formulaMode) {
+        return str
     }
     return [value, value]
 }

@@ -178,6 +178,9 @@ function genBattleHtml(dataLists) {
         '<script src="https://code.jquery.com/jquery-3.4.1.min.js" type="text/javascript"></script>' +
         '<script src="https://unpkg.com/multiple-select@1.4.0/dist/multiple-select.js" type="text/javascript"></script>' +
         '<link href="https://unpkg.com/multiple-select@1.4.0/dist/multiple-select.css" rel="stylesheet">' +
+        '<script src="https://cdn.jsdelivr.net/clipboard.js/1.5.13/clipboard.min.js"></script>' +
+        '<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script>' +
+        '<link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css" rel="stylesheet"/>' +
         '<style type="text/css">' +
             "body {font-family:'Lucida Grande','Hiragino Kaku Gothic ProN','ヒラギノ角ゴ ProN W3',Meiryo,メイリオ,sans-serif;}" +
             "div.box{margin-top:10px;margin-bottom:10px;font-size:small;}" +
@@ -371,6 +374,17 @@ function genBattleHtml(dataLists) {
                             '},' +
                         '});' +
                         '$("#enemy").multipleSelect("checkAll");' +
+                        'new Clipboard(".copied");' +
+                        'toastr.options = {' +
+                            '"timeOut": "1000"' +
+                        '};' +
+                        '$(".copied").click(function () {' +
+                            'toastr["info"]("計算式をコピーしました！");' +
+                        '});' +
+                        '$(".formula").hide();' +
+                        '$("#toggleFormula").click(function () {' +
+                            '$(".formula").toggle();' +
+                        '});' +
                     '});' +
                 '</script>' +
                 '<div style="float: right;">' +
@@ -403,7 +417,7 @@ function genBattleHtml(dataLists) {
                 '</div>'
             ) +
         '</div>' +
-        '<h2 style="clear: both; padding: 0; margin: 2px 0 0;">異常ダメ検知攻撃一覧</h2>' +
+        '<h2 style="clear: both; padding: 0; margin: 2px 0 0;">異常ダメ検知攻撃一覧<input id="toggleFormula" type="button" value="計算式表示切り替え" style="margin-left: 20px; cursor: pointer;"></h2>' +
         '<hr style="height: 1px; background-color: #BBB; border: none; margin-right:15px;"></hr>' +
         '</header>' +
         '<div style="width:100%; height:300px;"></div>' +
@@ -414,6 +428,7 @@ function genBattleHtml(dataLists) {
                 data.numOfAttackShips, data.formation, data.attack, data.attacker, data.defender, data.attackerHp, data.shouldUseSkilled, data.origins)
             var result = '<div style="border:#000000 solid 1px; padding:5px; margin:5px; background-color:#fce4d6;">'
             result += genHeaderHtml(data)
+            result += genFormulaHtml(power)
             result += isSubMarine(data.defender) ? genAntiSubMarineHtml(data, power) : genDayBattleHtml(data, power)
             result += genDefenseArmorHtml(data)
             result += genGimmickHtml(data)
@@ -425,6 +440,7 @@ function genBattleHtml(dataLists) {
                 data.numOfAttackShips, data.formation, data.attack, data.attacker, data.defender, data.attackerHp)
             var result = '<div style="border:#000000 solid 1px; padding:5px; margin:5px; background-color:#ddebf7;">'
             result += genHeaderHtml(data)
+            result += genFormulaHtml(power)
             result += genTorpedoAttackHtml(data, power)
             result += genDefenseArmorHtml(data)
             result += genGimmickHtml(data)
@@ -442,6 +458,7 @@ function genBattleHtml(dataLists) {
             }
             var result = '<div style="border:#000000 solid 1px; padding:5px; margin:5px; background-color:#e8d9f3;">'
             result += genHeaderHtml(data)
+            result += genFormulaHtml(power)
             result += isSubMarine(data.defender) ? genAntiSubMarineHtml(data, power) : genNightBattleHtml(data, power)
             result += genDefenseArmorHtml(data)
             result += genGimmickHtml(data)
@@ -488,6 +505,27 @@ function genHeaderHtml(data) {
         + (data.attack.attacker + 1) + '.' + data.attacker.friendlyName + '</td><td>→</td><td class="' + (data.defender.isFriend() ? 'friend' : 'enemy') + '" title="' + getItems(data.defender).map(function(item) { return item.name + (item.level > 0 ? '+' + item.level : '') }).join('&#10;') + '">'
         + (data.attack.defender + 1) + '.' + data.defender.friendlyName + '</td><td' + (isCritical(data.attack) ? ' style="font-weight:bold;"' : '') + '>' + data.attack.damage + '</td><td class="' + (data.defender.isFriend() ? 'friend' : 'enemy') + '">'
         + data.defenderHp.now + '→' + (data.defenderHp.now - data.attack.damage) + '</td><td>' + dmgWidth + '</td><td>' + getAmmoBonus(data.attacker, data.origins, data.mapCell).toFixed(2) + '</td></tr>'
+    result += '</table>'
+    return result
+}
+
+/**
+ * 計算式のHTMLを生成して返す
+ * @param {AntiSubmarinePower|DayBattlePower|TorpedoPower|NightBattlePower} power 火力
+ * @return {String} HTML
+ */
+function genFormulaHtml(power) {
+    var basicPower = power.getBasicPower(true)
+    var precapPower = power.getPrecapPower(true)
+    var postcapPower = power.getPostcapPower(true)
+    var result = '<table class="formula" style="margin-bottom:5px;">'
+    result += '<tr><th rowspan="7" style="padding: 0px 3px;">計<br>算<br>式</th></tr>'
+    result += '<tr><th>基本攻撃力<input type="button" value="copy" class="copied" style="float: right;cursor: pointer; margin-left: 15px;" data-clipboard-text="=' + basicPower +'"></th></tr>'
+    result += '<tr><td>=' + basicPower + '</td></tr>'
+    result += '<tr><th>キャップ前火力<input type="button" value="copy" class="copied" style="float: right;cursor: pointer; margin-left: 15px;" data-clipboard-text="=' + precapPower +'"></th></tr>'
+    result += '<tr><td>=' + precapPower + '</td></tr>'
+    result += '<tr><th>最終攻撃力(熟練度は最低値で表示されます)<input type="button" value="copy" class="copied" style="float: right;cursor: pointer; margin-left: 15px;" data-clipboard-text="=' + postcapPower +'"></th></tr>'
+    result += '<tr><td>=' + postcapPower + '</td></tr>'
     result += '</table>'
     return result
 }
