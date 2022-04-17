@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.58
+var VERSION = 2.59
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -187,14 +187,30 @@ var getAttackTypeAtDay = function (attack, attacker, defender) {
     // ロケットフラグ判定
     // 大発エフェクトid取得
 
+    // 速吸改
     if (attacker.shipId === 352) {
         if (isSubMarine(defender)) {
-            if (getItems(attacker).some(function (item) { return item.type2 === 8 && item.param.taisen > 0 || item.type2 === 7 || item.type2 === 25 })) {
+            if (getItems(attacker).some(function (item) { return item.type2 === 8 && item.param.taisen > 0 || item.type2 === 11 || item.type2 === 25 })) {
                 return 1
             } else {
                 return 2
             }
         } else if (getItems(attacker).some(function (item) { return item.type2 === 8 })) {
+            return 1
+        } else {
+            return 0
+        }
+    }
+
+    // 山汐丸、山汐丸改
+    if ([717, 900].indexOf(attacker.shipId) >= 0) {
+        if (isSubMarine(defender)) {
+            if (getItems(attacker).some(function (item) { return [7, 8, 11, 25, 26, 41].indexOf(item.type2) >= 0 && item.param.taisen >= 1 })) {
+                return 1
+            } else {
+                return 2
+            }
+        } else if (getItems(attacker).some(function (item) { return [7, 8].indexOf(item.type2) >= 0 })) {
             return 1
         } else {
             return 0
@@ -233,7 +249,7 @@ var getAttackTypeAtNight = function (attack, attacker, defender) {
     // 大発エフェクトid取得
     // 夜戦空母攻撃判定
 
-    if (attacker.stype === 7) {
+    if (attacker.stype === 7 || attacker.shipId === 646) {
         if (isSubMarine(defender)) {
             return 2
         }
@@ -3672,6 +3688,9 @@ function getEquipmentBonus(date, attacker) {
         } else if (BRITISH_SHIPS.indexOf(ctype) >= 0 || AUSTRALIAN_SHIPS.indexOf(ctype) >= 0) {
             add({ asw: 1 }, num, 1)
         }
+        if ([651, 656].indexOf(shipId) >= 0) {
+            add({ asw: 1 }, num, 1)
+        }
     }
     // 対潜短魚雷(試作初期型)
     if (num = count(378)) {
@@ -3684,7 +3703,8 @@ function getEquipmentBonus(date, attacker) {
             add({ asw: 2 }, num, 1)
         } else if (ctype === 96) {
             add({ asw: 1 }, num, 1)
-        } else if ([651, 656].indexOf(shipId) >= 0) {
+        }
+        if ([651, 656].indexOf(shipId) >= 0) {
             add({ asw: 1 }, num, 1)
         }
     }
@@ -3999,6 +4019,12 @@ function getEquipmentBonus(date, attacker) {
             add({ asw: 2 }, num, 1)
         }
     }
+    // 21inch艦首魚雷発射管6門(初期型)
+    // 21inch艦首魚雷発射管6門(後期型)
+    // if (num = count(440) + count(441)) {}
+    // 潜水艦後部魚雷発射管4門(初期型)
+    // 潜水艦後部魚雷発射管4門(後期型)
+    // if (num = count(440) + count(443)) {}
     // 零式艦戦64型(複座KMX搭載機)
     if (num = count(447)) {
         if (ctype === 76) {
@@ -4023,6 +4049,23 @@ function getEquipmentBonus(date, attacker) {
             return 0
         }))
         add({ fp: fp, asw: asw }, num, 1)
+    }
+    // 13号対空電探改(後期型)
+    // if (num = count(450)) {}
+    // 	三式指揮連絡機改
+    if (num = count(451)) {
+        if (yomi === "あきつまる") {
+            add({ asw: 2 }, num)
+        }
+        if (yomi === "やましおまる") {
+            add({ asw: 3 }, num)
+        }
+    }
+    // 試製 長12.7cm連装砲A型改四
+    if (num = count(455)) {
+        if (shipId === 647) {
+            add({ asw: 1 }, num)
+        }
     }
 
     return bonus
