@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.59
+var VERSION = 2.60
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -776,10 +776,10 @@ DayBattlePower.prototype.getPrecapPower = function (formulaMode) {
 /**
  * 昼砲撃火力(キャップ後)を返します
  * @param {Boolean} formulaMode 計算式モード
- * @param {Boolean} noCL2 クリティカル前の昼砲撃火力値を返すか(デフォルト=false)
+ * @param {Boolean} isCalc 切り捨て前の昼砲撃火力値を返すか(デフォルト=false)
  * @return {[Number,Number]|String} 昼砲撃火力(キャップ後)
  */
-DayBattlePower.prototype.getPostcapPower = function (formulaMode, noCL2) {
+DayBattlePower.prototype.getPostcapPower = function (formulaMode, isCalc) {
     // サイレント修正(Twitterで確認した限りでは17/9/9が最古=>17夏イベ?)以降、集積地棲姫特効のキャップ位置が変化(a5→a6)
     // 17夏以降に登場したPT小鬼群の特効位置もa6に変化?(乗算と加算組み合わせているっぽいので詳細不明)
     // A = [([キャップ後攻撃力] * 乗算特効補正 + 加算特効補正) * 乗算特効補正2] * 弾着観測射撃 * 戦爆連合カットイン攻撃
@@ -787,12 +787,16 @@ DayBattlePower.prototype.getPostcapPower = function (formulaMode, noCL2) {
     var str = "int((int(" + getPostcapValue(this.getPrecapPower(), this.CAP_VALUE) + ")*" + getMultiplySlayerBonus(this.attacker, this.defender) + "+" + getAddSlayerBonus(this.attacker, this.defender) + ")*" + getMultiplySlayerBonus2(this.attacker, this.defender) + ")*" + this.getSpottingBonus() + "*" + this.getUnifiedBombingBonus()
     // 徹甲弾補正判定
     if (this.isAPshellBonusTarget()) {
-        // A = [A * 徹甲弾補正]
-        value = Math.floor(value * this.getAPshellBonus())
+        if (!isCalc) {
+            // A = [A * 徹甲弾補正]
+            value = Math.floor(value * this.getAPshellBonus())
+        } else {
+            value *= this.getAPshellBonus()
+        }
         str = "int((" + str + ")*" + this.getAPshellBonus() + ")"
     }
     // クリティカル判定
-    if (!noCL2 && isCritical(this.attack)) {
+    if (!isCalc && isCritical(this.attack)) {
         // A = [A * クリティカル補正 * 熟練度補正]
         value *= getCriticalBonus(this.attack)
         str = "(" + str + ")*" + getCriticalBonus(this.attack)
