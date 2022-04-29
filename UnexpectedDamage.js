@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.60
+var VERSION = 2.61
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -702,6 +702,7 @@ DayBattlePower.prototype.getImprovementBonus = function () {
                 case 37: return 1    // 対地装備
                 case 39: return 1    // 水上艦要員
                 case 34: return 1    // 司令部施設
+                case 32: return 1    // 潜水艦魚雷
                 default: return 0
             }
         }
@@ -4071,6 +4072,8 @@ function getEquipmentBonus(date, attacker) {
             add({ asw: 1 }, num)
         }
     }
+    // SG レーダー(初期型)
+    // if (num = count(456)) {}
 
     return bonus
 }
