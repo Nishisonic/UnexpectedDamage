@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.61
+var VERSION = 2.62
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -446,6 +446,7 @@ AntiSubmarinePower.prototype.getImprovementBonus = function () {
                     148, // 試製南山
                     195, // SBD
                     248, // Skua
+                    316, // Re.2001 CB改
                     391, // 九九式艦爆二二型
                     392, // 九九式艦爆二二型(熟練)
                     419, // SBD-5
@@ -747,6 +748,7 @@ DayBattlePower.prototype.getImprovementBonus = function () {
                     148, // 試製南山
                     195, // SBD
                     248, // Skua
+                    316, // Re.2001 CB改
                     391, // 九九式艦爆二二型
                     392, // 九九式艦爆二二型(熟練)
                     419, // SBD-5
