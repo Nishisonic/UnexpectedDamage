@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.64
+var VERSION = 2.65
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -2406,8 +2406,8 @@ var getSpecialAttackBonus = function(that) {
         case 400: // 第一戦隊、突撃！主砲、全力斉射ッ！
             var base = attackIndex < 2 ? 1.5 : 1.65
             // 最終改造形態じゃないと発動しないらしい
-            var secondShipCtype = ships[1] && ships[1].json ? (JSON.parse(ships[1].json).api_ctype | 0) : -1
-            var thirdShipCtype = ships[2] && ships[2].json ? (JSON.parse(ships[2].json).api_ctype | 0) : -1
+            var secondShipCtype = JSON.parse(Ship.get(ships[1].shipId).json).api_ctype | 0
+            var thirdShipCtype = JSON.parse(Ship.get(ships[2].shipId).json).api_ctype | 0
             var companionCtypes = [secondShipCtype, thirdShipCtype]
             var companionShipBonus = function(ctypes) {
                 switch (attackIndex) {
