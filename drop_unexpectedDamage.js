@@ -1,6 +1,6 @@
 /**
  * 異常ダメージ検知
- * @version 2.6.2
+ * @version 2.6.4
  * @author Nishikuma
  */
 
@@ -435,9 +435,11 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
                                     return didx * 2
                                 case 101: // 一斉射かッ…胸が熱いな！
                                 case 102: // 長門、いい？ いくわよ！ 主砲一斉射ッ！
+                                case 401: // 大和、突撃します！二番艦も続いてください！
                                     return Math.floor(didx / 2)
                                 case 103: // Colorado 特殊攻撃
                                 case 104: // 僚艦夜戦突撃
+                                case 400: // 第一戦隊、突撃！主砲、全力斉射ッ！
                                     return didx
                                 default:
                                     return json.api_at_list[idx]
@@ -497,9 +499,11 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
                                     return didx * 2
                                 case 101: // 一斉射かッ…胸が熱いな！
                                 case 102: // 長門、いい？ いくわよ！ 主砲一斉射ッ！
+                                case 401: // 大和、突撃します！二番艦も続いてください！
                                     return Math.floor(didx / 2)
                                 case 103: // Colorado 特殊攻撃
                                 case 104: // 僚艦夜戦突撃
+                                case 400: // 第一戦隊、突撃！主砲、全力斉射ッ！
                                     return didx
                                 default:
                                     return json.api_at_list[idx]
@@ -583,9 +587,9 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
  * @param {Number} critical クリティカル
  * @param {Number} attackType 特殊攻撃フラグ
  * @param {[Number|String]} showItem 表示装備
- * @param {Number} attackNum 攻撃回数
+ * @param {Number} attackIndex 攻撃回数
  */
-var AttackDto = function (kind, friendAttack, mainAttack, attacker, mainDefense, defender, lastAttack, damage, critical, attackType, showItem, attackNum) {
+var AttackDto = function (kind, friendAttack, mainAttack, attacker, mainDefense, defender, lastAttack, damage, critical, attackType, showItem, attackIndex) {
     this.kind = kind
     this.friendAttack = friendAttack
     this.mainAttack = mainAttack
@@ -597,7 +601,7 @@ var AttackDto = function (kind, friendAttack, mainAttack, attacker, mainDefense,
     this.critical = critical
     this.attackType = attackType
     this.showItem = showItem
-    this.attackNum = attackNum
+    this.attackIndex = attackIndex
 }
 
 /**
