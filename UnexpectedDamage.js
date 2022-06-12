@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.64
+var VERSION = 2.65
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -1401,11 +1401,13 @@ NightBattlePower.prototype.getCutinBonus = function () {
             // 後期型53cm艦首魚雷(8門)
             // 21inch艦首魚雷発射管6門(後期型)
             // 潜水艦後部魚雷発射管4門(後期型)
-            var lateTorpedo = [213, 214, 383, 441, 443]
+            // 後期型艦首魚雷(4門)
+            var lateTorpedo = [213, 214, 383, 441, 443, 457]
             // 潜水艦搭載電探&水防式望遠鏡
             // 潜水艦搭載電探&逆探(E27)
-            // 後期型潜水艦搭載電探＆逆探
-            var ssRadar = [210, 211, 384]
+            // 後期型潜水艦搭載電探&逆探
+            // 後期型電探&逆探＋シュノーケル装備
+            var ssRadar = [210, 211, 384, 458]
             if (Java.from(this.attack.showItem).filter(function (id) { return lateTorpedo.indexOf(Number(id)) >= 0 }).length
                 && Java.from(this.attack.showItem).filter(function (id) { return ssRadar.indexOf(Number(id)) >= 0 }).length) {
                 return 1.75  // カットイン(後魚/潜電)
