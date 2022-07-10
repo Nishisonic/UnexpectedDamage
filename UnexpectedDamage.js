@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.65
+var VERSION = 2.66
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -726,6 +726,7 @@ DayBattlePower.prototype.getImprovementBonus = function () {
                     case 12:  // 15.5cm三連装副砲
                     case 234: // 15.5cm三連装副砲改
                     case 247: // 15.2cm三連装砲
+                    case 467: // 5inch連装砲(副砲配置) 集中配備
                         return 0.3 * item.level
                 }
             }
@@ -1317,6 +1318,8 @@ NightBattlePower.prototype.getImprovementBonus = function () {
                     return 0.2 * item.level
                 case 12:  // 15.5cm三連装副砲
                 case 234: // 15.5cm三連装副砲改
+                case 247: // 15.2cm三連装砲
+                case 467: // 5inch連装砲(副砲配置) 集中配備
                     return 0.3 * item.level
             }
         }
@@ -2341,13 +2344,23 @@ var getSpecialAttackBonus = function(that) {
             }(attackIndex < 2 ? that.items : getItems(ships[1]))
             return base * secondShipBonus * itemBonus
         case 103: // Colorado 特殊攻撃
-            var base = attackIndex === 0 ? 1.3 : 1.15
+            var base = that.date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE2) ?
+                (attackIndex === 0 ? 1.5 : 1.3) : (attackIndex === 0 ? 1.3 : 1.15)
             var companionShipBonus = function(secondShipYomi, thirdShipYomi) {
-                switch (attackIndex) {
-                    case 1:
-                        return isBig7(secondShipYomi) ? 1.1 : 1
-                    case 2:
-                        return isBig7(thirdShipYomi) ? 1.15 * (isBig7(secondShipYomi) ? 1.1 : 1) : 1
+                if (that.date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE2)) {
+                    switch (attackIndex) {
+                        case 1:
+                            return isBig7(secondShipYomi) ? 1.15 : 1
+                        case 2:
+                            return isBig7(thirdShipYomi) ? 1.17 * (isBig7(secondShipYomi) ? 1.15 : 1) : 1
+                    }
+                } else {
+                    switch (attackIndex) {
+                        case 1:
+                            return isBig7(secondShipYomi) ? 1.1 : 1
+                        case 2:
+                            return isBig7(thirdShipYomi) ? 1.15 * (isBig7(secondShipYomi) ? 1.1 : 1) : 1
+                    }
                 }
                 return 1
             }(ships[1].shipInfo.flagship, ships[2].shipInfo.flagship)
@@ -2358,11 +2371,14 @@ var getSpecialAttackBonus = function(that) {
                 var apShellBonus = function(items) {
                     return hasAPShell(items) ? 1.35 : 1
                 }
+                var sgRadarBonus = function(items) {
+                    return that.date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE2) && hasSgRadarLateModel(items) ? 1.15 : 1
+                }
                 switch (attackIndex) {
-                    case 0: return surfaceRadarBonus(items) * apShellBonus(items)
+                    case 0: return surfaceRadarBonus(items) * apShellBonus(items) * sgRadarBonus(items)
                     case 1:
                         var secondShipItems = getItems(ships[1])
-                        return surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems)
+                        return surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems) * sgRadarBonus(secondShipItems)
                     case 2:
                         var thirdShipItems = getItems(ships[2])
                         // 艦これ負の遺産
@@ -2372,7 +2388,7 @@ var getSpecialAttackBonus = function(that) {
                                 if (isBig7(secondShipYomi) || surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems) > 1) {
                                     return surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems)
                                 }
-                                return surfaceRadarBonus(thirdShipItems) * apShellBonus(thirdShipItems)
+                                return surfaceRadarBonus(thirdShipItems) * apShellBonus(thirdShipItems) * sgRadarBonus(thirdShipItems)
                             }
                             if (ships[1].item2.size() === 5) {
                                 var item = ships[1].item2.get(4)
@@ -2388,7 +2404,7 @@ var getSpecialAttackBonus = function(that) {
                             }
                             return 1
                         }
-                        return surfaceRadarBonus(thirdShipItems) * apShellBonus(thirdShipItems)
+                        return surfaceRadarBonus(thirdShipItems) * apShellBonus(thirdShipItems) * sgRadarBonus(thirdShipItems)
                 }
                 return 1
             }(that.items, ships[1].shipInfo.flagship, ships[2].shipInfo.flagship)
@@ -2643,7 +2659,7 @@ function calcCombinedKind(battle) {
  * @return {Boolean} ビック7か
  */
 function isBig7(yomi) {
-    return ["ながと", "むつ", "ネルソン"].indexOf(yomi) >= 0
+    return ["ながと", "むつ", "ネルソン", "コロラド", "メリーランド"].indexOf(yomi) >= 0
 }
 
 /**
@@ -2707,6 +2723,15 @@ function isAPshell(item) {
  */
 function hasYamatoClassRadar(items) {
     return items.some(function(item) { return [142, 460].indexOf(item.slotitemId) >= 0 })
+}
+
+/**
+ * SG レーダー(後期型)を所持しているかを返す
+ * @param {[logbook.dto.ItemDto]} items 装備
+ * @return {Boolean} 所持の有無
+ */
+function hasSgRadarLateModel(items) {
+    return items.some(function(item) { return item.slotitemId === 456 })
 }
 
 /**
@@ -3220,6 +3245,12 @@ function getEquipmentBonus(date, attacker) {
             }
         }
     }
+    // 38cm四連装砲
+    // 38cm四連装砲改
+    // 38cm四連装砲改 deux
+    // if (num = count(245) + count(246) + count(468)) {}
+    // 15.2cm三連装砲
+    // if (num = count(247)) {}
     // 12.7cm連装砲C型改二
     // if (num = count(266)) {}
     // 12.7cm連装砲D型改二
@@ -4171,7 +4202,7 @@ function getEquipmentBonus(date, attacker) {
             add({ asw: 1 }, num)
         }
     }
-    // SG レーダー(初期型)
+    // SG レーダー(後期型)
     // if (num = count(456)) {}
     // 15.5cm三連装副砲改二
     // if (num = count(463)) {}
@@ -4179,6 +4210,16 @@ function getEquipmentBonus(date, attacker) {
     // if (num = count(464)) {}
     // 試製51cm三連装砲
     // if (num = count(465)) {}
+    // 流星改(熟練)
+    if (num = count(466)) {
+        if ([277, 278, 156, 288, 112, 280, 279].indexOf(shipId) >= 0) {
+            add({ fp: 1 }, num)
+        } else if ([461, 462, 466, 467].indexOf(shipId) >= 0) {
+            add({ fp: 1 }, num)
+        }
+    }
+    // 5inch連装砲(副砲配置) 集中配備
+    // if (num = count(467)) {}
 
     return bonus
 }
