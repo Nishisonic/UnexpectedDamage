@@ -1,6 +1,6 @@
 /**
  * 異常ダメージ検知
- * @version 2.6.6
+ * @version 2.6.7
  * @author Nishikuma
  */
 
@@ -1115,6 +1115,7 @@ var detectTorpedoAttack = function (date, mapCell, kind, friendCombinedKind, isE
             var redCondDying = isHp1ReplacementShip(ship.defender, attack.defender === 0) && ((hp.defender.now - attack.damage) === 1)
             var covered = minPropDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxPropDmg || minSunkDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxSunkDmg || redCondDying
             if (!(minDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxDmg || covered)) {
+                var ammoBonus = getAmmoBonus(ship.attacker, attack.friendAttack ? friends : enemies, mapCell)
                 var minPostcapPower = attack.damage / ammoBonus + minDef
                 var maxPostcapPower = (attack.damage + 1) / ammoBonus + maxDef
                 var inversion = {
