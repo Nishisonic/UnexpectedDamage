@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.68
+var VERSION = 2.69
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -1539,9 +1539,9 @@ NightBattlePower.prototype.getNightTouchPlaneBonus = function () {
     var touchPlane = Number(this.touchPlane[this.attack.friendAttack ? 0 : 1])
     switch (touchPlane) {
         case 102: // 九八式水上偵察機(夜偵)
-            return 7
-        case 469: // 零式水上偵察機11型乙改(夜偵)
             return 5
+        case 469: // 零式水上偵察機11型乙改(夜偵)
+            return 7
         default:
             return 0
     }
