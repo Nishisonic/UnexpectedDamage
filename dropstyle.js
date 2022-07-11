@@ -319,7 +319,6 @@ function genBattleHtml(dataLists) {
                     'var unexpected = ' + JSON.stringify(getData("unexpected")[JSON.stringify(Java.from(masterData.mapCell.map))]) + ';' +
                     'function selectEnemyName(){' +
                         'var enemyIds = $("#enemy").multipleSelect("getSelects");' +
-                        'var hasExtra = $("#hasExtra").prop("checked");' +
                         'var datalist = Object.keys(unexpected).filter(function(index){' +
                             'return enemyIds.indexOf(index.split("_")[2]) >= 0;' +
                         '}).map(function(index){' +
@@ -330,8 +329,6 @@ function genBattleHtml(dataLists) {
                             '}).reduce(function(p, v){' +
                                 'p.min = Math.max(p.min, v.min);' +
                                 'p.max = Math.min(p.max, v.max);' +
-                                'p.minEx = Math.max(p.minEx, v.minEx);' +
-                                'p.maxEx = Math.min(p.maxEx, v.maxEx);' +
                                 'p.count++;' +
                                 'p.dates.push(v.date);' +
                                 'return p;' +
@@ -339,8 +336,6 @@ function genBattleHtml(dataLists) {
                             'if(p[v[0]]){' +
                                 'p[v[0]].min = Math.max(p[v[0]].min, u.min);' +
                                 'p[v[0]].max = Math.min(p[v[0]].max, u.max);' +
-                                'p[v[0]].minEx = Math.max(p[v[0]].minEx, u.minEx);' +
-                                'p[v[0]].maxEx = Math.min(p[v[0]].maxEx, u.maxEx);' +
                                 'p[v[0]].count += u.count;' +
                                 'Array.prototype.push.apply(p[v[0]].dates, u.dates);' +
                             '} else {' +
@@ -353,9 +348,6 @@ function genBattleHtml(dataLists) {
                         '}).sort(function(a, b){' +
                             'return ships[a.split("_")[0]].sortId - ships[b.split("_")[0]].sortId;' +
                         '}).map(function(key){' +
-                            'if (hasExtra) {' +
-                                'return "<div>" + key.split("_")[1] + " - " + datalist[key].minEx.toFixed(4) + " ~ " + datalist[key].maxEx.toFixed(4) + " (" + datalist[key].count + "x)</div>";' +
-                            '}' +
                             'return "<div>" + key.split("_")[1] + " - " + datalist[key].min.toFixed(4) + " ~ " + datalist[key].max.toFixed(4) + " (" + datalist[key].count + "x)</div>";' +
                         '}).join(""));' +
                     '}' +
@@ -399,15 +391,7 @@ function genBattleHtml(dataLists) {
                                 '<span style="padding-left: 5px;cursor:pointer;"><a class="input-button" title="全指定に戻す" data-clear>x</a></span>' +
                             '</span>' +
                         '</h2>' +
-                        '<h2 style="margin-top:3px;margin-bottom:3px;"><span style="margin-right: 2px;">速報値計算(OFF=a11/ON=Extra):</span>' +
-                            '<span class="switch3">' +
-                                '<label class="switch3__label">' +
-                                    '<input type="checkbox" id="hasExtra" class="switch3__input" onchange="selectEnemyName()"/>' +
-                                    '<span class="switch3__content" style="margin-bottom: -3px;"></span>' +
-                                    '<span class="switch3__circle" style="margin-bottom: -3px;"></span>' +
-                                '</label>' +
-                            '</span>' +
-                        '</h2>' +
+                        '<h2 style="margin-top:3px;margin-bottom:3px;">速報値計算</h2>' +
                         '<div id="unexpectedBox" style="overflow: scroll; width: 400px; height: 118px; border:#000000 1px solid; margin-right: 15px; font-size:small;"></div>' +
                     '</div>' +
                     '<div id="tsun" style="display: none;">' +
@@ -552,13 +536,11 @@ function genDefenseArmorHtml(data) {
  */
 function genGimmickHtml(data) {
     var result = '<table style="margin-top:5px;">'
-    result += '<tr><th colspan="2">イベント特効逆算</th></tr>'
+    result += '<tr><th>イベント特効逆算</th></tr>'
     result += '<tr>'
     result += '<th style="text-decoration: underline;" title="最終攻撃力を出した後にイベント特効倍率を乗算します。&#10;昼戦・雷撃戦・夜戦全て共通のシンプルな形式です。">a11</th>'
-    result += '<th style="text-decoration: underline;" title="キャップ後の特殊な位置にイベント特効倍率を乗算します。&#10;詳しくは更新履歴をご確認下さい。">Extra</th>'
     result += '</tr><tr>'
     result += '<td>' + data.inversion.min.toFixed(4) + " ~ " + data.inversion.max.toFixed(4) + '</td>'
-    result += '<td>' + data.inversion.minEx.toFixed(4) + " ~ " + data.inversion.maxEx.toFixed(4) + '</td>'
     result += '</tr>'
     result += '</table>'
     return result

@@ -1,6 +1,6 @@
 /**
  * 異常ダメージ検知
- * @version 2.6.7
+ * @version 2.6.8
  * @author Nishikuma
  */
 
@@ -141,7 +141,7 @@ var isInvestiagate = function (battle) {
         // 渦潮(弾薬減)マップ除外
         && !(MAELSTROM_MAP_LIST.some(function (map) { return map[0] === battle.mapCellDto.map[0] && map[1] === battle.mapCellDto.map[1] }))
         // 過去のイベント分は除外
-        && !(battle.mapCellDto.map[0] >= 22 && battle.mapCellDto.map[0] <= 51)
+        && !(battle.mapCellDto.map[0] >= 22 && battle.mapCellDto.map[0] <= 53)
     // 何らかのフィルタを条件する際はここに追加
 }
 
@@ -961,33 +961,17 @@ var detectDayBattle = function (date, mapCell, kind, friendCombinedKind, isEnemy
                     var covered = minPropDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxPropDmg || !attack.friendAttack && (minSunkDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxSunkDmg || redCondDying)
                     if (!(minDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxDmg || covered)) {
                         var ammoBonus = getAmmoBonus(ship.attacker, attack.friendAttack ? friends : enemies, mapCell)
+                        // キャップ後攻撃力(最小) = ダメージ / 弾薬補正 + 装甲乱数(最小)
                         var minPostcapPower = attack.damage / ammoBonus + minDef
+                        // キャップ後攻撃力(最大) = (ダメージ + 1) / 弾薬補正 + 装甲乱数(最大)
                         var maxPostcapPower = (attack.damage + 1) / ammoBonus + maxDef
                         var inversion = {
                             min: minPostcapPower / power[1],
                             max: maxPostcapPower / power[0],
-                            minEx: 0,
-                            maxEx: 0,
                             date:date.getTime()
                         }
                         // 熟練度
                         var skilled = getSkilledBonus(date, attack, ship.attacker, ship.defender, hp.attacker)
-
-                        if (!isSubMarine(ship.defender) && p.isAPshellBonusTarget() && isCritical(attack)) {
-                            var power2 = p.getPostcapPower(false, true)
-                            // [[[キャップ後攻撃力] * 弾着観測射撃 * 戦爆連合カットイン攻撃 * イベント特効 * 徹甲弾補正] * クリティカル補正 * 熟練度補正]
-                            inversion.minEx = Math.ceil(Math.ceil(minPostcapPower) / getCriticalBonus(attack) / skilled[1]) / power2[1]
-                            inversion.maxEx = Math.ceil(Math.ceil(maxPostcapPower) / getCriticalBonus(attack) / skilled[0]) / power2[0]
-                        } else if (!isSubMarine(ship.defender) && !p.isAPshellBonusTarget() || !isCritical(attack)) {
-                            // [キャップ後攻撃力] * 弾着観測射撃 * 戦爆連合カットイン攻撃 * イベント特効
-                            inversion.minEx = minPostcapPower / power[1]
-                            inversion.maxEx = maxPostcapPower / power[0]
-                        } else {
-                            // [[キャップ後攻撃力] * 弾着観測射撃 * 戦爆連合カットイン攻撃 * イベント特効 * 徹甲弾補正]
-                            // [[キャップ後攻撃力] * 弾着観測射撃 * 戦爆連合カットイン攻撃 * イベント特効 * クリティカル補正]
-                            inversion.minEx = Math.ceil(minPostcapPower) / power[1]
-                            inversion.maxEx = Math.ceil(maxPostcapPower) / power[0]
-                        }
                         if (mapCell.map[0] >= 22 && attack.friendAttack) {
                             // 割合ダメージ等ではない&(敵が陸上型またはPT小鬼群または熟練度補正攻撃ではない)
                             if (!covered && !(isGround(ship.defender) || isPtImpPack(ship.defender) || skilled[0] > 1)) {
@@ -1056,25 +1040,16 @@ var detectTorpedoAttack = function (date, mapCell, kind, friendCombinedKind, isE
             var covered = minPropDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxPropDmg
             if (!(minDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxDmg || covered)) {
                 var ammoBonus = getAmmoBonus(ship.attacker, attack.friendAttack ? friends : enemies, mapCell)
+                // キャップ後攻撃力(最小) = ダメージ / 弾薬補正 + 装甲乱数(最小)
                 var minPostcapPower = attack.damage / ammoBonus + minDef
+                // キャップ後攻撃力(最大) = (ダメージ + 1) / 弾薬補正 + 装甲乱数(最大)
                 var maxPostcapPower = (attack.damage + 1) / ammoBonus + maxDef
                 var inversion = {
                     min: minPostcapPower / power[1],
                     max: maxPostcapPower / power[0],
-                    minEx: 0,
-                    maxEx: 0,
                     date:date.getTime()
                 }
 
-                if (!isCritical(attack)) {
-                    // [キャップ後攻撃力] * イベント特効
-                    inversion.minEx = minPostcapPower / power[1]
-                    inversion.maxEx = maxPostcapPower / power[0]
-                } else {
-                    // [[キャップ後攻撃力] * イベント特効 * クリティカル補正]
-                    inversion.minEx = Math.ceil(minPostcapPower) / power[1]
-                    inversion.maxEx = Math.ceil(maxPostcapPower) / power[0]
-                }
                 if (mapCell.map[0] >= 22) {
                     // 割合ダメージ等ではない&(敵がPT小鬼群ではない)
                     if (!covered && !isPtImpPack(ship.defender)) {
@@ -1116,25 +1091,16 @@ var detectTorpedoAttack = function (date, mapCell, kind, friendCombinedKind, isE
             var covered = minPropDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxPropDmg || minSunkDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxSunkDmg || redCondDying
             if (!(minDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxDmg || covered)) {
                 var ammoBonus = getAmmoBonus(ship.attacker, attack.friendAttack ? friends : enemies, mapCell)
+                // キャップ後攻撃力(最小) = ダメージ / 弾薬補正 + 装甲乱数(最小)
                 var minPostcapPower = attack.damage / ammoBonus + minDef
+                // キャップ後攻撃力(最大) = (ダメージ + 1) / 弾薬補正 + 装甲乱数(最大)
                 var maxPostcapPower = (attack.damage + 1) / ammoBonus + maxDef
                 var inversion = {
                     min: minPostcapPower / power[1],
                     max: maxPostcapPower / power[0],
-                    minEx: 0,
-                    maxEx: 0,
                     date:date.getTime()
                 }
 
-                if (!isCritical(attack)) {
-                    // [キャップ後攻撃力] * イベント特効
-                    inversion.minEx = minPostcapPower / power[1]
-                    inversion.maxEx = maxPostcapPower / power[0]
-                } else {
-                    // [[キャップ後攻撃力] * イベント特効 * クリティカル補正]
-                    inversion.minEx = Math.ceil(minPostcapPower) / power[1]
-                    inversion.maxEx = Math.ceil(maxPostcapPower) / power[0]
-                }
                 result.push(new DetectDto(date, mapCell, 1, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], false, enemies, false, inversion))
             }
             processingShipHpDamage(ship.defender, hp.defender, attack.damage, false) // ダメージ仮処理
@@ -1214,25 +1180,16 @@ var detectNightBattle = function (date, mapCell, kind, friendCombinedKind, isEne
                     var covered = minPropDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxPropDmg || !attack.friendAttack && (minSunkDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxSunkDmg || redCondDying)
                     if (!(minDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxDmg || covered)) {
                         var ammoBonus = getAmmoBonus(ship.attacker, attack.friendAttack ? friends : enemies, mapCell)
+                        // キャップ後攻撃力(最小) = ダメージ / 弾薬補正 + 装甲乱数(最小)
                         var minPostcapPower = attack.damage / ammoBonus + minDef
+                        // キャップ後攻撃力(最大) = (ダメージ + 1) / 弾薬補正 + 装甲乱数(最大)
                         var maxPostcapPower = (attack.damage + 1) / ammoBonus + maxDef
                         var inversion = {
                             min: minPostcapPower / power[1],
                             max: maxPostcapPower / power[0],
-                            minEx: 0,
-                            maxEx: 0,
                             date:date.getTime()
                         }
 
-                        if (!isCritical(attack)) {
-                            // [キャップ後攻撃力] * イベント特効
-                            inversion.minEx = minPostcapPower / power[1]
-                            inversion.maxEx = maxPostcapPower / power[0]
-                        } else {
-                            // [[キャップ後攻撃力] * イベント特効 * クリティカル補正]
-                            inversion.minEx = Math.ceil(minPostcapPower) / power[1]
-                            inversion.maxEx = Math.ceil(maxPostcapPower) / power[0]
-                        }
                         if (mapCell.map[0] >= 22 && attack.friendAttack) {
                             // 熟練度
                             var skilled = getSkilledBonus(date, attack, ship.attacker, ship.defender, hp.attacker)
@@ -1307,25 +1264,16 @@ var detectRadarShooting = function (date, mapCell, kind, friendCombinedKind, isE
                     var covered = minPropDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxPropDmg || !attack.friendAttack && minSunkDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxSunkDmg || redCondDying
                     if (!(minDmg <= Math.floor(attack.damage) && Math.floor(attack.damage) <= maxDmg || covered)) {
                         var ammoBonus = getAmmoBonus(ship.attacker, attack.friendAttack ? friends : enemies, mapCell)
+                        // キャップ後攻撃力(最小) = ダメージ / 弾薬補正 + 装甲乱数(最小)
                         var minPostcapPower = attack.damage / ammoBonus + minDef
+                        // キャップ後攻撃力(最大) = (ダメージ + 1) / 弾薬補正 + 装甲乱数(最大)
                         var maxPostcapPower = (attack.damage + 1) / ammoBonus + maxDef
                         var inversion = {
                             min: minPostcapPower / power[1],
                             max: maxPostcapPower / power[0],
-                            minEx: 0,
-                            maxEx: 0,
                             date:date.getTime()
                         }
 
-                        if (!isCritical(attack)) {
-                            // [キャップ後攻撃力] * イベント特効
-                            inversion.minEx = minPostcapPower / power[1]
-                            inversion.maxEx = maxPostcapPower / power[0]
-                        } else {
-                            // [[キャップ後攻撃力] * イベント特効 * クリティカル補正]
-                            inversion.minEx = Math.ceil(minPostcapPower) / power[1]
-                            inversion.maxEx = Math.ceil(maxPostcapPower) / power[0]
-                        }
                         result.push(new DetectDto(date, mapCell, 2, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], _shouldUseSkilled, origins, true, inversion))
                     }
                 }

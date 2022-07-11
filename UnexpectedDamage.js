@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.67
+var VERSION = 2.68
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -460,6 +460,13 @@ AntiSubmarinePower.prototype.getImprovementBonus = function () {
                 return Math.sqrt(item.level)
             case 25: // 回転翼機
                 return (item.param.taisen > 10 ? 0.3 : 0.2) * item.level
+            case 26: // 対潜哨戒機
+                switch (item.slotitemId) {
+                    case 70: // 三式指揮連絡機
+                        return 0.2 * item.level
+                    case 451: // 三式指揮連絡機改
+                        return 0.3 * item.level
+                }
             default:
                 return 0
         }
@@ -1529,7 +1536,15 @@ NightBattlePower.prototype.getConditionBonus = function () {
  * @return {0|5} 夜間触接補正
  */
 NightBattlePower.prototype.getNightTouchPlaneBonus = function () {
-    return Number(this.touchPlane[this.attack.friendAttack ? 0 : 1]) > 0 ? 5 : 0
+    var touchPlane = Number(this.touchPlane[this.attack.friendAttack ? 0 : 1])
+    switch (touchPlane) {
+        case 102: // 九八式水上偵察機(夜偵)
+            return 7
+        case 469: // 零式水上偵察機11型乙改(夜偵)
+            return 5
+        default:
+            return 0
+    }
 }
 
 //#endregion
@@ -2352,9 +2367,17 @@ var getSpecialAttackBonus = function(that) {
                         case 1:
                             return isBig7(secondShipYomi) ? 1.15 : 1
                         case 2:
-                            return isBig7(thirdShipYomi) ? 1.17 * (isBig7(secondShipYomi) ? 1.15 : 1) : 1
+                            return isBig7(thirdShipYomi) ? 1.17 : 1
+                    }
+                } else if (that.date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE)) {
+                    switch (attackIndex) {
+                        case 1:
+                            return isBig7(secondShipYomi) ? 1.1 : 1
+                        case 2:
+                            return isBig7(thirdShipYomi) ? 1.15 : 1
                     }
                 } else {
+                    // bug
                     switch (attackIndex) {
                         case 1:
                             return isBig7(secondShipYomi) ? 1.1 : 1
@@ -2490,8 +2513,11 @@ var getSpecialAttackBonus = function(that) {
                         return 1.1
                     }
                 } else {
-                    // 大和型改二
-                    if ([546, 911, 916].indexOf(secondShipId) >= 0) {
+                    if (secondShipId === 916) {
+                        // 大和改二重
+                        return 1.25
+                    } else if ([546, 911].indexOf(secondShipId) >= 0) {
+                        // 大和改二・武蔵改二
                         return 1.2
                     }
                 }
@@ -2963,6 +2989,12 @@ function getEquipmentBonus(date, attacker) {
             if (shipId === 553) {
                 add({ asw: 1 }, num)
             }
+        }
+    }
+    // 三式指揮連絡機(対潜)
+    if (num = count(70)) {
+        if (yomi === "やましおまる") {
+            add({ fp: 1, asw: 1 }, num)
         }
     }
     // 12.7cm単装砲
@@ -3605,6 +3637,18 @@ function getEquipmentBonus(date, attacker) {
             add({ fp: 4, asw: 2 }, num)
         } else if (shipId === 883) {
             add({ fp: 5, asw: 2 }, num)
+        }
+    }
+    // 二式12cm迫撃砲改
+    if (num = count(346)) {
+        if (yomi === "やましおまる") {
+            add({ asw: 1 }, num)
+        }
+    }
+    // 二式12cm迫撃砲改 集中配備
+    if (num = count(347)) {
+        if (yomi === "やましおまる") {
+            add({ asw: 2 }, num)
         }
     }
     // 8inch三連装砲 Mk.9
