@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.69
+var VERSION = 2.70
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -2361,33 +2361,33 @@ var getSpecialAttackBonus = function(that) {
         case 103: // Colorado 特殊攻撃
             var base = that.date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE2) ?
                 (attackIndex === 0 ? 1.5 : 1.3) : (attackIndex === 0 ? 1.3 : 1.15)
-            var companionShipBonus = function(secondShipYomi, thirdShipYomi) {
+            var companionShipBonus = function(secondShipId, thirdShipId) {
                 if (that.date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE2)) {
                     switch (attackIndex) {
                         case 1:
-                            return isBig7(secondShipYomi) ? 1.15 : 1
+                            return isBig7BonusShipId(secondShipId) ? 1.15 : 1
                         case 2:
-                            return isBig7(thirdShipYomi) ? 1.17 : 1
+                            return isBig7BonusShipId(thirdShipId) ? 1.17 : 1
                     }
                 } else if (that.date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE)) {
                     switch (attackIndex) {
                         case 1:
-                            return isBig7(secondShipYomi) ? 1.1 : 1
+                            return isBig7BonusShipId(secondShipId) ? 1.1 : 1
                         case 2:
-                            return isBig7(thirdShipYomi) ? 1.15 : 1
+                            return isBig7BonusShipId(thirdShipId) ? 1.15 : 1
                     }
                 } else {
                     // bug
                     switch (attackIndex) {
                         case 1:
-                            return isBig7(secondShipYomi) ? 1.1 : 1
+                            return isBig7BonusShipId(secondShipId) ? 1.1 : 1
                         case 2:
-                            return isBig7(thirdShipYomi) ? 1.15 * (isBig7(secondShipYomi) ? 1.1 : 1) : 1
+                            return isBig7BonusShipId(thirdShipId) ? 1.15 * (isBig7BonusShipId(secondShipId) ? 1.1 : 1) : 1
                     }
                 }
                 return 1
-            }(ships[1].shipInfo.flagship, ships[2].shipInfo.flagship)
-            var itemBonus = function(items, secondShipYomi, thirdShipYomi) {
+            }(ships[1].shipId, ships[2].shipId)
+            var itemBonus = function(items, secondShipId, thirdShipId) {
                 var surfaceRadarBonus = function(items) {
                     return hasSurfaceRadar(items) ? 1.15 : 1
                 }
@@ -2407,8 +2407,8 @@ var getSpecialAttackBonus = function(that) {
                         // 艦これ負の遺産
                         if (that.date.before(getJstDate(2021, 10, 15, 12, 0, 0))) {
                             var secondShipItems = getItems(ships[1])
-                            if (isBig7(thirdShipYomi)) {
-                                if (isBig7(secondShipYomi) || surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems) > 1) {
+                            if (isBig7BonusShipId(thirdShipId)) {
+                                if (isBig7BonusShipId(secondShipId) || surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems) > 1) {
                                     return surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems)
                                 }
                                 return surfaceRadarBonus(thirdShipItems) * apShellBonus(thirdShipItems) * sgRadarBonus(thirdShipItems)
@@ -2680,12 +2680,22 @@ function calcCombinedKind(battle) {
 }
 
 /**
- * ビック7かを返す
- * @param {String} yomi 読み
+ * ビック7補正がかかるかを返す
+ * @param {Number} shipId 艦ID
  * @return {Boolean} ビック7か
  */
-function isBig7(yomi) {
-    return ["ながと", "むつ", "ネルソン", "コロラド", "メリーランド"].indexOf(yomi) >= 0
+function isBig7BonusShipId(shipId) {
+    return [
+        275,  // 長門改
+        541,  // 長門改二
+        276,  // 陸奥改
+        573,  // 陸奥改二
+        576,  // Nelson改
+        601,  // Colorado
+        1496, // Colorado改
+        913,  // Maryland
+        918,  // Maryland改
+    ].indexOf(shipId) >= 0
 }
 
 /**
