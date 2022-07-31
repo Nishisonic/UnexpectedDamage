@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.70
+var VERSION = 2.71
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -2433,7 +2433,7 @@ var getSpecialAttackBonus = function(that) {
             }(that.items, ships[1].shipInfo.flagship, ships[2].shipInfo.flagship)
             return base * companionShipBonus * itemBonus
         case 104: // 僚艦夜戦突撃
-            var base = date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE2) ? 2.2 : 1.9
+            var base = that.date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE2) ? 2.2 : 1.9
             var engagementBonus = function() {
                 switch (engagement) {
                     case 3: return 1.25
@@ -4245,9 +4245,27 @@ function getEquipmentBonus(date, attacker) {
     if (num = count(451)) {
         if (yomi === "あきつまる") {
             add({ asw: 2 }, num)
+            if (shipId === 166) {
+                var asw = Math.max.apply(null, items.filter(function(item) {
+                    return item.slotitemId === 451
+                }).map(function(item) {
+                    if (item.level >= 7) return 2
+                    if (item.level >= 3) return 1
+                    return 0
+                }))
+                add({ asw: asw }, num, 1)
+            }
         }
         if (yomi === "やましおまる") {
             add({ asw: 3 }, num)
+            var asw = Math.max.apply(null, items.filter(function(item) {
+                return item.slotitemId === 451
+            }).map(function(item) {
+                if (item.level >= 8) return 2
+                if (item.level >= 3) return 1
+                return 0
+            }))
+            add({ asw: asw }, num, 1)
         }
     }
     // 試製 長12.7cm連装砲A型改四
@@ -4274,6 +4292,10 @@ function getEquipmentBonus(date, attacker) {
     }
     // 5inch連装砲(副砲配置) 集中配備
     // if (num = count(467)) {}
+    // 12.7cm連装砲C型改三
+    // if (num = count(470)) {}
+    // Loire 130M
+    // if (num = count(471)) {}
 
     return bonus
 }
