@@ -13,7 +13,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.71
+var VERSION = 2.72
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -457,6 +457,7 @@ AntiSubmarinePower.prototype.getImprovementBonus = function () {
                 return 0.2 * item.level
             case 14: // ソナー
             case 15: // 爆雷
+            case 40: // 大型ソナー
                 return Math.sqrt(item.level)
             case 25: // 回転翼機
                 return (item.param.taisen > 10 ? 0.3 : 0.2) * item.level
@@ -518,7 +519,17 @@ AntiSubmarinePower.prototype.getSynergyBonus2 = function () {
     var MYSTERY_FIXED_DATE = getJstDate(2019, 8, 8, 12, 0, 0)
     var NEW_SYNERGY_DATE = getJstDate(2021, 10, 29, 12, 0, 0)
 
-    var depthChargeProjectorList = this.date.after(NEW_SYNERGY_DATE) ? [44, 45, 287, 288, 377] : [44, 45]
+    // 九四式爆雷投射機
+    // 三式爆雷投射機
+    // 三式爆雷投射機 集中配備
+    // 試製15cm9連装対潜噴進砲
+    // RUR-4A Weapon Alpha改
+    // Mk.32 対潜魚雷(Mk.2落射機)
+    var depthChargeProjectorList = this.date.after(NEW_SYNERGY_DATE) ? [44, 45, 287, 288, 377, 472] : [44, 45]
+    // 九五式爆雷
+    // 二式爆雷
+    // 対潜短魚雷(試作初期型)
+    // Hedgehog(初期型)
     var depthChargeList = this.date.after(NEW_SYNERGY_DATE) ? [226, 227, 378, 439] : this.date.after(MYSTERY_FIXED_DATE) ? [226, 227] : [226, 227, 228]
     var depthChargeProjector = this.items.some(function (item) { return depthChargeProjectorList.indexOf(item.slotitemId) >= 0 })
     var depthCharge = this.items.some(function (item) { return depthChargeList.indexOf(item.slotitemId) >= 0 })
@@ -700,7 +711,7 @@ DayBattlePower.prototype.getImprovementBonus = function () {
                 case 42: return 1    // 大型探照灯
                 case 21: return 1    // 機銃
                 case 15:             // 爆雷(投射機)
-                    // 爆雷は0
+                    // 九五式爆雷、二式爆雷は0
                     return [226, 227].indexOf(item.slotitemId) < 0 ? 0.75 : 0
                 case 14: return 0.75 // ソナー
                 case 40: return 0.75 // 大型ソナー
@@ -1217,7 +1228,7 @@ NightBattlePower.prototype.getBasicPower = function (formulaMode) {
     var useRaisou = !isGround(this.defender) || isNorthernmostLandingPrincess(this.defender) || this.items.length === 0
     // 夜襲
     if (isNightCvAttack(this.attacker, this.attackerHp)) {
-        var karyoku = this.attacker.karyoku - this.attacker.slotParam.karyoku - getEquipmentBonus(this.date, this.attacker).fp
+        var karyoku = getRawFirePower(this.date, this.attacker)
         var raisouBonus = this.date.after(getJstDate(2021, 8, 4, 12, 0, 0)) ? getEquipmentBonus(this.date, this.attacker).tp : 0
         var nightPlaneBonus = Java.from(this.attacker.item2.toArray()).map(function (item, i) {
             var slot = getOnSlot(this.attacker, this.date)[i]
@@ -1250,14 +1261,14 @@ NightBattlePower.prototype.getBasicPower = function (formulaMode) {
         var power = 0
         // Ark Royal、Ark Royal改
         if ([393, 515].indexOf(this.attacker.shipId) >= 0) {
-            power = this.attacker.karyoku
-                - this.attacker.slotParam.karyoku
+            power = getRawFirePower(this.date, this.attacker) 
                 + this.items.map(function (item) {
                     switch (item.slotitemId) {
                         case 242: // Swordfish
                         case 243: // Swordfish Mk.II(熟練)
                         case 244: // Swordfish Mk.III(熟練)
-                            return item.param.karyoku + (useRaisou ? item.param.raisou : 0)
+                            // 面倒なので改修効果合算
+                            return item.param.karyoku + (useRaisou ? item.param.raisou : 0) + Math.sqrt(item.level)
                     }
                     return 0
                 }).reduce(function (p, c) { return p + c }, 0)
@@ -1412,7 +1423,8 @@ NightBattlePower.prototype.getCutinBonus = function () {
             // 21inch艦首魚雷発射管6門(後期型)
             // 潜水艦後部魚雷発射管4門(後期型)
             // 後期型艦首魚雷(4門)
-            var lateTorpedo = [213, 214, 383, 441, 443, 457]
+            // 熟練聴音員＋後期型艦首魚雷(4門)
+            var lateTorpedo = [213, 214, 383, 441, 443, 457, 461]
             // 潜水艦搭載電探&水防式望遠鏡
             // 潜水艦搭載電探&逆探(E27)
             // 後期型潜水艦搭載電探&逆探
@@ -2285,11 +2297,17 @@ var getArmorBonus = function (date, mapCell, attacker, defender) {
     var mediumBulge = getItems(defender).filter(function (item) { return item.type2 === 27 }).map(function (item) { return 0.2 * item.level }).reduce(function (p, c) { return p + c }, 0)
     var largeBulge = getItems(defender).filter(function (item) { return item.type2 === 28 }).map(function (item) { return 0.3 * item.level }).reduce(function (p, c) { return p + c }, 0)
     var depthCharge = isSubMarine(defender) ? getItems(attacker).map(function (item) {
-        switch (item.slotitemId) {
-            case 226: return Math.sqrt(2) + (attacker.stype === 1 ? 1 : 0)
-            case 227: return Math.sqrt(5) + (attacker.stype === 1 ? 1 : 0)
-            default: return 0
+        // 九五式爆雷
+        // 二式爆雷
+        // 対潜短魚雷(試作初期型)
+        // RUR-4A Weapon Alpha改
+        // Hedgehog(初期型)
+        // Mk.32 対潜魚雷(Mk.2落射機)
+        var targetItems = date.after(getJstDate(2022, 8, 4, 12, 0, 0)) ? [226, 227, 377, 378, 439, 472] : [226, 227]
+        if (targetItems.indexOf(item.slotitemId) >= 0) {
+            return Math.sqrt(item.param.taisen - 2) + (attacker.stype === 1 ? 1 : 0)
         }
+        return 0
     }).reduce(function (p, c) { return p + c }, 0) : 0
     var northernSeaBulge = mapCell.map[0] === 3 && getItems(defender).some(function (item) { return item.slotitemId === 268 }) ? 3 : 0
     return mediumBulge + largeBulge - depthCharge + northernSeaBulge
@@ -2771,6 +2789,18 @@ function hasSgRadarLateModel(items) {
 }
 
 /**
+ * 素火力を返す
+ * @param {java.util.Date} date 戦闘日時
+ * @param {logbook.dto.ShipDto} attacker 攻撃艦
+ */
+function getRawFirePower(date, attacker) {
+    var slotParamPower = getItems(attacker).reduce(function (p, item) {
+        return p + item.param.karyoku
+    }, 0)
+    return attacker.karyoku - slotParamPower - getEquipmentBonus(date, attacker).fp
+}
+
+/**
  * 装備ボーナスの値を返す
  * @param {java.util.Date} date 戦闘日時
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
@@ -3105,6 +3135,20 @@ function getEquipmentBonus(date, attacker) {
             }
         }
     }
+    // 零式水中聴音機
+    if (num = count(132)) {
+        if (date.after(getJstDate(2022, 8, 4, 12, 0, 0))) {
+            var asw = Math.max.apply(null, items.filter(function(item) {
+                return item.slotitemId === 132
+            }).map(function(item) {
+                if (item.level >= 10) return 3
+                if (item.level >= 8) return 2
+                if (item.level >= 5) return 1
+                return 0
+            }))
+            add({ asw: asw }, num, 1)
+        }
+    }
     // プリエーゼ式水中防御隔壁
     // if (num = count(136)) {}
     // 15.2cm連装砲改
@@ -3209,6 +3253,19 @@ function getEquipmentBonus(date, attacker) {
     // if (num = count(217)) {}
     // 8cm高角砲改+増設機銃
     // if (num = count(220)) {}
+    // 二式爆雷
+    if (num = count(227)) {
+        if (date.after(getJstDate(2022, 8, 4, 12, 0, 0))) {
+            var asw = items.filter(function(item) {
+                return item.slotitemId === 227
+            }).map(function(item) {
+                return item.level >= 8 ? 1 : 0
+            }).reduce(function(p, v) {
+                return p + v
+            }, 0)
+            add({ asw: asw }, num, 1)
+        }
+    }
     // 九六式艦戦改
     if (num = count(228)) {
         if (date.after(getJstDate(2020, 3, 27, 12, 0, 0))) {
@@ -4296,6 +4353,18 @@ function getEquipmentBonus(date, attacker) {
     // if (num = count(470)) {}
     // Loire 130M
     // if (num = count(471)) {}
+    // Mk.32 対潜魚雷(Mk.2落射機)
+    if (num = count(472)) {
+        if (AMERICAN_SHIPS.indexOf(ctype) >= 0) {
+            add({ asw: 2 }, num)
+        }
+        if (BRITISH_SHIPS.indexOf(ctype) >= 0) {
+            add({ asw: 1 }, num)
+        }
+        if (shipId === 920) {
+            add({ asw: 1 }, num, 1)
+        }
+    }
 
     return bonus
 }
