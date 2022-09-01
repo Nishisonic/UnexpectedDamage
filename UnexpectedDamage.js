@@ -6,6 +6,7 @@ AppConstants = Java.type("logbook.constants.AppConstants")
 BattlePhaseKind = Java.type("logbook.dto.BattlePhaseKind")
 EnemyShipDto = Java.type("logbook.dto.EnemyShipDto")
 ShipDto = Java.type("logbook.dto.ShipDto")
+ShipParameters = Java.type("logbook.dto.ShipParameters")
 Item = Java.type("logbook.internal.Item")
 Ship = Java.type("logbook.internal.Ship")
 //#endregion
@@ -13,7 +14,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.72
+var VERSION = 2.74
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -49,7 +50,7 @@ var GERMAN_SHIPS = [47, 48, 55, 57, 63]
 /** イタリア艦 */
 var ITALIAN_SHIPS = [58, 61, 64, 68, 80, 92, 113]
 /** アメリカ艦 */
-var AMERICAN_SHIPS = [65, 69, 83, 84, 87, 91, 93, 95, 99, 102, 105, 106, 107, 110, 114]
+var AMERICAN_SHIPS = [65, 69, 83, 84, 87, 91, 93, 95, 99, 102, 105, 106, 107, 110, 114, 116]
 /** イギリス艦 */
 var BRITISH_SHIPS = [67, 78, 82, 88, 108, 112]
 /** フランス艦 */
@@ -400,7 +401,7 @@ AntiSubmarinePower.prototype.getBasicPower = function (formulaMode) {
         return Math.sqrt(this.attacker.raisou) * 2
     }
     var equipmentBonus = getEquipmentBonus(this.date, this.attacker).asw
-    var taisenShip = this.attacker.taisen - this.attacker.slotParam.taisen - equipmentBonus
+    var taisenShip = this.attacker.taisen - getSlotParam(this.attacker).taisen - equipmentBonus
     var taisenItem = this.items.map(function (item) {
         switch (item.type2) {
             case 7:  // 艦上爆撃機
@@ -659,14 +660,15 @@ DayBattlePower.prototype.getBasicPower = function (formulaMode) {
     // 空撃または陸上型かつ艦上爆撃機,艦上攻撃機,陸上攻撃機,噴式戦闘爆撃機,噴式攻撃機所持時?
     if (getAttackTypeAtDay(this.attack, this.attacker, this.defender) === 1 || isGround(this.attacker) && this.items.some(function (item) { return [7, 8, 47, 57, 58].indexOf(item.type2) >= 0 })) {
         // 空撃
-        var rai = this.attacker.slotParam.raig + (this.date.after(getJstDate(2021, 8, 4, 12, 0, 0)) ? getEquipmentBonus(this.date, this.attacker).tp : 0)
-        var baku = this.attacker.slotParam.baku
+        var slotParam = getSlotParam(this.attacker)
+        var rai = slotParam.raig + (this.date.after(getJstDate(2021, 8, 4, 12, 0, 0)) ? getEquipmentBonus(this.date, this.attacker).tp : 0)
+        var baku = slotParam.baku + getEquipmentBonus(this.date, this.attacker).bomb
         if (isGround(this.defender)) {
             rai = 0
             if (this.date.after(getJstDate(2019, 3, 27, 12, 0, 0))) {
                 var landAttacker = this.date.after(getJstDate(2021, 7, 15, 12, 0, 0)) ?
-                    // Ju87C改, 試製南山, F4U-1D, FM-2, Ju87C改二(KMX搭載機), Ju87C改二(KMX搭載機/熟練), 彗星一二型(六三四空/三号爆弾搭載機), TBM-3W+3S, 九九式艦爆二二型, 九九式艦爆二二型(熟練), 彗星一二型(三一号光電管爆弾搭載機), SB2C-3, SB2C-5
-                    [64, 148, 233, 277, 305, 306, 319, 389, 391, 392, 320, 420, 421] :
+                    // Ju87C改, 試製南山, F4U-1D, FM-2, Ju87C改二(KMX搭載機), Ju87C改二(KMX搭載機/熟練), 彗星一二型(六三四空/三号爆弾搭載機), TBM-3W+3S, 九九式艦爆二二型, 九九式艦爆二二型(熟練), 彗星一二型(三一号光電管爆弾搭載機), SB2C-3, SB2C-5, F4U-4
+                    [64, 148, 233, 277, 305, 306, 319, 389, 391, 392, 320, 420, 421, 474] :
                     // Ju87C改, 試製南山, F4U-1D, FM-2, Ju87C改二(KMX搭載機), Ju87C改二(KMX搭載機/熟練), 彗星一二型(六三四空/三号爆弾搭載機), TBM-3W+3S
                     [64, 148, 233, 277, 305, 306, 319, 389]
                 baku = this.items.filter(function (item) {
@@ -700,11 +702,11 @@ DayBattlePower.prototype.getImprovementBonus = function () {
     return this.items.map(function (item) {
         var _getimprovementBonus = function () {
             switch (item.type2) {
-                case 1: return 1     // 小口径主砲
-                case 2: return 1     // 中口径主砲
-                case 3: return 1.5   // 大口径主砲
+                case 1:  return 1    // 小口径主砲
+                case 2:  return 1    // 中口径主砲
+                case 3:  return 1.5  // 大口径主砲
                 case 38: return 1.5  // 大口径主砲(II)
-                case 4: return 1     // 副砲
+                case 4:  return 1    // 副砲
                 case 19: return 1    // 対艦強化弾
                 case 36: return 1    // 高射装置
                 case 29: return 1    // 探照灯
@@ -722,6 +724,7 @@ DayBattlePower.prototype.getImprovementBonus = function () {
                 case 39: return 1    // 水上艦要員
                 case 34: return 1    // 司令部施設
                 case 32: return 1    // 潜水艦魚雷
+                case 35: return 1    // 航空要員
                 default: return 0
             }
         }
@@ -1310,6 +1313,7 @@ NightBattlePower.prototype.getImprovementBonus = function () {
                 case 32: return 1 // 潜水艦魚雷
                 case 39: return 1 // 水上艦要員
                 case 34: return 1 // 司令部施設
+                case 35: return 1 // 航空要員
                 default: return 0
             }
         }
@@ -1446,7 +1450,7 @@ NightBattlePower.prototype.getCutinBonus = function () {
             // 夜間攻撃機
             var kind2 = items.filter(function (item) { return item.type3 === 46 }).length
             // その他(SF,岩井,彗星(31号))
-            var kind3 = items.filter(function (item) { return [154,242,243,244,320].indexOf(item.id) >= 0 }).length
+            var kind3 = items.filter(function (item) { return [154, 242, 243, 244, 320].indexOf(item.id) >= 0 }).length
             if (kind1 === 2 && kind2 === 1) return 1.25
             if ((kind1 + kind2 + kind3) === 2) return 1.2
             if ((kind1 + kind2 + kind3) === 3) return 1.18
@@ -1897,7 +1901,9 @@ var isHeavyCrusierSummerPrincess = function (ship) {
 var isFrenchBattleshipPrincess = function (ship) {
     return [
         1745, 1746, 1747,   // 戦艦仏棲姫
-        1748, 1749, 1750,   // 戦艦仏棲姫-壊 
+        1748, 1749, 1750,   // 戦艦仏棲姫-壊
+        1834, 1835, 1836,   // 戦艦仏棲姫 バカンスmode
+        1837, 1838, 1839,   // 戦艦仏棲姫-壊 バカンスmode
     ].indexOf(ship.shipId) >= 0
 }
 
@@ -2376,7 +2382,7 @@ var getSpecialAttackBonus = function(that) {
                 return surfaceRadarBonus * apShellBonus
             }(attackIndex < 2 ? that.items : getItems(ships[1]))
             return base * secondShipBonus * itemBonus
-        case 103: // Colorado 特殊攻撃
+        case 103: // Colorado 特殊攻撃 ※正式名称不明
             var base = that.date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE2) ?
                 (attackIndex === 0 ? 1.5 : 1.3) : (attackIndex === 0 ? 1.3 : 1.15)
             var companionShipBonus = function(secondShipId, thirdShipId) {
@@ -2462,7 +2468,7 @@ var getSpecialAttackBonus = function(that) {
             return base * engagementBonus
         case 200: return 1.35 // 瑞雲立体攻撃
         case 201: return 1.3 // 海空立体攻撃
-        case 400: // 第一戦隊、突撃！主砲、全力斉射ッ！
+        case 400: // 大和 特殊攻撃(3隻版) ※正式名称不明
             var base = attackIndex < 2 ? 1.5 : 1.65
             // 最終改造形態じゃないと発動しないらしい
             var secondShipCtype = JSON.parse(Ship.get(ships[1].shipId).json).api_ctype | 0
@@ -2522,7 +2528,7 @@ var getSpecialAttackBonus = function(that) {
                 return 1
             }(that.items)
             return base * companionShipBonus * itemBonus
-        case 401: // 大和、突撃します！二番艦も続いてください！
+        case 401: // 大和 特殊攻撃(2隻版) ※正式名称不明
             var base = attackIndex < 2 ? 1.4 : 1.55
             var secondShipBonus = function(secondShipId) {
                 if (attackIndex < 2) {
@@ -2792,19 +2798,31 @@ function hasSgRadarLateModel(items) {
  * 素火力を返す
  * @param {java.util.Date} date 戦闘日時
  * @param {logbook.dto.ShipDto} attacker 攻撃艦
+ * @return {Number}
  */
 function getRawFirePower(date, attacker) {
-    var slotParamPower = getItems(attacker).reduce(function (p, item) {
-        return p + item.param.karyoku
-    }, 0)
-    return attacker.karyoku - slotParamPower - getEquipmentBonus(date, attacker).fp
+    return attacker.karyoku - getSlotParam(attacker).karyoku - getEquipmentBonus(date, attacker).fp
+}
+
+/**
+ * 装備合計パラメータを返す
+ * @param {logbook.dto.ShipDto} attacker 攻撃艦
+ * @return {logbook.dto.ShipParameters}
+ */
+function getSlotParam(attacker) {
+    return getItems(attacker).map(function (item) {
+        return item.param
+    }).reduce(function (p, param) {
+        p.add(param)
+        return p
+    }, new ShipParameters())
 }
 
 /**
  * 装備ボーナスの値を返す
  * @param {java.util.Date} date 戦闘日時
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
- * @return {{fp: number, asw: number, tp: number}}
+ * @return {{fp: number, asw: number, tp: number, bomb: number}}
  */
 function getEquipmentBonus(date, attacker) {
     var shipId = attacker.shipId
@@ -2812,10 +2830,10 @@ function getEquipmentBonus(date, attacker) {
     var ctype = (JSON.parse(Ship.get(attacker.shipId).json).api_ctype | 0)
     var yomi = attacker.shipInfo.flagship
     var items = getItems(attacker)
-    var bonus = { fp: 0, asw: 0, tp: 0 }
+    var bonus = { fp: 0, asw: 0, tp: 0, bomb: 0 }
     function add(effect, num, max) {
-        // 火力・対潜
-        ["fp", "asw"].forEach(function(param) {
+        // 火力・対潜・爆装
+        ["fp", "asw", "bomb"].forEach(function(param) {
             bonus[param] += (effect[param] | 0) * Math.min(num, max | 0 || Infinity)
         })
         // 雷装
@@ -4365,7 +4383,54 @@ function getEquipmentBonus(date, attacker) {
             add({ asw: 1 }, num, 1)
         }
     }
-
+    // F4U-2 Night Corsair
+    if (num = count(473)) {
+        if (AMERICAN_SHIPS.indexOf(ctype) >= 0) {
+            add({ fp: 1 }, num)
+        }
+        if (BRITISH_SHIPS.indexOf(ctype) >= 0) {
+            add({ fp: 1 }, num)
+        }
+    }
+    // F4U-4
+    if (num = count(474)) {
+        if (AMERICAN_SHIPS.indexOf(ctype) >= 0) {
+            add({ fp: 2 }, num)
+        }
+        if (BRITISH_SHIPS.indexOf(ctype) >= 0) {
+            add({ fp: 1 }, num)
+        }
+        if (FRENCH_SHIPS.indexOf(ctype) >= 0) {
+            add({ fp: 1 }, num)
+        }
+        if ([707, 930].indexOf(ctype) >= 0) {
+            add({ fp: 1 }, num)
+        }
+    }
+    // 熟練甲板要員+航空整備員
+    if (num = count(478)) {
+        var fp = Math.max.apply(null, items.filter(function(item) {
+            return item.slotitemId === 478
+        }).map(function(item) {
+            if (item.level === 10) return 3
+            if (item.level >= 7) return 2
+            if (item.level >= 1) return 1
+            return 0
+        }))
+        var tp = Math.max.apply(null, items.filter(function(item) {
+            return item.slotitemId === 478
+        }).map(function(item) {
+            if (item.level >= 5) return 1
+            return 0
+        }))
+        var bomb = Math.max.apply(null, items.filter(function(item) {
+            return item.slotitemId === 478
+        }).map(function(item) {
+            if (item.level >= 4) return 1
+            return 0
+        }))
+        add({ fp: fp, tp: tp, bomb: bomb }, num, 1)
+    }
     return bonus
 }
 
