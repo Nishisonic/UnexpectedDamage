@@ -1,6 +1,6 @@
 /**
  * 異常ダメージ検知
- * @version 2.7.4
+ * @version 2.7.5
  * @author Nishikuma
  */
 
@@ -946,7 +946,7 @@ var detectDayBattle = function (date, mapCell, kind, friendCombinedKind, isEnemy
                     // 特殊攻撃は熟練度の対象から外す
                     var _shouldUseSkilled = shouldUseSkilled && attack.attackType < 100
                     var origins = attack.friendAttack ? friends : enemies
-                    var p = getDayBattlePower(date, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, attack, ship.attacker, ship.defender, hp.attacker, _shouldUseSkilled, attack.friendAttack ? friends : enemies)
+                    var p = getDayBattlePower(date, mapCell, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, attack, ship.attacker, ship.defender, hp.attacker, _shouldUseSkilled, attack.friendAttack ? friends : enemies)
                     var power = p.getPostcapPower()
                     var armor = Math.max(ship.defender.soukou + getArmorBonus(date, mapCell, ship.attacker, ship.defender), 1)
                     var minDef = armor * 0.7
@@ -1029,7 +1029,7 @@ var detectTorpedoAttack = function (date, mapCell, kind, friendCombinedKind, isE
             var ship = getAtkDef(attack, friends, enemies)
             var numOfAttackShips = (attack.friendAttack ? friendHp : enemyHp)[attack.mainAttack ? "main" : "escort"].length
             var hp = getAtkDefHp(attack, fFriendHp, fEnemyHp)
-            var power = getTorpedoPower(date, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, attack, ship.attacker, ship.defender, hp.attacker).getPostcapPower()
+            var power = getTorpedoPower(date, mapCell, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, attack, ship.attacker, ship.defender, hp.attacker).getPostcapPower()
             var armor = Math.max(ship.defender.soukou + getArmorBonus(date, mapCell, ship.attacker, ship.defender), 1)
             var minDef = armor * 0.7
             var maxDef = armor * 0.7 + Math.floor(armor - 1) * 0.6
@@ -1077,7 +1077,7 @@ var detectTorpedoAttack = function (date, mapCell, kind, friendCombinedKind, isE
             var ship = getAtkDef(attack, friends, enemies)
             var numOfAttackShips = (attack.friendAttack ? friendHp : enemyHp)[attack.mainAttack ? "main" : "escort"].length
             var hp = getAtkDefHp(attack, eFriendHp, eEnemyHp)
-            var power = getTorpedoPower(date, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, attack, ship.attacker, ship.defender, hp.attacker).getPostcapPower()
+            var power = getTorpedoPower(date, mapCell, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, attack, ship.attacker, ship.defender, hp.attacker).getPostcapPower()
             var armor = Math.max(ship.defender.soukou + getArmorBonus(date, mapCell, ship.attacker, ship.defender), 1)
             var minDef = armor * 0.7
             var maxDef = armor * 0.7 + Math.floor(armor - 1) * 0.6
@@ -1166,7 +1166,7 @@ var detectNightBattle = function (date, mapCell, kind, friendCombinedKind, isEne
                     // 特殊攻撃は熟練度の対象から外す
                     var _shouldUseSkilled = shouldUseSkilled && attack.attackType < 100
                     var origins = attack.friendAttack ? friends : enemies
-                    var power = getNightBattlePower(date, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, touchPlane, attack, ship.attacker, ship.defender, hp.attacker, _shouldUseSkilled, attack.friendAttack ? friends : enemies).getPostcapPower()
+                    var power = getNightBattlePower(date, mapCell, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, touchPlane, attack, ship.attacker, ship.defender, hp.attacker, _shouldUseSkilled, attack.friendAttack ? friends : enemies).getPostcapPower()
                     var armor = Math.max(ship.defender.soukou + getArmorBonus(date, mapCell, ship.attacker, ship.defender), 1)
                     var minDef = armor * 0.7
                     var maxDef = armor * 0.7 + Math.floor(armor - 1) * 0.6
@@ -1250,7 +1250,7 @@ var detectRadarShooting = function (date, mapCell, kind, friendCombinedKind, isE
                     // 特殊攻撃は熟練度の対象から外す
                     var _shouldUseSkilled = shouldUseSkilled && attack.attackType < 100
                     var origins = attack.friendAttack ? friends : enemies
-                    var power = getRadarShootingPower(date, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, attack, ship.attacker, ship.defender, hp.attacker, _shouldUseSkilled, attack.friendAttack ? friends : enemies).getPostcapPower()
+                    var power = getRadarShootingPower(date, mapCell, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, attack, ship.attacker, ship.defender, hp.attacker, _shouldUseSkilled, attack.friendAttack ? friends : enemies).getPostcapPower()
                     var armor = Math.max(ship.defender.soukou + getArmorBonus(date, mapCell, ship.attacker, ship.defender), 1)
                     var minDef = armor * 0.7
                     var maxDef = armor * 0.7 + Math.floor(armor - 1) * 0.6
