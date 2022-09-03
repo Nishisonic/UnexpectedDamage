@@ -1,6 +1,6 @@
 /**
  * 異常ダメージ検知
- * @version 2.7.5
+ * @version 2.7.6
  * @author Nishikuma
  */
 
@@ -17,7 +17,6 @@ StandardOpenOption = Java.type("java.nio.file.StandardOpenOption")
 Collectors = Java.type("java.util.stream.Collectors")
 BattlePhaseKind = Java.type("logbook.dto.BattlePhaseKind")
 EnemyShipDto = Java.type("logbook.dto.EnemyShipDto")
-ShipDto = Java.type("logbook.dto.ShipDto")
 Item = Java.type("logbook.internal.Item")
 IOUtils = Java.type("org.apache.commons.io.IOUtils")
 //#endregion
@@ -269,7 +268,7 @@ DamagedHpDto.prototype.add = function (hpdto) {
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃側情報
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} defender 防御側情報
  */
-var AtkDefDto = function (attacker, defender) {
+var InvolvedShipsDto = function (attacker, defender) {
     this.attacker = attacker
     this.defender = defender
 }
@@ -279,7 +278,7 @@ var AtkDefDto = function (attacker, defender) {
  * @param {ShipHpDto} attacker 攻撃側Hp
  * @param {ShipHpDto} defender 防御側Hp
  */
-var AtkDefHpDto = function (attacker, defender) {
+var InvolvedShipHpsDto = function (attacker, defender) {
     this.attacker = attacker
     this.defender = defender
 }
@@ -721,9 +720,9 @@ var detectOrDefault = function (date, battle, friends, enemies, friendHp, enemyH
                     // 味方艦隊への誤爆排除
                     return attack.friendAttack
                 }).forEach(function (attack) {
-                    var ship = getAtkDef(attack, friends, enemies)
-                    var hp = getAtkDefHp(attack, friendHp, enemyHp)
-                    processingShipHpDamage(ship.defender, hp.defender, attack.damage, attack.lastAttack) // ダメージ処理
+                    var ship = extractInvolvedShips(attack, friends, enemies)
+                    var hp = extractInvolvedShipHps(attack, friendHp, enemyHp)
+                    damageHandling(ship.defender, hp.defender, attack.damage, attack.lastAttack) // ダメージ処理
                 })
             })
         }
@@ -938,9 +937,9 @@ var detectDayBattle = function (date, mapCell, kind, friendCombinedKind, isEnemy
                 // 攻撃ミスは除外
                 return (attack.critical | 0) > 0
             }).forEach(function (attack) {
-                var ship = getAtkDef(attack, friends, enemies)
+                var ship = extractInvolvedShips(attack, friends, enemies)
                 var numOfAttackShips = (attack.friendAttack ? friendHp : enemyHp)[attack.mainAttack ? "main" : "escort"].length
-                var hp = getAtkDefHp(attack, friendHp, enemyHp)
+                var hp = extractInvolvedShipHps(attack, friendHp, enemyHp)
                 // 味方潜水への攻撃は検出対象から除外(敵対潜値が不明のため)
                 if (!(!attack.friendAttack && isSubMarine(ship.defender))) {
                     // 特殊攻撃は熟練度の対象から外す
@@ -990,7 +989,7 @@ var detectDayBattle = function (date, mapCell, kind, friendCombinedKind, isEnemy
                         result.push(new DetectDto(date, mapCell, 0, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], _shouldUseSkilled, origins, false, inversion))
                     }
                 }
-                processingShipHpDamage(ship.defender, hp.defender, attack.damage, attack.lastAttack) // ダメージ処理
+                damageHandling(ship.defender, hp.defender, attack.damage, attack.lastAttack) // ダメージ処理
             })
         })
     }
@@ -1026,9 +1025,9 @@ var detectTorpedoAttack = function (date, mapCell, kind, friendCombinedKind, isE
             // 攻撃ミスは除外
             return (attack.critical | 0) > 0
         }).forEach(function (attack) {
-            var ship = getAtkDef(attack, friends, enemies)
+            var ship = extractInvolvedShips(attack, friends, enemies)
             var numOfAttackShips = (attack.friendAttack ? friendHp : enemyHp)[attack.mainAttack ? "main" : "escort"].length
-            var hp = getAtkDefHp(attack, fFriendHp, fEnemyHp)
+            var hp = extractInvolvedShipHps(attack, fFriendHp, fEnemyHp)
             var power = getTorpedoPower(date, mapCell, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, attack, ship.attacker, ship.defender, hp.attacker).getPostcapPower()
             var armor = Math.max(ship.defender.soukou + getArmorBonus(date, mapCell, ship.attacker, ship.defender), 1)
             var minDef = armor * 0.7
@@ -1067,16 +1066,16 @@ var detectTorpedoAttack = function (date, mapCell, kind, friendCombinedKind, isE
                 }
                 result.push(new DetectDto(date, mapCell, 1, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], false, friends, false, inversion))
             }
-            processingShipHpDamage(ship.defender, hp.defender, attack.damage, false) // ダメージ仮処理
+            damageHandling(ship.defender, hp.defender, attack.damage, false) // ダメージ仮処理
         })
 
         Array.prototype.concat.apply([], attackList.enemy).filter(function (attack) {
             // 攻撃ミスは除外
             return (attack.critical | 0) > 0
         }).forEach(function (attack) {
-            var ship = getAtkDef(attack, friends, enemies)
+            var ship = extractInvolvedShips(attack, friends, enemies)
             var numOfAttackShips = (attack.friendAttack ? friendHp : enemyHp)[attack.mainAttack ? "main" : "escort"].length
-            var hp = getAtkDefHp(attack, eFriendHp, eEnemyHp)
+            var hp = extractInvolvedShipHps(attack, eFriendHp, eEnemyHp)
             var power = getTorpedoPower(date, mapCell, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, attack, ship.attacker, ship.defender, hp.attacker).getPostcapPower()
             var armor = Math.max(ship.defender.soukou + getArmorBonus(date, mapCell, ship.attacker, ship.defender), 1)
             var minDef = armor * 0.7
@@ -1103,16 +1102,16 @@ var detectTorpedoAttack = function (date, mapCell, kind, friendCombinedKind, isE
 
                 result.push(new DetectDto(date, mapCell, 1, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], false, enemies, false, inversion))
             }
-            processingShipHpDamage(ship.defender, hp.defender, attack.damage, false) // ダメージ仮処理
+            damageHandling(ship.defender, hp.defender, attack.damage, false) // ダメージ仮処理
         })
 
         Array.prototype.concat.apply([], attackList.friend.concat(attackList.enemy)).filter(function (attack) {
             // ダメージ=0を判定しても無駄なので除外
             return Math.floor(attack.damage) > 0
         }).forEach(function (attack) {
-            var ship = getAtkDef(attack, friends, enemies)
-            var hp = getAtkDefHp(attack, friendHp, enemyHp)
-            processingShipHpDamage(ship.defender, hp.defender, attack.damage, false) // ダメージ本処理
+            var ship = extractInvolvedShips(attack, friends, enemies)
+            var hp = extractInvolvedShipHps(attack, friendHp, enemyHp)
+            damageHandling(ship.defender, hp.defender, attack.damage, false) // ダメージ本処理
         })
 
         // ダメコン処理
@@ -1158,9 +1157,9 @@ var detectNightBattle = function (date, mapCell, kind, friendCombinedKind, isEne
                 // 攻撃ミスは除外
                 return (attack.critical | 0) > 0
             }).forEach(function (attack) {
-                var ship = getAtkDef(attack, friends, enemies)
+                var ship = extractInvolvedShips(attack, friends, enemies)
                 var numOfAttackShips = (attack.friendAttack ? friendHp : enemyHp)[attack.mainAttack ? "main" : "escort"].length
-                var hp = getAtkDefHp(attack, friendHp, enemyHp)
+                var hp = extractInvolvedShipHps(attack, friendHp, enemyHp)
                 // 味方潜水への攻撃は検出対象から除外(敵対潜値が不明のため)
                 if (!(!attack.friendAttack && isSubMarine(ship.defender))) {
                     // 特殊攻撃は熟練度の対象から外す
@@ -1210,7 +1209,7 @@ var detectNightBattle = function (date, mapCell, kind, friendCombinedKind, isEne
                         result.push(new DetectDto(date, mapCell, 2, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, touchPlane, _shouldUseSkilled, origins, false, inversion))
                     }
                 }
-                processingShipHpDamage(ship.defender, hp.defender, attack.damage, attack.lastAttack) // ダメージ処理
+                damageHandling(ship.defender, hp.defender, attack.damage, attack.lastAttack) // ダメージ処理
             })
         })
     }
@@ -1242,9 +1241,9 @@ var detectRadarShooting = function (date, mapCell, kind, friendCombinedKind, isE
                 // 攻撃ミスは除外
                 return (attack.critical | 0) > 0
             }).forEach(function (attack) {
-                var ship = getAtkDef(attack, friends, enemies)
+                var ship = extractInvolvedShips(attack, friends, enemies)
                 var numOfAttackShips = (attack.friendAttack ? friendHp : enemyHp)[attack.mainAttack ? "main" : "escort"].length
-                var hp = getAtkDefHp(attack, friendHp, enemyHp)
+                var hp = extractInvolvedShipHps(attack, friendHp, enemyHp)
                 // 味方潜水への攻撃は検出対象から除外(敵対潜値が不明のため)
                 if (!(!attack.friendAttack && isSubMarine(ship.defender))) {
                     // 特殊攻撃は熟練度の対象から外す
@@ -1277,7 +1276,7 @@ var detectRadarShooting = function (date, mapCell, kind, friendCombinedKind, isE
                         result.push(new DetectDto(date, mapCell, 2, attack, power, ship.attacker, ship.defender, hp.attacker, hp.defender, kind, friendCombinedKind, isEnemyCombined, formation, [-1, -1], _shouldUseSkilled, origins, true, inversion))
                     }
                 }
-                processingShipHpDamage(ship.defender, hp.defender, attack.damage, attack.lastAttack) // ダメージ処理
+                damageHandling(ship.defender, hp.defender, attack.damage, attack.lastAttack) // ダメージ処理
             })
         })
     }

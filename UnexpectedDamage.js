@@ -14,7 +14,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.75
+var VERSION = 2.76
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -762,7 +762,7 @@ DayBattlePower.prototype.getImprovementBonus = function () {
     var RECHANGE_SUB_GUN_BONUS_DATE = getJstDate(2017, 5, 2, 12, 0, 0)
     var isAirAttack = getAttackTypeAtDay(this.attack, this.attacker, this.defender) === 1
     return this.items.map(function (item) {
-        var _getimprovementBonus = function () {
+        var modifier = (function () {
             switch (item.type2) {
                 case 1:  return 1    // 小口径主砲
                 case 2:  return 1    // 中口径主砲
@@ -789,7 +789,7 @@ DayBattlePower.prototype.getImprovementBonus = function () {
                 case 35: return 1    // 航空要員
                 default: return 0
             }
-        }
+        })()
         // 副砲
         if (item.type2 === 4) {
             // 2017/3/17～2017/5/2
@@ -842,7 +842,7 @@ DayBattlePower.prototype.getImprovementBonus = function () {
             }
             return 0
         }
-        return _getimprovementBonus() * Math.sqrt(item.level)
+        return modifier * Math.sqrt(item.level)
     }, this).reduce(function (prev, current) {
         return prev + current
     }, 0)
@@ -1376,7 +1376,7 @@ NightBattlePower.prototype.getImprovementBonus = function () {
     }
     // 通常砲撃
     return this.items.map(function (item) {
-        var _getimprovementBonus = function () {
+        var modifier = (function () {
             switch (item.type2) {
                 case 1: return 1  // 小口径主砲
                 case 2: return 1  // 中口径主砲
@@ -1399,7 +1399,7 @@ NightBattlePower.prototype.getImprovementBonus = function () {
                 case 35: return 1 // 航空要員
                 default: return 0
             }
-        }
+        })()
         // 2022/1/21～
         if (this.date.after(getJstDate(2022, 1, 21, 12, 0, 0))) {
             // 潜水艦魚雷
@@ -1428,7 +1428,7 @@ NightBattlePower.prototype.getImprovementBonus = function () {
                     return 0.3 * item.level
             }
         }
-        return _getimprovementBonus() * Math.sqrt(item.level)
+        return modifier * Math.sqrt(item.level)
     }, this).reduce(function (prev, current) {
         return prev + current
     }, 0)
@@ -2166,6 +2166,9 @@ var getLandBonus = function (attacker, defender, isDay) {
             a *= ((rikuDaihatsu + issikihou) ? 1.6 : 1) * ((rikuDaihatsu + issikihou) >= 2 ? 1.5 : 1)
             a *= m4a1dd ? 2.0 : 1
             a *= kamisha ? 2.8 : 1
+            if (isDay) {
+                a *= (spBoat ? 1.5 : 1) * (spBoat >= 2 ? 1.1 : 1)
+            }
             break
         default: // ソフトスキン
             a *= type3shell ? 2.5 : 1
@@ -2760,12 +2763,12 @@ var getJstDate = function (year, month, date, hourOfDay, minute, second) {
  * @param {AttackDto} attack
  * @param {FleetDto} friends 自軍側
  * @param {FleetDto} enemies 敵軍側
- * @return {AtkDefDto} 攻撃艦/防御艦
+ * @return {InvolvedShipsDto} 攻撃艦/防御艦
  */
-var getAtkDef = function (attack, friends, enemies) {
+var extractInvolvedShips = function (attack, friends, enemies) {
     var attacker = (attack.friendAttack ? friends : enemies)[attack.mainAttack ? "main" : "escort"].get(attack.attacker % Math.max(6, (attack.friendAttack ? friends : enemies).main.length))
     var defender = (!attack.friendAttack ? friends : enemies)[attack.mainDefense ? "main" : "escort"].get(attack.defender % Math.max(6, (!attack.friendAttack ? friends : enemies).main.length))
-    return new AtkDefDto(attacker, defender)
+    return new InvolvedShipsDto(attacker, defender)
 }
 
 /**
@@ -2773,12 +2776,12 @@ var getAtkDef = function (attack, friends, enemies) {
  * @param {AttackDto} attack
  * @param {FleetHpDto} friendHp
  * @param {FleetHpDto} enemyHp
- * @return {AtkDefHpDto} 攻撃艦/防御艦Hp
+ * @return {InvolvedShipHpsDto} 攻撃艦/防御艦Hp
  */
-var getAtkDefHp = function (attack, friendHp, enemyHp) {
+var extractInvolvedShipHps = function (attack, friendHp, enemyHp) {
     var attackerHp = (attack.friendAttack ? friendHp : enemyHp)[attack.mainAttack ? "main" : "escort"][attack.attacker % Math.max(6, (attack.friendAttack ? friendHp : enemyHp).main.length)]
     var defenderHp = (!attack.friendAttack ? friendHp : enemyHp)[attack.mainDefense ? "main" : "escort"][attack.defender % Math.max(6, (!attack.friendAttack ? friendHp : enemyHp).main.length)]
-    return new AtkDefHpDto(attackerHp, defenderHp)
+    return new InvolvedShipHpsDto(attackerHp, defenderHp)
 }
 
 /**
@@ -2786,11 +2789,11 @@ var getAtkDefHp = function (attack, friendHp, enemyHp) {
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} ship 艦
  * @param {ShipHpDto} shipHp 艦Hp
  * @param {Number} damage ダメージ
- * @param {Boolean} dmgCtrl ダメコン処理をするか(デフォルト=true)
+ * @param {Boolean} useDamageControl ダメコン処理をするか(デフォルト=true)
  */
-var processingShipHpDamage = function (ship, shipHp, damage, dmgCtrl) {
+var damageHandling = function (ship, shipHp, damage, useDamageControl) {
     shipHp.now -= Math.floor(damage)
-    if (dmgCtrl === undefined || dmgCtrl) {
+    if (useDamageControl === undefined || useDamageControl) {
         damageControl(shipHp, ship)
     }
 }
