@@ -14,7 +14,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.76
+var VERSION = 2.77
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -628,9 +628,9 @@ AntiSubmarinePower.prototype.getPostcapPower = function (formulaMode) {
     var s = this.shouldUseSkilled ? getSkilledBonus(this.date, this.attack, this.attacker, this.defender, this.attackerHp) : [1.0, 1.0]
     var m = getMapBonus(this.mapCell, this.attacker, this.defender)
     if (formulaMode) {
-        return "int(int(" + getPostcapValue(this.getPrecapPower(), this.CAP_VALUE) + ")*" + getCriticalBonus(this.attack) + "*" + s[0] + ")*" + m
+        return "int(int(" + getPostcapValue(this.getPrecapPower(), this.CAP_VALUE) + ")*" + m + "*" + getCriticalBonus(this.attack) + "*" + s[0] + ")"
     }
-    return [Math.floor(v * s[0]) * m, Math.floor(v * s[1]) * m]
+    return [Math.floor(v * m * s[0]), Math.floor(v * m * s[1])]
 }
 
 /**
@@ -882,24 +882,23 @@ DayBattlePower.prototype.getPostcapPower = function (formulaMode, isCalc) {
         }
         str = "int((" + str + ")*" + this.getAPshellBonus() + ")"
     }
+    value *= getMapBonus(this.mapCell, this.attacker, this.defender)
+    str += "*" + getMapBonus(this.mapCell, this.attacker, this.defender)
     // クリティカル判定
-    var min = value
-    var max = value
     if (!isCalc && isCritical(this.attack)) {
         // A = [A * クリティカル補正 * 熟練度補正]
         value *= getCriticalBonus(this.attack)
         str = "(" + str + ")*" + getCriticalBonus(this.attack)
         var skilled = this.shouldUseSkilled ? getSkilledBonus(this.date, this.attack, this.attacker, this.defender, this.attackerHp) : [1.0, 1.0]
-        str = "int((" + str + ")*" + skilled[0] + ")"
-        min = Math.floor(value * skilled[0])
-        max = Math.floor(value * skilled[1])
+        if (formulaMode) {
+            str = "int((" + str + ")*" + skilled[0] + ")"
+        }
+        return [Math.floor(value * skilled[0]), Math.floor(value * skilled[1])]
     }
     if (formulaMode) {
-        return str + "*" + getMapBonus(this.mapCell, this.attacker, this.defender)
+        return str
     }
-    min *= getMapBonus(this.mapCell, this.attacker, this.defender)
-    max *= getMapBonus(this.mapCell, this.attacker, this.defender)
-    return [min, max]
+    return [value, value]
 }
 
 /**
@@ -1147,10 +1146,9 @@ TorpedoPower.prototype.getPrecapPower = function (formulaMode) {
 TorpedoPower.prototype.getPostcapPower = function (formulaMode) {
     var result = [0, 0]
     var value = getPostcapValue(this.getPrecapPower(), this.CAP_VALUE)
-    var critical = getCriticalBonus(this.attack)
-    result[0] = result[1] = Math.floor((Math.floor(value) * getMultiplySlayerBonus(this.attacker, this.defender) + getAddSlayerBonus(this.attacker, this.defender)) * getMultiplySlayerBonus2(this.attacker, this.defender) * critical) * getMapBonus(this.mapCell, this.attacker, this.defender)
+    result[0] = result[1] = Math.floor((Math.floor(value) * getMultiplySlayerBonus(this.attacker, this.defender) + getAddSlayerBonus(this.attacker, this.defender)) * getMultiplySlayerBonus2(this.attacker, this.defender) * getMapBonus(this.mapCell, this.attacker, this.defender) * getCriticalBonus(this.attack))
     if (formulaMode) {
-        return "int((int(" + value + ")*" + getMultiplySlayerBonus(this.attacker, this.defender) + "+" + getAddSlayerBonus(this.attacker, this.defender) + ")*" + getMultiplySlayerBonus2(this.attacker, this.defender) + "*" + critical + ")*" + getMapBonus(this.mapCell, this.attacker, this.defender)
+        return "int((int(" + value + ")*" + getMultiplySlayerBonus(this.attacker, this.defender) + "+" + getAddSlayerBonus(this.attacker, this.defender) + ")*" + getMultiplySlayerBonus2(this.attacker, this.defender) + "*" + getMapBonus(this.mapCell, this.attacker, this.defender) + "*" + getCriticalBonus(this.attack) + ")"
     }
     return result
 }
@@ -1472,26 +1470,23 @@ NightBattlePower.prototype.getPrecapPostMultiplyPower = function () {
  */
 NightBattlePower.prototype.getPostcapPower = function (formulaMode) {
     // A = [([キャップ後攻撃力] * 乗算特効補正 + 加算特効補正) * 乗算特効補正2]
-    var value = Math.floor((Math.floor(getPostcapValue(this.getPrecapPower(), this.CAP_VALUE)) * getMultiplySlayerBonus(this.attacker, this.defender) + getAddSlayerBonus(this.attacker, this.defender)) * getMultiplySlayerBonus2(this.attacker, this.defender))
-    var str = "int((int(" + getPostcapValue(this.getPrecapPower(), this.CAP_VALUE) + ")*" + getMultiplySlayerBonus(this.attacker, this.defender) + "+" + getAddSlayerBonus(this.attacker, this.defender) + ")*" + getMultiplySlayerBonus2(this.attacker, this.defender) + ")"
-    var min = value
-    var max = value
+    var value = Math.floor((Math.floor(getPostcapValue(this.getPrecapPower(), this.CAP_VALUE)) * getMultiplySlayerBonus(this.attacker, this.defender) + getAddSlayerBonus(this.attacker, this.defender)) * getMultiplySlayerBonus2(this.attacker, this.defender)) * getMapBonus(this.mapCell, this.attacker, this.defender)
+    var str = "int((int(" + getPostcapValue(this.getPrecapPower(), this.CAP_VALUE) + ")*" + getMultiplySlayerBonus(this.attacker, this.defender) + "+" + getAddSlayerBonus(this.attacker, this.defender) + ")*" + getMultiplySlayerBonus2(this.attacker, this.defender) + ")*" + getMapBonus(this.mapCell, this.attacker, this.defender)
     // クリティカル判定
     if (isCritical(this.attack)) {
         // A = [A * クリティカル補正 * 熟練度補正]
         value *= getCriticalBonus(this.attack)
         str = "(" + str + ")*" + getCriticalBonus(this.attack)
         var skilled = this.shouldUseSkilled ? getSkilledBonus(this.date, this.attack, this.attacker, this.defender, this.attackerHp) : [1.0, 1.0]
-        str = "int((" + str + ")*" + skilled[0] + ")"
-        min = Math.floor(value * skilled[0])
-        max = Math.floor(value * skilled[1])
+        if (formulaMode) {
+            return "int((" + str + ")*" + skilled[0] + ")"
+        }
+        return [Math.floor(value * skilled[0]), Math.floor(value * skilled[1])]
     }
     if (formulaMode) {
-        return str + "*" + getMapBonus(this.mapCell, this.attacker, this.defender)
+        return str
     }
-    min *= getMapBonus(this.mapCell, this.attacker, this.defender)
-    max *= getMapBonus(this.mapCell, this.attacker, this.defender)
-    return [min, max]
+    return [value, value]
 }
 
 /**
@@ -1923,7 +1918,7 @@ var getMapBonus = function (mapCell, attacker, defender) {
                 // 海防艦
                 case STYPE.DE: return 1.25
                 // 練習巡洋艦
-                case STYPE.CLT: return 1.15
+                case STYPE.CT: return 1.15
             }
         }
         if (mapCell.isBoss()) {
@@ -1931,7 +1926,7 @@ var getMapBonus = function (mapCell, attacker, defender) {
                 // 海防艦
                 case STYPE.DE: return 1.33
                 // 練習巡洋艦
-                case STYPE.CLT: return 1.22
+                case STYPE.CT: return 1.22
             }
         }
     }
@@ -2331,7 +2326,7 @@ var getSkilledBonus = function (date, attack, attacker, defender, attackerHp) {
                     }
                 }
                 result[0] = modifier(SKILLED[items[0].alv].INTERNAL[0], avgExps[0])
-                result[1] = modifier(SKILLED[items[1].alv].INTERNAL[1], avgExps[1])
+                result[1] = modifier(SKILLED[items[0].alv].INTERNAL[1], avgExps[1])
             } else {
                 // 隊長機なし
                 var modifier = function (exp) {
@@ -4640,30 +4635,39 @@ function getEquipmentBonus(date, attacker) {
     // if (num = count(450)) {}
     // 	三式指揮連絡機改
     if (num = count(451)) {
-        if (yomi === "あきつまる") {
-            add({ asw: 2 }, num)
-            // あきつ丸改
-            if (shipId === 166) {
+        if (date.after(getJstDate(2022, 7, 13, 12, 0, 0))) {
+            if (yomi === "あきつまる") {
+                add({ asw: 2 }, num)
+                // あきつ丸改
+                if (shipId === 166) {
+                    var asw = Math.max.apply(null, items.filter(function(item) {
+                        return item.slotitemId === 451
+                    }).map(function(item) {
+                        if (item.level >= 7) return 2
+                        if (item.level >= 3) return 1
+                        return 0
+                    }))
+                    add({ asw: asw }, num, 1)
+                }
+            }
+            if (yomi === "やましおまる") {
+                add({ asw: 3 }, num)
                 var asw = Math.max.apply(null, items.filter(function(item) {
                     return item.slotitemId === 451
                 }).map(function(item) {
-                    if (item.level >= 7) return 2
+                    if (item.level >= 8) return 2
                     if (item.level >= 3) return 1
                     return 0
                 }))
                 add({ asw: asw }, num, 1)
             }
-        }
-        if (yomi === "やましおまる") {
-            add({ asw: 3 }, num)
-            var asw = Math.max.apply(null, items.filter(function(item) {
-                return item.slotitemId === 451
-            }).map(function(item) {
-                if (item.level >= 8) return 2
-                if (item.level >= 3) return 1
-                return 0
-            }))
-            add({ asw: asw }, num, 1)
+        } else {
+            if (yomi === "あきつまる") {
+                add({ asw: 2 }, num)
+            }
+            if (yomi === "やましおまる") {
+                add({ asw: 3 }, num)
+            }
         }
     }
     // 試製 長12.7cm連装砲A型改四
