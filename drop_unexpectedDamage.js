@@ -967,7 +967,7 @@ var detectDayBattle = function (date, mapCell, kind, friendCombinedKind, isEnemy
                         var inversion = {
                             min: minPostcapPower / power[1],
                             max: maxPostcapPower / power[0],
-                            date:date.getTime()
+                            date: date.getTime()
                         }
                         // 熟練度
                         var skilled = getSkilledBonus(date, attack, ship.attacker, ship.defender, hp.attacker)

@@ -624,13 +624,12 @@ AntiSubmarinePower.prototype.getPrecapPower = function (formulaMode) {
  * @return {[Number,Number]|String} 対潜火力(キャップ後)
  */
 AntiSubmarinePower.prototype.getPostcapPower = function (formulaMode) {
-    var v = Math.floor(getPostcapValue(this.getPrecapPower(), this.CAP_VALUE)) * getCriticalBonus(this.attack)
+    var v = Math.floor(Math.floor(getPostcapValue(this.getPrecapPower(), this.CAP_VALUE)) * getMapBonus(this.mapCell, this.attacker, this.defender)) * getCriticalBonus(this.attack)
     var s = this.shouldUseSkilled ? getSkilledBonus(this.date, this.attack, this.attacker, this.defender, this.attackerHp) : [1.0, 1.0]
-    var m = getMapBonus(this.mapCell, this.attacker, this.defender)
     if (formulaMode) {
-        return "int(int(" + getPostcapValue(this.getPrecapPower(), this.CAP_VALUE) + ")*" + m + "*" + getCriticalBonus(this.attack) + "*" + s[0] + ")"
+        return "int(int(int(" + getPostcapValue(this.getPrecapPower(), this.CAP_VALUE) + ")*" + getMapBonus(this.mapCell, this.attacker, this.defender) + ")*" + getCriticalBonus(this.attack) + "*" + s[0] + ")"
     }
-    return [Math.floor(v * m * s[0]), Math.floor(v * m * s[1])]
+    return [Math.floor(v * s[0]), Math.floor(v * s[1])]
 }
 
 /**
@@ -869,9 +868,9 @@ DayBattlePower.prototype.getPrecapPower = function (formulaMode) {
 DayBattlePower.prototype.getPostcapPower = function (formulaMode, isCalc) {
     // サイレント修正(Twitterで確認した限りでは17/9/9が最古=>17夏イベ?)以降、集積地棲姫特効のキャップ位置が変化(a5→a6)
     // 17夏以降に登場したPT小鬼群の特効位置もa6に変化?(乗算と加算組み合わせているっぽいので詳細不明)
-    // A = [([キャップ後攻撃力] * 乗算特効補正 + 加算特効補正) * 乗算特効補正2] * 弾着観測射撃 * 戦爆連合カットイン攻撃
-    var value = Math.floor((Math.floor(getPostcapValue(this.getPrecapPower(), this.CAP_VALUE)) * getMultiplySlayerBonus(this.attacker, this.defender) + getAddSlayerBonus(this.attacker, this.defender)) * getMultiplySlayerBonus2(this.attacker, this.defender)) * this.getSpottingBonus() * this.getUnifiedBombingBonus()
-    var str = "int((int(" + getPostcapValue(this.getPrecapPower(), this.CAP_VALUE) + ")*" + getMultiplySlayerBonus(this.attacker, this.defender) + "+" + getAddSlayerBonus(this.attacker, this.defender) + ")*" + getMultiplySlayerBonus2(this.attacker, this.defender) + ")*" + this.getSpottingBonus() + "*" + this.getUnifiedBombingBonus()
+    // A = [([キャップ後攻撃力] * 乗算特効補正 + 加算特効補正) * 乗算特効補正2 * マップ補正] * 弾着観測射撃 * 戦爆連合カットイン攻撃
+    var value = Math.floor((Math.floor(getPostcapValue(this.getPrecapPower(), this.CAP_VALUE)) * getMultiplySlayerBonus(this.attacker, this.defender) + getAddSlayerBonus(this.attacker, this.defender)) * getMultiplySlayerBonus2(this.attacker, this.defender) * getMapBonus(this.mapCell, this.attacker, this.defender)) * this.getSpottingBonus() * this.getUnifiedBombingBonus()
+    var str = "int((int(" + getPostcapValue(this.getPrecapPower(), this.CAP_VALUE) + ")*" + getMultiplySlayerBonus(this.attacker, this.defender) + "+" + getAddSlayerBonus(this.attacker, this.defender) + ")*" + getMultiplySlayerBonus2(this.attacker, this.defender) + "*" + getMapBonus(this.mapCell, this.attacker, this.defender) + ")*" + this.getSpottingBonus() + "*" + this.getUnifiedBombingBonus()
     // 徹甲弾補正判定
     if (this.isAPshellBonusTarget()) {
         if (!isCalc) {
@@ -882,8 +881,6 @@ DayBattlePower.prototype.getPostcapPower = function (formulaMode, isCalc) {
         }
         str = "int((" + str + ")*" + this.getAPshellBonus() + ")"
     }
-    value *= getMapBonus(this.mapCell, this.attacker, this.defender)
-    str += "*" + getMapBonus(this.mapCell, this.attacker, this.defender)
     // クリティカル判定
     if (!isCalc && isCritical(this.attack)) {
         // A = [A * クリティカル補正 * 熟練度補正]
@@ -1144,13 +1141,13 @@ TorpedoPower.prototype.getPrecapPower = function (formulaMode) {
  * @return {[Number,Number]|String} 雷撃火力(キャップ後)
  */
 TorpedoPower.prototype.getPostcapPower = function (formulaMode) {
-    var result = [0, 0]
+    // A = [[([キャップ後攻撃力] * 乗算特効補正 + 加算特効補正) * 乗算特効補正2 * マップ補正] * クリティカル補正]
     var value = getPostcapValue(this.getPrecapPower(), this.CAP_VALUE)
-    result[0] = result[1] = Math.floor((Math.floor(value) * getMultiplySlayerBonus(this.attacker, this.defender) + getAddSlayerBonus(this.attacker, this.defender)) * getMultiplySlayerBonus2(this.attacker, this.defender) * getMapBonus(this.mapCell, this.attacker, this.defender) * getCriticalBonus(this.attack))
+    var result = Math.floor(Math.floor((Math.floor(value) * getMultiplySlayerBonus(this.attacker, this.defender) + getAddSlayerBonus(this.attacker, this.defender)) * getMultiplySlayerBonus2(this.attacker, this.defender) * getMapBonus(this.mapCell, this.attacker, this.defender)) * getCriticalBonus(this.attack))
     if (formulaMode) {
-        return "int((int(" + value + ")*" + getMultiplySlayerBonus(this.attacker, this.defender) + "+" + getAddSlayerBonus(this.attacker, this.defender) + ")*" + getMultiplySlayerBonus2(this.attacker, this.defender) + "*" + getMapBonus(this.mapCell, this.attacker, this.defender) + "*" + getCriticalBonus(this.attack) + ")"
+        return "int(int((int(" + value + ")*" + getMultiplySlayerBonus(this.attacker, this.defender) + "+" + getAddSlayerBonus(this.attacker, this.defender) + ")*" + getMultiplySlayerBonus2(this.attacker, this.defender) + "*" + getMapBonus(this.mapCell, this.attacker, this.defender) + ")*" + getCriticalBonus(this.attack) + ")"
     }
-    return result
+    return [result, result]
 }
 
 /**
@@ -1469,9 +1466,9 @@ NightBattlePower.prototype.getPrecapPostMultiplyPower = function () {
  * @return {[Number,Number]|String} 夜戦火力(キャップ後)
  */
 NightBattlePower.prototype.getPostcapPower = function (formulaMode) {
-    // A = [([キャップ後攻撃力] * 乗算特効補正 + 加算特効補正) * 乗算特効補正2]
-    var value = Math.floor((Math.floor(getPostcapValue(this.getPrecapPower(), this.CAP_VALUE)) * getMultiplySlayerBonus(this.attacker, this.defender) + getAddSlayerBonus(this.attacker, this.defender)) * getMultiplySlayerBonus2(this.attacker, this.defender)) * getMapBonus(this.mapCell, this.attacker, this.defender)
-    var str = "int((int(" + getPostcapValue(this.getPrecapPower(), this.CAP_VALUE) + ")*" + getMultiplySlayerBonus(this.attacker, this.defender) + "+" + getAddSlayerBonus(this.attacker, this.defender) + ")*" + getMultiplySlayerBonus2(this.attacker, this.defender) + ")*" + getMapBonus(this.mapCell, this.attacker, this.defender)
+    // A = [([キャップ後攻撃力] * 乗算特効補正 + 加算特効補正) * 乗算特効補正2 * マップ補正]
+    var value = Math.floor((Math.floor(getPostcapValue(this.getPrecapPower(), this.CAP_VALUE)) * getMultiplySlayerBonus(this.attacker, this.defender) + getAddSlayerBonus(this.attacker, this.defender)) * getMultiplySlayerBonus2(this.attacker, this.defender) * getMapBonus(this.mapCell, this.attacker, this.defender))
+    var str = "int((int(" + getPostcapValue(this.getPrecapPower(), this.CAP_VALUE) + ")*" + getMultiplySlayerBonus(this.attacker, this.defender) + "+" + getAddSlayerBonus(this.attacker, this.defender) + ")*" + getMultiplySlayerBonus2(this.attacker, this.defender) + "*" + getMapBonus(this.mapCell, this.attacker, this.defender) + ")"
     // クリティカル判定
     if (isCritical(this.attack)) {
         // A = [A * クリティカル補正 * 熟練度補正]
@@ -4633,7 +4630,7 @@ function getEquipmentBonus(date, attacker) {
     }
     // 13号対空電探改(後期型)
     // if (num = count(450)) {}
-    // 	三式指揮連絡機改
+    // 三式指揮連絡機改
     if (num = count(451)) {
         if (date.after(getJstDate(2022, 7, 13, 12, 0, 0))) {
             if (yomi === "あきつまる") {
