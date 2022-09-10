@@ -14,7 +14,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.78
+var VERSION = 2.79
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -1964,6 +1964,8 @@ var isSupplyDepotPrincess = function (ship) {
         2019, 2020, 2021, 2022, // 集積地棲姫II バカンスmode-壊
         2084, 2086, 2088,       // 集積地棲姫III
         2085, 2087, 2089,       // 集積地棲姫III-壊
+        2138, 2140, 2142, 2144, // 集積地棲姫III バカンスmode
+        2139, 2141, 2143, 2145, // 集積地棲姫III バカンスmode-壊
     ].indexOf(ship.shipId) >= 0
 }
 
