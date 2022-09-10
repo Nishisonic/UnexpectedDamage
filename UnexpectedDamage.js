@@ -14,7 +14,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.77
+var VERSION = 2.78
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -862,10 +862,9 @@ DayBattlePower.prototype.getPrecapPower = function (formulaMode) {
 /**
  * 昼砲撃火力(キャップ後)を返します
  * @param {Boolean} formulaMode 計算式モード
- * @param {Boolean} isCalc 切り捨て前の昼砲撃火力値を返すか(デフォルト=false)
  * @return {[Number,Number]|String} 昼砲撃火力(キャップ後)
  */
-DayBattlePower.prototype.getPostcapPower = function (formulaMode, isCalc) {
+DayBattlePower.prototype.getPostcapPower = function (formulaMode) {
     // サイレント修正(Twitterで確認した限りでは17/9/9が最古=>17夏イベ?)以降、集積地棲姫特効のキャップ位置が変化(a5→a6)
     // 17夏以降に登場したPT小鬼群の特効位置もa6に変化?(乗算と加算組み合わせているっぽいので詳細不明)
     // A = [([キャップ後攻撃力] * 乗算特効補正 + 加算特効補正) * 乗算特効補正2 * マップ補正] * 弾着観測射撃 * 戦爆連合カットイン攻撃
@@ -873,16 +872,12 @@ DayBattlePower.prototype.getPostcapPower = function (formulaMode, isCalc) {
     var str = "int((int(" + getPostcapValue(this.getPrecapPower(), this.CAP_VALUE) + ")*" + getMultiplySlayerBonus(this.attacker, this.defender) + "+" + getAddSlayerBonus(this.attacker, this.defender) + ")*" + getMultiplySlayerBonus2(this.attacker, this.defender) + "*" + getMapBonus(this.mapCell, this.attacker, this.defender) + ")*" + this.getSpottingBonus() + "*" + this.getUnifiedBombingBonus()
     // 徹甲弾補正判定
     if (this.isAPshellBonusTarget()) {
-        if (!isCalc) {
-            // A = [A * 徹甲弾補正]
-            value = Math.floor(value * this.getAPshellBonus())
-        } else {
-            value *= this.getAPshellBonus()
-        }
+        // A = [A * 徹甲弾補正]
+        value = Math.floor(value * this.getAPshellBonus())
         str = "int((" + str + ")*" + this.getAPshellBonus() + ")"
     }
     // クリティカル判定
-    if (!isCalc && isCritical(this.attack)) {
+    if (isCritical(this.attack)) {
         // A = [A * クリティカル補正 * 熟練度補正]
         value *= getCriticalBonus(this.attack)
         str = "(" + str + ")*" + getCriticalBonus(this.attack)
@@ -1923,7 +1918,7 @@ var getMapBonus = function (mapCell, attacker, defender) {
                 // 海防艦
                 case STYPE.DE: return 1.33
                 // 練習巡洋艦
-                case STYPE.CT: return 1.22
+                case STYPE.CT: return 1.23
             }
         }
     }
