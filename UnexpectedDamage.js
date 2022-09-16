@@ -14,7 +14,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.79
+var VERSION = 2.80
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -1620,18 +1620,21 @@ NightBattlePower.prototype.getConditionBonus = function () {
 
 /**
  * 夜間触接補正を返します
- * @return {0|5} 夜間触接補正
+ * @return {0|5|7|9} 夜間触接補正
  */
 NightBattlePower.prototype.getNightTouchPlaneBonus = function () {
-    var touchPlane = Number(this.touchPlane[this.attack.friendAttack ? 0 : 1])
-    switch (touchPlane) {
-        case 102: // 九八式水上偵察機(夜偵)
-            return 5
-        case 469: // 零式水上偵察機11型乙改(夜偵)
-            return 7
-        default:
-            return 0
+    var touchPlane = Item.get(Number(this.touchPlane[this.attack.friendAttack ? 0 : 1]))
+    if (!touchPlane) {
+        return 0
     }
+
+    if (touchPlane.param.houm <= 1) {
+        return 5
+    }
+    if (touchPlane.param.houm === 2) {
+        return 7
+    }
+    return 9
 }
 
 //#endregion
@@ -1790,12 +1793,12 @@ var getMultiplySlayerBonus = function (attacker, defender) {
     
     var ship = Ship.get(attacker.shipId)
     var ctype = ship && ship.json ? (JSON.parse(ship.json).api_ctype | 0) : -1
-    var overseasShip = OVERSEA_SHIPS.indexOf(ctype) >= 0
 
     switch (true) {
         case isPtImpPack(defender): // PT小鬼群
             return 0.35
         case isSupplyDepotPrincess(defender): // 集積地棲姫
+        case isSupplyDepotPrincessVacationModeV3(defender): // 集積地棲姫III バカンスmode
             var a = Math.pow(daihatsuGroupLv / 50 + 1, !!(rikuDaihatsu + issikihou) + !!(pzKpfwII) + 1) * (kamishaLv / 30 + 1)
             a *= (wg42 ? 1.25 : 1) * (wg42 >= 2 ? 1.3 : 1)
             a *= (type4RocketGroup ? 1.2 : 1) * (type4RocketGroup >= 2 ? 1.4 : 1)
@@ -1812,23 +1815,34 @@ var getMultiplySlayerBonus = function (attacker, defender) {
             var a = 1
             a *= suijo ? 1.1 : 1
             a *= apShell ? 1.2 : 1
-            // 海外艦全指定(戦艦・空母のみ) ※超弩級戦艦は謎
-            if ([STYPE.CVL, STYPE.FBB, STYPE.BB, STYPE.BBV, STYPE.CV, STYPE.CVB].indexOf(attacker.stype) >= 0) {
-                a *= overseasShip ? 1.1 : 1
-            }
+            a *= ["アークロイヤル", "ビスマルク", "プリンツ・オイゲン", "ゴトランド"].indexOf(attacker.shipInfo.flagship) >= 0 ? 1.1 : 1
             return a
         case isHeavyCrusierSummerPrincess(defender): // 重巡夏姫
             var a = 1
             a *= suijo ? 1.15 : 1
             a *= apShell ? 1.1 : 1
+            a *= ["ビスマルク", "ネルソン"].indexOf(attacker.shipInfo.flagship) >= 0 ? 1.1 : 1
             return a
-        case isFrenchBattleshipPrincess(defender): // 戦艦仏棲姫-壊
+        case isFrenchBattleshipPrincess(defender): // 戦艦仏棲姫
             var a = 1
             a *= apShell ? 1.2 : 1
-            a *= late298B ? 1.3 : 1
+            a *= late298B ? 1.2 : 1
             a *= suijo ? 1.1 : 1
             a *= (bomber ? 1.1 : 1) * (bomber >= 2 ? 1.15 : 1)
-            a *= attacker.shipInfo.flagship === "リシュリュー" ? 1.17 : 1
+            a *= FRENCH_SHIPS.indexOf(ctype) >= 0 ? 1.15 : 1
+        case isAnchorageWaterDemonVacationMode(defender): // 泊地水鬼 バカンスmode
+            var a = (daihatsuGroupLv / 50 + 1) * (kamishaLv / 30 + 1)
+            a *= (bomber ? 1.4 : 1) * (bomber >= 2 ? 1.75 : 1)
+            a *= (wg42 ? 1.2 : 1) * (wg42 >= 2 ? 1.3 : 1)
+            a *= (type4RocketGroup ? 1.15 : 1) * (type4RocketGroup >= 2 ? 1.4 : 1)
+            a *= type3shell ? 1.45 : 1
+            a *= (kamisha ? 2.4 : 1) * (kamisha >= 2 ? 1.4 : 1)
+            a *= daihatsuGroup ? 1.4 : 1
+            a *= ((rikuDaihatsu + issikihou) ? 1.2 : 1) * ((rikuDaihatsu + issikihou) >= 2 ? 1.4 : 1)
+            a *= m4a1dd ? 1.85 : 1 // 1.624~1.884
+            a *= spBoat ? 1.25 : 1 // 1.187~1.279
+            a *= pzKpfwII ? 1.2 : 1
+            a *= ["やまと", "むさし", "ながと", "むつ"].indexOf(attacker.shipInfo.flagship) >= 0 ? 1.2 : 1
             return a
     }
     return 1.0
@@ -1964,6 +1978,15 @@ var isSupplyDepotPrincess = function (ship) {
         2019, 2020, 2021, 2022, // 集積地棲姫II バカンスmode-壊
         2084, 2086, 2088,       // 集積地棲姫III
         2085, 2087, 2089,       // 集積地棲姫III-壊
+    ].indexOf(ship.shipId) >= 0
+}
+
+/**
+ * 集積地棲姫III バカンスmodeか
+ * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} ship 艦
+ */
+var isSupplyDepotPrincessVacationModeV3 = function (ship) {
+    return [
         2138, 2140, 2142, 2144, // 集積地棲姫III バカンスmode
         2139, 2141, 2143, 2145, // 集積地棲姫III バカンスmode-壊
     ].indexOf(ship.shipId) >= 0
