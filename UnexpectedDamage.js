@@ -14,7 +14,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.80
+var VERSION = 2.81
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -97,7 +97,7 @@ var GERMAN_SHIPS = [47, 48, 55, 57, 63]
 /** イタリア艦 */
 var ITALIAN_SHIPS = [58, 61, 64, 68, 80, 92, 113]
 /** アメリカ艦 */
-var AMERICAN_SHIPS = [65, 69, 83, 84, 87, 91, 93, 95, 99, 102, 105, 106, 107, 110, 114, 116]
+var AMERICAN_SHIPS = [65, 69, 83, 84, 87, 91, 93, 95, 99, 102, 105, 106, 107, 110, 114, 116, 118]
 /** イギリス艦 */
 var BRITISH_SHIPS = [67, 78, 82, 88, 108, 112]
 /** フランス艦 */
@@ -1279,7 +1279,7 @@ NightBattlePower.prototype.getBasicPower = function (formulaMode) {
     var useRaisou = !isGround(this.defender) || isNorthernmostLandingPrincess(this.defender) || this.items.length === 0
     // 夜襲
     if (isNightCvAttack(this.attacker, this.attackerHp)) {
-        var fp = getRawFirePower(this.date, this.attacker)
+        var fp = getRawFirePower(this.date, this.attacker) + getEquipmentBonus(this.date, this.attacker).nfp
         var tpBonus = this.date.after(getJstDate(2021, 8, 4, 12, 0, 0)) ? getEquipmentBonus(this.date, this.attacker).tp : 0
         var bombBonus = getEquipmentBonus(this.date, this.attacker).bomb
         var nightPlaneBonus = Java.from(this.attacker.item2.toArray()).map(function (item, i) {
@@ -1346,13 +1346,6 @@ NightBattlePower.prototype.getImprovementBonus = function () {
             }
             return 0
         }, this).reduce(function (p, c) { return p + c }, 0)
-        + this.items.map(function (item) {
-            // 熟練甲板要員+航空整備員
-            if (item.slotitemId === 478) {
-                return 0.7 * Math.sqrt(item.level)
-            }
-            return 0
-        }).reduce(function (p, c) { return p + c }, 0)
     }
     // Ark Royal、Ark Royal改
     if ([393, 515].indexOf(this.attacker.shipId) >= 0) {
@@ -1751,7 +1744,11 @@ var getMultiplySlayerBonus = function (attacker, defender) {
     /** 武装大発 */
     var armedDaihatsu = getItemNum(items, 409)
     /** 大発動艇(II号戦車/北アフリカ仕様) */
+    // Tips: 大発動艇(II号戦車/北アフリカ仕様)は大発動艇(八九式中戦車&陸戦隊)と大体同じ(ただし補正は別個計算)、改修補正が2乗→3乗になるかだけ
     var pzKpfwII = getItemNum(items, 436)
+    /** 特大発動艇+Ⅲ号戦車(北アフリカ仕様) */
+    // Tips: 特大発動艇+Ⅲ号戦車(北アフリカ仕様)は特大発動艇+戦車第11連隊と同じ
+    var pzKpfwIII = getItemNum(items, 482)
     /** [カテゴリ]上陸用舟艇 */
     var daihatsuGroup = items.filter(function (item) { return item.type2 === 24 }).length
     /** [カテゴリ]上陸用舟艇[改修] */
@@ -1762,8 +1759,8 @@ var getMultiplySlayerBonus = function (attacker, defender) {
     var issikihou = getItemNum(items, 449)
     /** 大発動艇・特大発動艇・大発動艇(八九式中戦車&陸戦隊)・大発動艇(II号戦車/北アフリカ仕様)・特大発動艇+一式砲戦車 */
     var jpBoatA = daihatsu + tokuDaihatsu + rikuDaihatsu + pzKpfwII + issikihou
-    /** 特大発動艇+戦車第11連隊・特二式内火艇 */
-    var jpBoatB = shikonDaihatsu + kamisha
+    /** 特大発動艇+戦車第11連隊・特二式内火艇・特大発動艇+Ⅲ号戦車(北アフリカ仕様) */
+    var jpBoatB = shikonDaihatsu + kamisha + pzKpfwIII
     /** 装甲艇(AB艇)・武装大発 */
     var spBoat = armoredBoat + armedDaihatsu
     /** [カテゴリ]特型内火艇[改修] */
@@ -1790,7 +1787,11 @@ var getMultiplySlayerBonus = function (attacker, defender) {
     var bomber = items.filter(function (item) { return item.type2 === 7 }).length
     /** Laté 298B */
     var late298B = getItemNum(items, 194)
-    
+    /** Swortfish系列 */
+    var swordfish = getItemNum(items, 242) + getItemNum(items, 243) + getItemNum(items, 244)
+    /** [カテゴリ]噴式戦闘爆撃機 */
+    var jetBomber = items.filter(function (item) { return item.type2 === 57 }).length
+
     var ship = Ship.get(attacker.shipId)
     var ctype = ship && ship.json ? (JSON.parse(ship.json).api_ctype | 0) : -1
 
@@ -1813,37 +1814,57 @@ var getMultiplySlayerBonus = function (attacker, defender) {
             return a
         case isBattleshipSummerPrincess(defender): // 戦艦夏姫
             var a = 1
-            a *= suijo ? 1.1 : 1
             a *= apShell ? 1.2 : 1
-            a *= ["アークロイヤル", "ビスマルク", "プリンツ・オイゲン", "ゴトランド"].indexOf(attacker.shipInfo.flagship) >= 0 ? 1.1 : 1
+            a *= suijo ? 1.1 : 1
+            a *= (swordfish ? 1.15 : 1) * (swordfish >= 2 ? 1.05 : 1)
+            a *= ["アークロイヤル", "ビスマルク", "ネルソン", "プリンツ・オイゲン", "ゴトランド"].indexOf(attacker.shipInfo.flagship) >= 0 ? 1.1 : 1
             return a
         case isHeavyCrusierSummerPrincess(defender): // 重巡夏姫
             var a = 1
-            a *= suijo ? 1.15 : 1
             a *= apShell ? 1.1 : 1
-            a *= ["ビスマルク", "ネルソン"].indexOf(attacker.shipInfo.flagship) >= 0 ? 1.1 : 1
+            a *= suijo ? 1.15 : 1
+            a *= (swordfish ? 1.15 : 1) * (swordfish >= 2 ? 1.05 : 1)
+            a *= ["アークロイヤル", "ビスマルク", "ネルソン", "プリンツ・オイゲン", "ゴトランド"].indexOf(attacker.shipInfo.flagship) >= 0 ? 1.1 : 1
             return a
         case isFrenchBattleshipPrincess(defender): // 戦艦仏棲姫
             var a = 1
             a *= apShell ? 1.2 : 1
-            a *= late298B ? 1.2 : 1
             a *= suijo ? 1.1 : 1
+            a *= late298B ? 1.2 : 1
             a *= (bomber ? 1.1 : 1) * (bomber >= 2 ? 1.15 : 1)
             a *= FRENCH_SHIPS.indexOf(ctype) >= 0 ? 1.15 : 1
         case isAnchorageWaterDemonVacationMode(defender): // 泊地水鬼 バカンスmode
             var a = (daihatsuGroupLv / 50 + 1) * (kamishaLv / 30 + 1)
-            a *= (bomber ? 1.4 : 1) * (bomber >= 2 ? 1.75 : 1)
+            a *= ((jetBomber + bomber) ? 1.4 : 1) * ((jetBomber || bomber >= 2) ? 1.75 : 1)
             a *= (wg42 ? 1.2 : 1) * (wg42 >= 2 ? 1.3 : 1)
             a *= (type4RocketGroup ? 1.15 : 1) * (type4RocketGroup >= 2 ? 1.4 : 1)
+            a *= mortarGroup ? 1.1 : 1
             a *= type3shell ? 1.45 : 1
-            a *= (kamisha ? 2.4 : 1) * (kamisha >= 2 ? 1.4 : 1)
+            a *= (kamisha ? 2.4 : 1) * (kamisha >= 2 ? 1.35 : 1)
             a *= daihatsuGroup ? 1.4 : 1
+            a *= tokuDaihatsu ? 1.15 : 1
             a *= ((rikuDaihatsu + issikihou) ? 1.2 : 1) * ((rikuDaihatsu + issikihou) >= 2 ? 1.4 : 1)
-            a *= m4a1dd ? 1.85 : 1 // 1.624~1.884
-            a *= spBoat ? 1.25 : 1 // 1.187~1.279
+            a *= m4a1dd ? 1.8 : 1
+            a *= (spBoat ? 1.2 : 1) * (spBoat >= 2 ? 1.1 : 1)
             a *= pzKpfwII ? 1.2 : 1
             a *= ["やまと", "むさし", "ながと", "むつ"].indexOf(attacker.shipInfo.flagship) >= 0 ? 1.2 : 1
             return a
+        case isDockPrincess(defender): // 船渠棲姫
+            var a = (daihatsuGroupLv / 50 + 1) * (kamishaLv / 30 + 1)
+            a *= ((jetBomber + bomber) ? 1.1 : 1) * ((jetBomber + bomber) ? 1.1 : 1)
+            a *= suijo ? 1.1 : 1
+            a *= (wg42 ? 1.1 : 1) * (wg42 >= 2 ? 1.2 : 1)
+            // 四式20cm対地噴進砲は不明
+            a *= type3shell ? 1.3 : 1
+            a *= (kamisha ? 1.2 : 1) * (kamisha >= 2 ? 1.2 : 1)
+            a *= daihatsuGroup ? 1.1 : 1
+            // 特大発動艇は1?
+            a *= pzKpfwIII ? 1.4 : 1
+            a *= ((rikuDaihatsu + issikihou) ? 1.15 : 1) * ((rikuDaihatsu + issikihou) >= 2 ? 1.15 : 1)
+            a *= m4a1dd ? 1.1 : 1
+            a *= (pzKpfwII ? 1.15 : 1) * (pzKpfwII >= 2 ? 1.15 : 1)
+            a *= (spBoat ? 1.1 : 1)
+            a *= ITALIAN_SHIPS.indexOf(ctype) >= 0 ? 1.1 : 1
     }
     return 1.0
 }
@@ -2051,6 +2072,14 @@ var isIsolatedIslandPrincess = function (ship) {
 }
 
 /**
+ * 船渠棲姫か
+ * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} ship 艦
+ */
+var isDockPrincess = function (ship) {
+    return [1827, 1828, 1829, 1830, 1831, 1832].indexOf(ship.shipId) >= 0
+}
+
+/**
  * 陸上特効補正を返します
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} defender 防御艦
@@ -2086,7 +2115,11 @@ var getLandBonus = function (attacker, defender, isDay) {
     /** 武装大発 */
     var armedDaihatsu = getItemNum(items, 409)
     /** 大発動艇(II号戦車/北アフリカ仕様) */
+    // Tips: 大発動艇(II号戦車/北アフリカ仕様)は大発動艇(八九式中戦車&陸戦隊)と大体同じ(ただし補正は別個計算)、改修補正が2乗→3乗になるかだけ
     var pzKpfwII = getItemNum(items, 436)
+    /** 特大発動艇+Ⅲ号戦車(北アフリカ仕様) */
+    // Tips: 特大発動艇+Ⅲ号戦車(北アフリカ仕様)は特大発動艇+戦車第11連隊と大体同じ
+    var pzKpfwIII = getItemNum(items, 482)
     /** [カテゴリ]上陸用舟艇 */
     var daihatsuGroup = items.filter(function (item) { return item.type2 === 24 }).length
     /** [カテゴリ]上陸用舟艇[改修] */
@@ -2097,8 +2130,8 @@ var getLandBonus = function (attacker, defender, isDay) {
     var issikihou = getItemNum(items, 449)
     /** 大発動艇・特大発動艇・大発動艇(八九式中戦車&陸戦隊)・大発動艇(II号戦車/北アフリカ仕様)・特大発動艇+一式砲戦車 */
     var jpBoatA = daihatsu + tokuDaihatsu + rikuDaihatsu + pzKpfwII + issikihou
-    /** 特大発動艇+戦車第11連隊・特二式内火艇 */
-    var jpBoatB = shikonDaihatsu + kamisha
+    /** 特大発動艇+戦車第11連隊・特二式内火艇・特大発動艇+Ⅲ号戦車(北アフリカ仕様) */
+    var jpBoatB = shikonDaihatsu + kamisha + pzKpfwIII
     /** 装甲艇(AB艇)・武装大発 */
     var spBoat = armoredBoat + armedDaihatsu
     /** [カテゴリ]特型内火艇[改修] */
@@ -2125,6 +2158,10 @@ var getLandBonus = function (attacker, defender, isDay) {
     var bomber = items.filter(function (item) { return item.type2 === 7 }).length
     /** Laté 298B */
     var late298B = getItemNum(items, 194)
+    /** Swortfish系列 */
+    var swordfish = getItemNum(items, 242) + getItemNum(items, 243) + getItemNum(items, 244)
+    /** [カテゴリ]噴式戦闘爆撃機 */
+    var jetBomber = items.filter(function (item) { return item.type2 === 57 }).length
 
     var a = (daihatsuGroupLv / 50 + 1) * (kamishaLv / 30 + 1)
     var b = ([0, 75, 110, 140, 160, 160])[wg42]
@@ -2216,8 +2253,8 @@ var getLandBonus = function (attacker, defender, isDay) {
         })(),
         /** 基本補正 */
         basicBonus: { a: a, b: b },
-        /** 特大発動艇+戦車第11連隊 */
-        shikonBonus: (shikonDaihatsu + issikihou) ? { a: 1.8, b: 25 } : { a: 1, b: 0 },
+        /** 特大発動艇+戦車第11連隊・特大発動艇+一式砲戦車・特大発動艇+Ⅲ号戦車(北アフリカ仕様) */
+        shikonBonus: (shikonDaihatsu + issikihou + pzKpfwIII) ? { a: 1.8, b: 25 } : { a: 1, b: 0 },
         /** M4A1DD */
         m4a1ddBonus: m4a1dd ? { a: 1.4, b: 35 } : { a: 1, b: 0 },
         /** 特大発動艇+一式砲戦車 */
@@ -2980,7 +3017,7 @@ function getSlotParam(attacker) {
  * 装備ボーナスの値を返す
  * @param {java.util.Date} date 戦闘日時
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
- * @return {{fp: number, asw: number, tp: number, bomb: number}}
+ * @return {{fp: number, nfp: number, asw: number, tp: number, bomb: number}}
  */
 function getEquipmentBonus(date, attacker) {
     var shipId = attacker.shipId
@@ -2988,10 +3025,10 @@ function getEquipmentBonus(date, attacker) {
     var ctype = (JSON.parse(Ship.get(attacker.shipId).json).api_ctype | 0)
     var yomi = attacker.shipInfo.flagship
     var items = getItems(attacker)
-    var bonus = { fp: 0, asw: 0, tp: 0, bomb: 0 }
+    var bonus = { fp: 0, nfp: 0, asw: 0, tp: 0, bomb: 0, itp: 0 }
     function add(effect, num, max) {
-        // 火力・対潜・爆装
-        ["fp", "asw", "bomb"].forEach(function(param) {
+        // 火力・火力(夜戦)・対潜・爆装・雷装(純加算)
+        ["fp", "nfp", "asw", "bomb", "itp"].forEach(function(param) {
             bonus[param] += (effect[param] | 0) * Math.min(num, max | 0 || Infinity)
         })
         // 雷装
@@ -4778,9 +4815,14 @@ function getEquipmentBonus(date, attacker) {
             if (item.level >= 4) return 1
             return 0
         }))
-        add({ fp: fp, tp: tp, bomb: bomb }, num, 1)
+        add({ fp: fp, nfp: fp, bomb: bomb, itp: tp }, num, 1)
     }
-    return bonus
+    // 三式弾改二
+    // if (num = count(483)) {}
+
+    // 1.熟練甲板要員と艦攻の雷装ボーナスの加算は別個で計算して最後に合わせる、また雷装の装備ボーナスは夜襲火力に加算
+    // 2.夜襲の際、熟練甲板要員の火力ボーナスのみ夜襲火力に加算
+    return { fp: bonus.fp, nfp: bonus.nfp, asw: bonus.asw, tp: bonus.tp + bonus.itp, bomb: bonus.bomb }
 }
 
 //#endregion
