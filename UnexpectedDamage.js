@@ -14,7 +14,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.81
+var VERSION = 2.82
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -585,12 +585,14 @@ AntiSubmarinePower.prototype.getSynergyBonus2 = function () {
     // 試製15cm9連装対潜噴進砲
     // RUR-4A Weapon Alpha改
     // Mk.32 対潜魚雷(Mk.2落射機)
-    var depthChargeProjectorList = this.date.after(NEW_SYNERGY_DATE) ? [44, 45, 287, 288, 377, 472] : [44, 45]
+    // 二式爆雷改二
+    var depthChargeProjectorList = this.date.after(NEW_SYNERGY_DATE) ? [44, 45, 287, 288, 377, 472, 488] : [44, 45]
     // 九五式爆雷
     // 二式爆雷
     // 対潜短魚雷(試作初期型)
     // Hedgehog(初期型)
-    var depthChargeList = this.date.after(NEW_SYNERGY_DATE) ? [226, 227, 378, 439] : this.date.after(MYSTERY_FIXED_DATE) ? [226, 227] : [226, 227, 228]
+    // 二式爆雷改二
+    var depthChargeList = this.date.after(NEW_SYNERGY_DATE) ? [226, 227, 378, 439, 488] : this.date.after(MYSTERY_FIXED_DATE) ? [226, 227] : [226, 227, 228]
     var depthChargeProjector = this.items.some(function (item) { return depthChargeProjectorList.indexOf(item.slotitemId) >= 0 })
     var depthCharge = this.items.some(function (item) { return depthChargeList.indexOf(item.slotitemId) >= 0 })
     var smallSonar = this.items.some(function (item) { return item.type2 === 14 })
@@ -774,8 +776,8 @@ DayBattlePower.prototype.getImprovementBonus = function () {
                 case 42: return 1    // 大型探照灯
                 case 21: return 1    // 機銃
                 case 15:             // 爆雷(投射機)
-                    // 九五式爆雷、二式爆雷は0
-                    return [226, 227].indexOf(item.slotitemId) < 0 ? 0.75 : 0
+                    // 九五式爆雷、二式爆雷、二式爆雷改二は0
+                    return [226, 227, 488].indexOf(item.slotitemId) < 0 ? 0.75 : 0
                 case 14: return 0.75 // ソナー
                 case 40: return 0.75 // 大型ソナー
                 case 24: return 1    // 上陸用舟艇
@@ -3126,6 +3128,10 @@ function getEquipmentBonus(date, attacker) {
             if ([75, 76].indexOf(ctype) >= 0) {
                 add({ fp: 2, asw: 3 }, num)
             }
+            // 鳳翔改二、鳳翔改二戦
+            if ([894, 899].indexOf(shipId) >= 0) {
+                add({ fp: 1, asw: 1 }, num)
+            }
         } else if (date.after(getJstDate(2019, 8, 8, 12, 0, 0))) {
             if (yomi === "ほうしょう") {
                 add({ fp: 1, asw: 1 }, num)
@@ -3496,7 +3502,12 @@ function getEquipmentBonus(date, attacker) {
     // 強風改
     // if (num = count(217)) {}
     // 8cm高角砲改+増設機銃
-    // if (num = count(220)) {}
+    if (num = count(220)) {
+        // 鳳翔改二、鳳翔改二戦
+        if ([894, 899].indexOf(shipId) >= 0) {
+            add({ fp: 1 }, getItemNum(items, 220, 10))
+        }
+    }
     // 二式爆雷
     if (num = count(227)) {
         if (date.after(getJstDate(2022, 8, 4, 12, 0, 0))) {
@@ -3523,6 +3534,10 @@ function getEquipmentBonus(date, attacker) {
             // 軽空母
             if (stype === STYPE.CVL) {
                 add({ asw: 2 }, num)
+            }
+            // 鳳翔改二、鳳翔改二戦
+            if ([894, 899].indexOf(shipId) >= 0) {
+                add({ fp: 1, asw: 2 }, num)
             }
         } else if (date.after(getJstDate(2019, 8, 8, 12, 0, 0))) {
             if (yomi === "ほうしょう") {
@@ -3625,6 +3640,14 @@ function getEquipmentBonus(date, attacker) {
                 }, 0)
                 add({ fp: fp }, num, 1)
             }
+        }
+    }
+    // 10cm連装高角砲改+増設機銃
+    if (num = count(275)) {
+        // 鳳翔改二、鳳翔改二戦
+        if ([894, 899].indexOf(shipId) >= 0) {
+            add({ fp: 1 }, num)
+            add({ fp: 1 }, getItemNum(items, 220, 10))
         }
     }
     // FM-2
@@ -4603,6 +4626,9 @@ function getEquipmentBonus(date, attacker) {
         if (shipId === 285) {
             // 鳳翔改
             add({ fp: 3 }, num)
+        } else if ([894, 899].indexOf(shipId) >= 0) {
+            // 鳳翔改二、鳳翔改二戦
+            add({ fp: 4 }, num)
         } else if ([196, 197].indexOf(shipId) >= 0) {
             // 飛龍改二、蒼龍改二
             add({ fp: 2 }, num)
@@ -4669,6 +4695,10 @@ function getEquipmentBonus(date, attacker) {
             add({ fp: 1, asw: 1 }, num)
         } else if (["ほうしょう", "たいげい・りゅうほう"].indexOf(yomi) >= 0) {
             add({ fp: 1, asw: 2 }, num)
+        }
+        if ([894, 899].indexOf(shipId) >= 0) {
+            // 鳳翔改二、鳳翔改二戦
+            add({ fp: 1, asw: 1 }, num)
         }
         var fp = Math.max.apply(null, items.filter(function(item) {
             return item.slotitemId === 447
@@ -4819,6 +4849,55 @@ function getEquipmentBonus(date, attacker) {
     }
     // 三式弾改二
     // if (num = count(483)) {}
+    // 強風改二
+    // if (num = count(485)) {}
+    // 零式艦戦64型(制空戦闘機仕様)
+    if (num = count(486)) {
+        if ([894, 899].indexOf(shipId) >= 0) {
+            // 鳳翔改二、鳳翔改二戦
+            add({ fp: 4 }, num)
+        } else if ([888, 883].indexOf(shipId) >= 0) {
+            // 龍鳳改二、龍鳳改二戊
+            add({ fp: 2 }, num)
+        }
+        add({ fp: 1 }, getItemNum(items, 486, 10))
+    }
+    // 零式艦戦64型(熟練爆戦)
+    if (num = count(487)) {
+        if ([894, 899].indexOf(shipId) >= 0) {
+            // 鳳翔改二、鳳翔改二戦
+            add({ fp: 5 }, num)
+        } else if ([888, 883].indexOf(shipId) >= 0) {
+            // 龍鳳改二、龍鳳改二戊
+            add({ fp: 3 }, num)
+        }
+        add({ fp: 1 }, getItemNum(items, 486, 6))
+        add({ fp: 1 }, getItemNum(items, 486, 10))
+    }
+    // 二式爆雷改二
+    if (num = count(488)) {
+        // 占守型、択捉型、日振型、鵜来型、丁型海防艦
+        if (JAPANESE_DD_SHIPS.indexOf(shipId) >= 0 || [74, 77, 85, 117, 104].indexOf(ctype) >= 0 && stype === STYPE.DE) {
+            add({ asw: 1 }, num)
+        }
+        // 時雨改二
+        if (shipId === 145) {
+            add({ asw: 5 }, num)
+            add({ asw: 1 }, getItemNum(items, 488, 5))
+            add({ asw: 1 }, getItemNum(items, 488, 9))
+            add({ asw: 1 }, getItemNum(items, 488, 10))
+        }
+        // 磯風乙改、浜風乙改、雪風改、雪風改二、丹陽、時雨改
+        if ([557, 558, 228, 656, 651, 243].indexOf(shipId) >= 0) {
+            add({ asw: 2 }, num)
+            add({ asw: 1 }, getItemNum(items, 488, 5))
+            add({ asw: 1 }, getItemNum(items, 488, 10))
+        }
+        // 山城改二、扶桑改二、初霜改二、響改、潮改二、冬月改、涼月改、矢矧改二、矢矧改二乙、時雨
+        if ([412, 411, 419, 235, 407, 538, 537, 663, 668, 43].indexOf(shipId) >= 0) {
+            add({ asw: 1 }, num)
+        }
+    }
 
     // 1.熟練甲板要員と艦攻の雷装ボーナスの加算は別個で計算して最後に合わせる、また雷装の装備ボーナスは夜襲火力に加算
     // 2.夜襲の際、熟練甲板要員の火力ボーナスのみ夜襲火力に加算

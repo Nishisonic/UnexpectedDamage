@@ -1,6 +1,6 @@
 /**
  * 異常ダメージ検知
- * @version 2.8.1
+ * @version 2.8.2
  * @author Nishikuma
  */
 
@@ -141,6 +141,8 @@ var isInvestiagate = function (battle) {
         && !(MAELSTROM_MAP_LIST.some(function (map) { return map[0] === battle.mapCellDto.map[0] && map[1] === battle.mapCellDto.map[1] }))
         // 過去のイベント分は除外
         && !(battle.mapCellDto.map[0] >= 22 && battle.mapCellDto.map[0] <= 54)
+        // 敵装備ID+1000以前のデータは読まないようにする(暫定対応)
+        && battle.battleDate.after(getJstDate(2022, 11, 9, 12, 0, 0))
     // 何らかのフィルタを条件する際はここに追加
 }
 
