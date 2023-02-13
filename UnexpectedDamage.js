@@ -14,7 +14,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.85
+var VERSION = 2.86
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -5010,7 +5010,7 @@ function getEquipmentBonus(date, attacker) {
     // 二式爆雷改二
     if (num = count(488)) {
         // 占守型、択捉型、日振型、鵜来型、丁型海防艦
-        if (JAPANESE_DD_SHIPS.indexOf(shipId) >= 0 || [74, 77, 85, 117, 104].indexOf(ctype) >= 0 && stype === STYPE.DE) {
+        if (JAPANESE_DD_SHIPS.indexOf(ctype) >= 0 || [74, 77, 85, 117, 104].indexOf(ctype) >= 0 && stype === STYPE.DE) {
             add({ asw: 1 }, num)
         }
         // 時雨改二
