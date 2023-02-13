@@ -14,7 +14,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.84
+var VERSION = 2.85
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -1936,10 +1936,6 @@ var getMultiplySlayerBonus = function (attacker, defender) {
  * @return {Number} 倍率
  */
 var getAddSlayerBonus = function (attacker, defender) {
-    switch (true) {
-        case isPtImpPack(defender): // PT小鬼群
-            return Math.sqrt(getPostcapValue(this.getPrecapPower(), this.CAP_VALUE)) + 10
-    }
     return 0
 }
 
@@ -2048,7 +2044,7 @@ var getMapBonus = function (mapCell, attacker, defender) {
             "りゅうじょう", "ちとせ", "みょうこう", "なち",
             "あしがら", "はぐろ", "じんつう", "なか",
             "デ・ロイテル", "まつかぜ", "あけぼの", "さざなみ",
-            "うしお", "いかずち", "いなづま", "むらさめ",
+            "うしお", "いかづち", "いなづま", "むらさめ",
             "ゆうだち", "はるさめ", "さみだれ", "やまかぜ",
             "かわかぜ", "あさぐも", "みねぐも", "はつかぜ",
             "ゆきかぜ", "あまつかぜ", "ときつかぜ", "みずほ"
@@ -2075,7 +2071,6 @@ var getMapBonus = function (mapCell, attacker, defender) {
             if (bonusShipsC.indexOf(yomi) >= 0) {
                 return 1.06
             }
-            
         }
         // Gマス、Kマス、Lマス、Mマス
         if ([7, 11, 14, 15, 20].indexOf(mapCell.map[2]) >= 0) {
