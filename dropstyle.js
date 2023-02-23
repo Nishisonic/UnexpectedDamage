@@ -636,20 +636,30 @@ function genNightBattleHtml(data, power) {
     var b = ((((landBonus.stypeBonus.b * landBonus.basicBonus.a + landBonus.basicBonus.b) * landBonus.shikonBonus.a + landBonus.shikonBonus.b) * landBonus.m4a1ddBonus.a + landBonus.m4a1ddBonus.b) * landBonus.issikihouBonus.a + landBonus.issikihouBonus.b) * landBonus.supportBonus.a + landBonus.supportBonus.b
     result += '<tr><td>' + power.getBasicPower().toFixed(2) + '</td><td>' + power.getImprovementBonus().toFixed(2) + '</td><td>' + power.getNightTouchPlaneBonus() + '</td><td>' + a.toFixed(3) + '</td><td>' + b + '</td><td></td></tr>'
     result += '<tr><th>キャップ前火力</th><th>攻撃側陣形補正</th><th>夜戦特殊攻撃補正</th><th>夜戦特殊攻撃補正2</th><th>損傷補正</th><th>特殊砲補正</th></tr>'
-    result += '<tr><td>' + power.getPrecapPower().toFixed(2) + '</td><td>' + power.getFormationBonus().toFixed(2) + '</td><td>' + power.getCutinBonus().toFixed(2) + '</td><td>' + power.getCutinBonus2().toFixed(2) + '</td><td>' + power.getConditionBonus().toFixed(2) + '</td><td>' + power.getPrecapPostMultiplyPower().toFixed(2) + '</td></tr>'
+    var pp = power.getPrecapPower()
+    var pps = pp[0] !== pp[1] ? pp[0].toFixed(2) + "~" + pp[1].toFixed(2) : pp[0].toFixed(2)
+    var cb = power.getCutinBonus()
+    var cbs = cb[0] !== cb[1] ? cb[0].toFixed(2) + "~" + cb[1].toFixed(2) : cb[0].toFixed(2)
+    result += '<tr><td>' + pps + '</td><td>' + power.getFormationBonus().toFixed(2) + '</td><td>' + cbs + '</td><td>' + power.getCutinBonus2().toFixed(2) + '</td><td>' + power.getConditionBonus().toFixed(2) + '</td><td>' + power.getPrecapPostMultiplyPower().toFixed(2) + '</td></tr>'
     result += '<tr><th rowspan="2">最終攻撃力</th><th>キャップ値</th><th>キャップ後火力</th><th>マップ補正</th><th>特殊敵乗算特効</th><th>特殊敵加算特効</th></tr>'
-    var pc = getPostcapValue(power.getPrecapPower(), power.CAP_VALUE)
+    var pp = power.getPrecapPower()
+    var minpc = getPostcapValue(pp[0], power.CAP_VALUE)
+    var maxpc = getPostcapValue(pp[1], power.CAP_VALUE)
+    var pcs = minpc !== maxpc ? minpc.toFixed(2) + "~" + maxpc.toFixed(2) : minpc.toFixed(2)
     var ms = getMultiplySlayerBonus(data.attacker, data.defender)
     var as = getAddSlayerBonus(data.attacker, data.defender)
     var m = getMapBonus(data.mapCell, data.attacker, data.defender)
-    var postMapBonusValue = Math.floor(Math.floor(pc) * ms + as) * m
+    var minPostMapBonusValue = Math.floor(Math.floor(minpc) * ms + as) * m
+    var maxPostMapBonusValue = Math.floor(Math.floor(maxpc) * ms + as) * m
     var ptbm = getPtImpPackBasicMultiplyBonus(data.defender)
-    var pta = getPtImpPackBasicAddBonus(postMapBonusValue, data.defender)
+    var minpta = getPtImpPackBasicAddBonus(minPostMapBonusValue, data.defender)
+    var maxpta = getPtImpPackBasicAddBonus(maxPostMapBonusValue, data.defender)
+    var ptas = minpta !== maxpta ? minpta.toFixed(2) + "~" + maxpta.toFixed(2) : minpta.toFixed(2)
     var ptim = getPtImpPackItemBonus(data.attacker, data.defender)
-    result += '<tr><td>' + power.CAP_VALUE + '</td><td>' + pc.toFixed(2) + '</td><td>' + m.toFixed(2) + '</td><td>' + ms.toFixed(2) + '</td><td>' + as + '</td></tr>'
+    result += '<tr><td>' + power.CAP_VALUE + '</td><td>' + pcs + '</td><td>' + m.toFixed(2) + '</td><td>' + ms.toFixed(2) + '</td><td>' + as + '</td></tr>'
     result += '<tr><td rowspan="2" style="font-weight:bold;">' + power.getPostcapPower().map(function (power) { return power.toFixed(2) }).join('~') + '</td><th>PT乗算補正</th><th>PT加算補正</th><th>PT装備補正</th><th>クリティカル補正</th><th>熟練度補正</th></tr>'
     var skilled = data.shouldUseSkilled ? getSkilledBonus(data.date, data.attack, data.attacker, data.defender, data.attackerHp).map(function (value) { return value.toFixed(2) }).join(' ~ ') : '1.00'
-    result += '<tr><td>' + ptbm.toFixed(2) + '</td><td>' + pta + '</td><td>' + ptim.toFixed(2) + '</td><td>' + getCriticalBonus(data.attack).toFixed(1) + '</td><td>' + skilled + '</td></tr>'
+    result += '<tr><td>' + ptbm.toFixed(2) + '</td><td>' + ptas + '</td><td>' + ptim.toFixed(2) + '</td><td>' + getCriticalBonus(data.attack).toFixed(1) + '</td><td>' + skilled + '</td></tr>'
     return '<table>' + result + '</table>'
 }
 

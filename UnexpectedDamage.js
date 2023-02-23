@@ -14,7 +14,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.86
+var VERSION = 2.87
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -506,6 +506,7 @@ AntiSubmarinePower.prototype.getImprovementBonus = function () {
                     148, // 試製南山
                     195, // SBD
                     248, // Skua
+                    277, // FM-2
                     316, // Re.2001 CB改
                     391, // 九九式艦爆二二型
                     392, // 九九式艦爆二二型(熟練)
@@ -852,6 +853,7 @@ DayBattlePower.prototype.getImprovementBonus = function () {
                     148, // 試製南山
                     195, // SBD
                     248, // Skua
+                    277, // FM-2
                     316, // Re.2001 CB改
                     391, // 九九式艦爆二二型
                     392, // 九九式艦爆二二型(熟練)
@@ -996,6 +998,13 @@ DayBattlePower.prototype.isAPshellBonusTarget = function () {
  * @return {Number} 倍率
  */
 DayBattlePower.prototype.getSpottingBonus = function () {
+    var ADD_ITEM_BONUS_DATE = getJstDate(2018, 12, 7, 12, 0, 0)
+    var UPDATE_SPECIAL_ATTACK_BONUS_DATE = getJstDate(2019, 2, 27, 12, 0, 0)
+    var UPDATE_SPECIAL_ATTACK_BONUS_DATE2 = getJstDate(2022, 6, 8, 12, 0, 0)
+    var ships = this.origins[this.attack.mainAttack ? "main" : "escort"]
+    var attackIndex = this.attack.attackIndex
+    var engagement = this.formation[2]
+
     switch (Number(this.attack.attackType)) {
         case 0: return 1.0   // 通常攻撃
         case 1: return 1.0   // レーザー攻撃
@@ -1005,7 +1014,218 @@ DayBattlePower.prototype.getSpottingBonus = function () {
         case 5: return 1.3   // 主砲+徹甲弾
         case 6: return 1.5   // 主砲+主砲
         //case 7: return 1.0 // 戦爆連合CI
-        default: return getSpecialAttackBonus(this)
+        case 100: // Nelson Touch
+            return 2.0 * (engagement === 4 ? 1.25 : 1.0)
+        case 101: // 一斉射かッ…胸が熱いな！
+            var base = attackIndex < 2 ? 1.4 : 1.2
+            var secondShipBonus = function(date, secondShipId) {
+                if (attackIndex < 2) {
+                    switch (secondShipId) {
+                        case 573: return 1.2  // 陸奥改二
+                        case 276: return 1.15 // 陸奥改
+                        case 576: return date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE) ? 1.1 : 1.0  // Nelson改
+                    }
+                } else {
+                    switch (secondShipId) {
+                        case 573: return 1.4  // 陸奥改二
+                        case 276: return 1.35 // 陸奥改
+                        case 576: return date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE) ? 1.25 : 1.0  // Nelson改
+                    }
+                }
+                return 1.0
+            }(this.date, ships[1].shipId)
+            var itemBonus = function(date, items) {
+                if (date.before(ADD_ITEM_BONUS_DATE)) return 1
+                var surfaceRadarBonus = hasSurfaceRadar(items) ? 1.15 : 1
+                var apShellBonus = hasAPShell(items) ? 1.35 : 1
+                return surfaceRadarBonus * apShellBonus
+            }(this.date, attackIndex < 2 ? this.items : getItems(ships[1]))
+            return base * secondShipBonus * itemBonus
+        case 102: // 長門、いい？ いくわよ！ 主砲一斉射ッ！
+            var base = attackIndex < 2 ? 1.4 : 1.2
+            var secondShipBonus = function(secondShipId) {
+                if (attackIndex < 2) {
+                    // 長門改/長門改二
+                    if ([275, 541].indexOf(secondShipId) >= 0) {
+                        return 1.2
+                    }
+                } else {
+                    // 長門改/長門改二
+                    if ([275, 541].indexOf(secondShipId) >= 0) {
+                        return 1.4
+                    }
+                }
+                return 1.0
+            }(ships[1].shipId)
+            var itemBonus = function(items) {
+                var surfaceRadarBonus = hasSurfaceRadar(items) ? 1.15 : 1
+                var apShellBonus = hasAPShell(items) ? 1.35 : 1
+                return surfaceRadarBonus * apShellBonus
+            }(attackIndex < 2 ? this.items : getItems(ships[1]))
+            return base * secondShipBonus * itemBonus
+        case 103: // Colorado 特殊攻撃 ※正式名称不明
+            var base = this.date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE2) ?
+                (attackIndex === 0 ? 1.5 : 1.3) : (attackIndex === 0 ? 1.3 : 1.15)
+            var companionShipBonus = function(secondShipId, thirdShipId) {
+                if (this.date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE2)) {
+                    switch (attackIndex) {
+                        case 1:
+                            return isBig7BonusShipId(secondShipId) ? 1.15 : 1
+                        case 2:
+                            return isBig7BonusShipId(thirdShipId) ? 1.17 : 1
+                    }
+                } else if (this.date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE)) {
+                    switch (attackIndex) {
+                        case 1:
+                            return isBig7BonusShipId(secondShipId) ? 1.1 : 1
+                        case 2:
+                            return isBig7BonusShipId(thirdShipId) ? 1.15 : 1
+                    }
+                } else {
+                    // bug
+                    switch (attackIndex) {
+                        case 1:
+                            return isBig7BonusShipId(secondShipId) ? 1.1 : 1
+                        case 2:
+                            return isBig7BonusShipId(thirdShipId) ? 1.15 * (isBig7BonusShipId(secondShipId) ? 1.1 : 1) : 1
+                    }
+                }
+                return 1
+            }(ships[1].shipId, ships[2].shipId)
+            var itemBonus = function(items, secondShipId, thirdShipId) {
+                var surfaceRadarBonus = function(items) {
+                    return hasSurfaceRadar(items) ? 1.15 : 1
+                }
+                var apShellBonus = function(items) {
+                    return hasAPShell(items) ? 1.35 : 1
+                }
+                var sgRadarBonus = function(items) {
+                    return this.date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE2) && hasSgRadarLateModel(items) ? 1.15 : 1
+                }
+                switch (attackIndex) {
+                    case 0: return surfaceRadarBonus(items) * apShellBonus(items) * sgRadarBonus(items)
+                    case 1:
+                        var secondShipItems = getItems(ships[1])
+                        return surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems) * sgRadarBonus(secondShipItems)
+                    case 2:
+                        var thirdShipItems = getItems(ships[2])
+                        // 艦これ負の遺産
+                        if (this.date.before(getJstDate(2021, 10, 15, 12, 0, 0))) {
+                            var secondShipItems = getItems(ships[1])
+                            if (isBig7BonusShipId(thirdShipId)) {
+                                if (isBig7BonusShipId(secondShipId) || surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems) > 1) {
+                                    return surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems)
+                                }
+                                return surfaceRadarBonus(thirdShipItems) * apShellBonus(thirdShipItems) * sgRadarBonus(thirdShipItems)
+                            }
+                            if (ships[1].item2.size() === 5) {
+                                var item = ships[1].item2.get(4)
+                                // 二番艦に5スロの艦かつ補強増設が空いている状態で、
+                                var cond = ships[1].hasSlotEx() && !ships[1].slotExItem
+                                // 5番スロットに徹甲弾もしくは水上電探を装備
+                                    && (item && (isSurfaceRadar(item) || isAPshell(item)))
+                                // そして三番艦にビッグ7ではない艦を置き、何かしらの装備を載せる
+                                    && thirdShipItems.length > 0
+                                if (cond) {
+                                    return surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems) * (isAPshell(item) ? 1.35 : 1.15)
+                                }
+                            }
+                            return 1
+                        }
+                        return surfaceRadarBonus(thirdShipItems) * apShellBonus(thirdShipItems) * sgRadarBonus(thirdShipItems)
+                }
+                return 1
+            }(this.items, ships[1].shipInfo.flagship, ships[2].shipInfo.flagship)
+            return base * companionShipBonus * itemBonus
+        case 200: return 1.35 // 瑞雲立体攻撃
+        case 201: return 1.3 // 海空立体攻撃
+        case 400: // 大和 特殊攻撃(3隻版) ※正式名称不明
+            var base = attackIndex < 2 ? 1.5 : 1.65
+            // 最終改造形態じゃないと発動しないらしい
+            var secondShipCtype = JSON.parse(Ship.get(ships[1].shipId).json).api_ctype | 0
+            var thirdShipCtype = JSON.parse(Ship.get(ships[2].shipId).json).api_ctype | 0
+            var companionCtypes = [secondShipCtype, thirdShipCtype]
+            var companionShipBonus = function(ctypes) {
+                switch (attackIndex) {
+                    case 0:
+                        // 大和型、長門型、伊勢型
+                        if (ctypes.indexOf(37) >= 0 || ctypes.indexOf(19) >= 0 || ctypes.indexOf(2) >= 0) {
+                            return 1.1
+                        }
+                        break
+                    case 1:
+                        // 大和型
+                        if (ctypes.indexOf(37) >= 0) {
+                            return 1.2
+                        }
+                        // 長門型
+                        if (ctypes.indexOf(19) >= 0) {
+                            return 1.1
+                        }
+                        // 伊勢型
+                        if (ctypes.indexOf(2) >= 0) {
+                            return 1.05
+                        }
+                        break
+                }
+                return 1.0
+            }(companionCtypes)
+            var itemBonus = function(items) {
+                var surfaceRadarBonus = function(items) {
+                    return hasSurfaceRadar(items) ? 1.15 : 1
+                }
+                var apShellBonus = function(items) {
+                    return hasAPShell(items) ? 1.35 : 1
+                }
+                var yamatoClassRadarBonus = function(items) {
+                    return hasYamatoClassRadar(items) ? 1.1 : 1
+                }
+                switch (attackIndex) {
+                    case 0: return surfaceRadarBonus(items) * apShellBonus(items) * yamatoClassRadarBonus(items)
+                    case 1:
+                        var secondShipItems = getItems(ships[1])
+                        return surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems) * yamatoClassRadarBonus(secondShipItems)
+                    case 2:
+                        // 艦これ負の遺産
+                        // https://twitter.com/KanColle_STAFF/status/1534778149887950848
+                        if (this.date.before(getJstDate(2022, 6, 9, 15, 3, 0))) {
+                            var secondShipItems = getItems(ships[1])
+                            return surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems) * yamatoClassRadarBonus(secondShipItems)
+                        }
+                        // 正しい方
+                        var thirdShipItems = getItems(ships[2])
+                        return surfaceRadarBonus(thirdShipItems) * apShellBonus(thirdShipItems)
+                }
+                return 1
+            }(this.items)
+            return base * companionShipBonus * itemBonus
+        case 401: // 大和 特殊攻撃(2隻版) ※正式名称不明
+            var base = attackIndex < 2 ? 1.4 : 1.55
+            var secondShipBonus = function(secondShipId) {
+                if (attackIndex < 2) {
+                    // 大和型改二
+                    if ([546, 911, 916].indexOf(secondShipId) >= 0) {
+                        return 1.1
+                    }
+                } else {
+                    if (secondShipId === 916) {
+                        // 大和改二重
+                        return 1.25
+                    } else if ([546, 911].indexOf(secondShipId) >= 0) {
+                        // 大和改二・武蔵改二
+                        return 1.2
+                    }
+                }
+                return 1.0
+            }(ships[1].shipId)
+            var itemBonus = function(items) {
+                var surfaceRadarBonus = hasSurfaceRadar(items) ? 1.15 : 1
+                var apShellBonus = hasAPShell(items) ? 1.35 : 1
+                var yamatoClassRadarBonus = hasYamatoClassRadar(items) ? 1.1 : 1
+                return surfaceRadarBonus * apShellBonus * yamatoClassRadarBonus
+            }(attackIndex < 2 ? this.items : getItems(ships[1]))
+            return base * secondShipBonus * itemBonus
+        default: return 1.0  // それ以外
     }
 }
 
@@ -1482,13 +1702,23 @@ NightBattlePower.prototype.getFormationBonus = function () {
 /**
  * 夜戦火力(キャップ前)を返します
  * @param {Boolean} formulaMode 計算式モード
- * @return {Number|String} 夜戦火力(キャップ前)
+ * @return {[Number, Number]|String} 夜戦火力(キャップ前)
  */
 NightBattlePower.prototype.getPrecapPower = function (formulaMode) {
+    var bp = this.getBasicPower()
+    var fb = this.getFormationBonus()
+    var cib = this.getCutinBonus()
+    var cib2 = this.getCutinBonus2()
+    var cb = this.getConditionBonus()
+    var ppmp = this.getPrecapPostMultiplyPower()
+
     if (formulaMode) {
-        return "(" + this.getBasicPower() + ")" + "*" + this.getFormationBonus() + "*" + this.getCutinBonus() + "*" + this.getCutinBonus2() + "*" + this.getConditionBonus() + "+" + this.getPrecapPostMultiplyPower()
+        return "(" + bp + ")*" + fb + "*" + cib[0] + "*" + cib2 + "*" + cb + "+" + ppmp
     }
-    return this.getBasicPower() * this.getFormationBonus() * this.getCutinBonus() * this.getCutinBonus2() * this.getConditionBonus() + this.getPrecapPostMultiplyPower()
+    return [
+        bp * fb * cib[0] * cib2 * cb + ppmp,
+        bp * fb * cib[1] * cib2 * cb + ppmp
+    ]
 }
 
 /**
@@ -1505,45 +1735,57 @@ NightBattlePower.prototype.getPrecapPostMultiplyPower = function () {
  * @return {[Number,Number]|String} 夜戦火力(キャップ後)
  */
 NightBattlePower.prototype.getPostcapPower = function (formulaMode) {
-    var pc = getPostcapValue(this.getPrecapPower(), this.CAP_VALUE)
+    var pp = this.getPrecapPower()
+    var minpc = getPostcapValue(pp[0], this.CAP_VALUE)
+    var maxpc = getPostcapValue(pp[1], this.CAP_VALUE)
     var ms = getMultiplySlayerBonus(this.attacker, this.defender)
     var as = getAddSlayerBonus(this.attacker, this.defender)
     var m = getMapBonus(this.mapCell, this.attacker, this.defender)
-    var postMapBonusValue = Math.floor(Math.floor(pc) * ms + as) * m
+    var minPostMapBonusValue = Math.floor(Math.floor(minpc) * ms + as) * m
+    var maxPostMapBonusValue = Math.floor(Math.floor(maxpc) * ms + as) * m
     var ptbm = getPtImpPackBasicMultiplyBonus(this.defender)
-    var pta = getPtImpPackBasicAddBonus(postMapBonusValue, this.defender)
+    var minpta = getPtImpPackBasicAddBonus(minPostMapBonusValue, this.defender)
+    var maxpta = getPtImpPackBasicAddBonus(maxPostMapBonusValue, this.defender)
     var ptim = getPtImpPackItemBonus(this.attacker, this.defender)
 
     // A = ([[キャップ後攻撃力] * 乗算特効補正 + 加算特効補正] * マップ補正 * PT基本補正 + PT基本補正) * PT装備補正
-    var value = (postMapBonusValue * ptbm + pta) * ptim
-    var str = "(int(int(" + pc + ")*" + ms + "+" + as + ")*" + m + "*" + ptbm + "+" + pta + ")*" + ptim
+    var min = (minPostMapBonusValue * ptbm + minpta) * ptim
+    var max = (maxPostMapBonusValue * ptbm + maxpta) * ptim
+    var str = "(int(int(" + minpc + ")*" + ms + "+" + as + ")*" + m + "*" + ptbm + "+" + minpta + ")*" + ptim
     // クリティカル判定
     if (isCritical(this.attack)) {
         // A = [A * クリティカル補正 * 熟練度補正]
-        value *= getCriticalBonus(this.attack)
+        min *= getCriticalBonus(this.attack)
+        max *= getCriticalBonus(this.attack)
         str = "(" + str + ")*" + getCriticalBonus(this.attack)
         var skilled = this.shouldUseSkilled ? getSkilledBonus(this.date, this.attack, this.attacker, this.defender, this.attackerHp) : [1.0, 1.0]
         if (formulaMode) {
             return "int((" + str + ")*" + skilled[0] + ")"
         }
-        return [Math.floor(value * skilled[0]), Math.floor(value * skilled[1])]
+        return [Math.floor(min * skilled[0]), Math.floor(max * skilled[1])]
     }
     if (formulaMode) {
         return str
     }
-    return [value, value]
+    return [min, max]
 }
 
 /**
  * カットイン攻撃補正を返します
- * @return {Number} 倍率
+ * @return {[Number, Number]} 倍率
  */
 NightBattlePower.prototype.getCutinBonus = function () {
+    var ADD_ITEM_BONUS_DATE = getJstDate(2018, 12, 7, 12, 0, 0)
+    var UPDATE_SPECIAL_ATTACK_BONUS_DATE = getJstDate(2019, 2, 27, 12, 0, 0)
+    var UPDATE_SPECIAL_ATTACK_BONUS_DATE2 = getJstDate(2022, 6, 8, 12, 0, 0)
+    var ships = this.origins[this.attack.mainAttack ? "main" : "escort"]
+    var attackIndex = this.attack.attackIndex
+    var engagement = this.formation[2]
     var items = Java.from(this.attack.showItem).map(function (id) { return Item.get(Number(id)) })
 
     switch (Number(this.attack.attackType)) {
-        case 1: return 1.2  // 連撃
-        case 2: return 1.3  // カットイン(主砲/魚雷)
+        case 1: return [1.2, 1.2]  // 連撃
+        case 2: return [1.3, 1.3]  // カットイン(主砲/魚雷)
         case 3:
             // 後期型艦首魚雷(6門)
             // 熟練聴音員+後期型艦首魚雷(6門)
@@ -1560,14 +1802,14 @@ NightBattlePower.prototype.getCutinBonus = function () {
             var ssRadar = [210, 211, 384, 458]
             if (Java.from(this.attack.showItem).filter(function (id) { return lateTorpedo.indexOf(Number(id)) >= 0 }).length
                 && Java.from(this.attack.showItem).filter(function (id) { return ssRadar.indexOf(Number(id)) >= 0 }).length) {
-                return 1.75  // カットイン(後魚/潜電)
+                return [1.75, 1.75] // カットイン(後魚/潜電)
             }
             if (Java.from(this.attack.showItem).filter(function (id) { return lateTorpedo.indexOf(Number(id)) >= 0 }).length >= 2) {
-                return 1.6  // カットイン(後魚/後魚)
+                return [1.6, 1.6]   // カットイン(後魚/後魚)
             }
-            return 1.5      // カットイン(魚雷/魚雷)
-        case 4: return 1.75 // カットイン(主砲/副砲)
-        case 5: return 2.0  // カットイン(主砲/主砲)
+            return [1.5, 1.5]       // カットイン(魚雷/魚雷)
+        case 4: return [1.75, 1.75] // カットイン(主砲/副砲)
+        case 5: return [2.0, 2.0]   // カットイン(主砲/主砲)
         case 6:             // 夜襲カットイン
             // 夜間戦闘機
             var kind1 = items.filter(function (item) { return item.type3 === 45 }).length
@@ -1575,18 +1817,18 @@ NightBattlePower.prototype.getCutinBonus = function () {
             var kind2 = items.filter(function (item) { return item.type3 === 46 }).length
             // その他(SF,岩井,彗星(31号))
             var kind3 = items.filter(function (item) { return [154, 242, 243, 244, 320].indexOf(item.id) >= 0 }).length
-            if (kind1 === 2 && kind2 === 1) return 1.25
-            if ((kind1 + kind2 + kind3) === 2) return 1.2
-            if ((kind1 + kind2 + kind3) === 3) return 1.18
-            return 1.0
+            if (kind1 === 2 && kind2 === 1) return [1.18, 1.25]
+            if ((kind1 + kind2 + kind3) === 2) return [1.2, 1.2]
+            if ((kind1 + kind2 + kind3) === 3) return [1.18, 1.18]
+            return [1.0, 1.0]
         case 7:             // 駆逐カットイン(主砲/魚雷/電探) 単発
         case 11:            // 駆逐カットイン(主砲/魚雷/電探) 二発
-            return 1.3
+            return [1.3, 1.3]
         case 8:             // 駆逐カットイン(魚雷/見張員/電探) 単発
         case 12:            // 駆逐カットイン(魚雷/見張員/電探) 二発
             // API値変化(2021/05/08～)
             if (this.date.after(getJstDate(2021, 5, 8, 18, 0, 0))) {
-                return 1.2
+                return [1.2, 1.2]
             }
             // 魚雷
             var torpedo = items.filter(function (item) { return item.type2 === 5 }).length
@@ -1597,22 +1839,262 @@ NightBattlePower.prototype.getCutinBonus = function () {
             // ドラム缶
             var drum = items.filter(function (item) { return item.type2 === 30 }).length
             if (torpedo && radar && lookouts) {
-                return 1.2
+                return [1.2, 1.2]
             }
             if (torpedo === 2 && lookouts) {
-                return 1.5
+                return [1.5, 1.5]
             }
             if (torpedo && lookouts && drum) {
-                return 1.3
+                return [1.3, 1.3]
             }
             return 1
         case 9:             // 駆逐カットイン(魚雷/魚雷/見張員) 単発
         case 13:            // 駆逐カットイン(魚雷/魚雷/見張員) 二発
-            return 1.5
+            return [1.5, 1.5]
         case 10:            // 駆逐カットイン(魚雷/ドラム缶/見張員) 単発
         case 14:            // 駆逐カットイン(魚雷/ドラム缶/見張員) 二発
-            return 1.3
-        default: return getSpecialAttackBonus(this)
+            return [1.3, 1.3]
+        case 100: // Nelson Touch
+            var modifier = 2.0 * (engagement === 4 ? 1.25 : 1.0)
+            return [modifier, modifier]
+        case 101: // 一斉射かッ…胸が熱いな！
+            var base = attackIndex < 2 ? 1.4 : 1.2
+            var secondShipBonus = function(date, secondShipId) {
+                if (attackIndex < 2) {
+                    switch (secondShipId) {
+                        case 573: return 1.2  // 陸奥改二
+                        case 276: return 1.15 // 陸奥改
+                        case 576: return date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE) ? 1.1 : 1.0  // Nelson改
+                    }
+                } else {
+                    switch (secondShipId) {
+                        case 573: return 1.4  // 陸奥改二
+                        case 276: return 1.35 // 陸奥改
+                        case 576: return date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE) ? 1.25 : 1.0  // Nelson改
+                    }
+                }
+                return 1.0
+            }(this.date, ships[1].shipId)
+            var itemBonus = function(date, items) {
+                if (date.before(ADD_ITEM_BONUS_DATE)) return 1
+                var surfaceRadarBonus = hasSurfaceRadar(items) ? 1.15 : 1
+                var apShellBonus = hasAPShell(items) ? 1.35 : 1
+                return surfaceRadarBonus * apShellBonus
+            }(this.date, attackIndex < 2 ? this.items : getItems(ships[1]))
+            var modifier = base * secondShipBonus * itemBonus
+            return [modifier, modifier]
+        case 102: // 長門、いい？ いくわよ！ 主砲一斉射ッ！
+            var base = attackIndex < 2 ? 1.4 : 1.2
+            var secondShipBonus = function(secondShipId) {
+                if (attackIndex < 2) {
+                    // 長門改/長門改二
+                    if ([275, 541].indexOf(secondShipId) >= 0) {
+                        return 1.2
+                    }
+                } else {
+                    // 長門改/長門改二
+                    if ([275, 541].indexOf(secondShipId) >= 0) {
+                        return 1.4
+                    }
+                }
+                return 1.0
+            }(ships[1].shipId)
+            var itemBonus = function(items) {
+                var surfaceRadarBonus = hasSurfaceRadar(items) ? 1.15 : 1
+                var apShellBonus = hasAPShell(items) ? 1.35 : 1
+                return surfaceRadarBonus * apShellBonus
+            }(attackIndex < 2 ? this.items : getItems(ships[1]))
+            var modifier = base * secondShipBonus * itemBonus
+            return [modifier, modifier]
+        case 103: // Colorado 特殊攻撃 ※正式名称不明
+            var base = this.date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE2) ?
+                (attackIndex === 0 ? 1.5 : 1.3) : (attackIndex === 0 ? 1.3 : 1.15)
+            var companionShipBonus = function(secondShipId, thirdShipId) {
+                if (this.date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE2)) {
+                    switch (attackIndex) {
+                        case 1:
+                            return isBig7BonusShipId(secondShipId) ? 1.15 : 1
+                        case 2:
+                            return isBig7BonusShipId(thirdShipId) ? 1.17 : 1
+                    }
+                } else if (this.date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE)) {
+                    switch (attackIndex) {
+                        case 1:
+                            return isBig7BonusShipId(secondShipId) ? 1.1 : 1
+                        case 2:
+                            return isBig7BonusShipId(thirdShipId) ? 1.15 : 1
+                    }
+                } else {
+                    // bug
+                    switch (attackIndex) {
+                        case 1:
+                            return isBig7BonusShipId(secondShipId) ? 1.1 : 1
+                        case 2:
+                            return isBig7BonusShipId(thirdShipId) ? 1.15 * (isBig7BonusShipId(secondShipId) ? 1.1 : 1) : 1
+                    }
+                }
+                return 1
+            }(ships[1].shipId, ships[2].shipId)
+            var itemBonus = function(items, secondShipId, thirdShipId) {
+                var surfaceRadarBonus = function(items) {
+                    return hasSurfaceRadar(items) ? 1.15 : 1
+                }
+                var apShellBonus = function(items) {
+                    return hasAPShell(items) ? 1.35 : 1
+                }
+                var sgRadarBonus = function(items) {
+                    return this.date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE2) && hasSgRadarLateModel(items) ? 1.15 : 1
+                }
+                switch (attackIndex) {
+                    case 0: return surfaceRadarBonus(items) * apShellBonus(items) * sgRadarBonus(items)
+                    case 1:
+                        var secondShipItems = getItems(ships[1])
+                        return surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems) * sgRadarBonus(secondShipItems)
+                    case 2:
+                        var thirdShipItems = getItems(ships[2])
+                        // 艦これ負の遺産
+                        if (this.date.before(getJstDate(2021, 10, 15, 12, 0, 0))) {
+                            var secondShipItems = getItems(ships[1])
+                            if (isBig7BonusShipId(thirdShipId)) {
+                                if (isBig7BonusShipId(secondShipId) || surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems) > 1) {
+                                    return surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems)
+                                }
+                                return surfaceRadarBonus(thirdShipItems) * apShellBonus(thirdShipItems) * sgRadarBonus(thirdShipItems)
+                            }
+                            if (ships[1].item2.size() === 5) {
+                                var item = ships[1].item2.get(4)
+                                // 二番艦に5スロの艦かつ補強増設が空いている状態で、
+                                var cond = ships[1].hasSlotEx() && !ships[1].slotExItem
+                                // 5番スロットに徹甲弾もしくは水上電探を装備
+                                    && (item && (isSurfaceRadar(item) || isAPshell(item)))
+                                // そして三番艦にビッグ7ではない艦を置き、何かしらの装備を載せる
+                                    && thirdShipItems.length > 0
+                                if (cond) {
+                                    return surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems) * (isAPshell(item) ? 1.35 : 1.15)
+                                }
+                            }
+                            return 1
+                        }
+                        return surfaceRadarBonus(thirdShipItems) * apShellBonus(thirdShipItems) * sgRadarBonus(thirdShipItems)
+                }
+                return 1
+            }(this.items, ships[1].shipInfo.flagship, ships[2].shipInfo.flagship)
+            var modifier = base * companionShipBonus * itemBonus
+            return [modifier, modifier]
+        case 104: // 僚艦夜戦突撃
+            var base = this.date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE2) ? 2.2 : 1.9
+            var engagementBonus = function() {
+                switch (engagement) {
+                    case 3: return 1.25
+                    case 4: return 0.75
+                }
+                return 1.0
+            }()
+            var modifier = base * engagementBonus
+            return [modifier, modifier]
+        case 200:
+            // 夜間瑞雲夜戦カットイン
+            var base = 1.2
+            var zuiun = items.filter(function(item) { return item.slotitemId === 490 }).length
+            if (zuiun >= 2) {
+                base += 0.08
+            }
+            if (zuiun >= 1) {
+                base += 0.04
+            }
+            if (hasSurfaceRadar(items)) {
+                base += 0.04
+            }
+            return [1.2, base]
+        case 400: // 大和 特殊攻撃(3隻版) ※正式名称不明
+            var base = attackIndex < 2 ? 1.5 : 1.65
+            // 最終改造形態じゃないと発動しないらしい
+            var secondShipCtype = JSON.parse(Ship.get(ships[1].shipId).json).api_ctype | 0
+            var thirdShipCtype = JSON.parse(Ship.get(ships[2].shipId).json).api_ctype | 0
+            var companionCtypes = [secondShipCtype, thirdShipCtype]
+            var companionShipBonus = function(ctypes) {
+                switch (attackIndex) {
+                    case 0:
+                        // 大和型、長門型、伊勢型
+                        if (ctypes.indexOf(37) >= 0 || ctypes.indexOf(19) >= 0 || ctypes.indexOf(2) >= 0) {
+                            return 1.1
+                        }
+                        break
+                    case 1:
+                        // 大和型
+                        if (ctypes.indexOf(37) >= 0) {
+                            return 1.2
+                        }
+                        // 長門型
+                        if (ctypes.indexOf(19) >= 0) {
+                            return 1.1
+                        }
+                        // 伊勢型
+                        if (ctypes.indexOf(2) >= 0) {
+                            return 1.05
+                        }
+                        break
+                }
+                return 1.0
+            }(companionCtypes)
+            var itemBonus = function(items) {
+                var surfaceRadarBonus = function(items) {
+                    return hasSurfaceRadar(items) ? 1.15 : 1
+                }
+                var apShellBonus = function(items) {
+                    return hasAPShell(items) ? 1.35 : 1
+                }
+                var yamatoClassRadarBonus = function(items) {
+                    return hasYamatoClassRadar(items) ? 1.1 : 1
+                }
+                switch (attackIndex) {
+                    case 0: return surfaceRadarBonus(items) * apShellBonus(items) * yamatoClassRadarBonus(items)
+                    case 1:
+                        var secondShipItems = getItems(ships[1])
+                        return surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems) * yamatoClassRadarBonus(secondShipItems)
+                    case 2:
+                        // 艦これ負の遺産
+                        // https://twitter.com/KanColle_STAFF/status/1534778149887950848
+                        if (this.date.before(getJstDate(2022, 6, 9, 15, 3, 0))) {
+                            var secondShipItems = getItems(ships[1])
+                            return surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems) * yamatoClassRadarBonus(secondShipItems)
+                        }
+                        // 正しい方
+                        var thirdShipItems = getItems(ships[2])
+                        return surfaceRadarBonus(thirdShipItems) * apShellBonus(thirdShipItems)
+                }
+                return 1
+            }(this.items)
+            var modifier = base * companionShipBonus * itemBonus
+            return [modifier, modifier]
+        case 401: // 大和 特殊攻撃(2隻版) ※正式名称不明
+            var base = attackIndex < 2 ? 1.4 : 1.55
+            var secondShipBonus = function(secondShipId) {
+                if (attackIndex < 2) {
+                    // 大和型改二
+                    if ([546, 911, 916].indexOf(secondShipId) >= 0) {
+                        return 1.1
+                    }
+                } else {
+                    if (secondShipId === 916) {
+                        // 大和改二重
+                        return 1.25
+                    } else if ([546, 911].indexOf(secondShipId) >= 0) {
+                        // 大和改二・武蔵改二
+                        return 1.2
+                    }
+                }
+                return 1.0
+            }(ships[1].shipId)
+            var itemBonus = function(items) {
+                var surfaceRadarBonus = hasSurfaceRadar(items) ? 1.15 : 1
+                var apShellBonus = hasAPShell(items) ? 1.35 : 1
+                var yamatoClassRadarBonus = hasYamatoClassRadar(items) ? 1.1 : 1
+                return surfaceRadarBonus * apShellBonus * yamatoClassRadarBonus
+            }(attackIndex < 2 ? this.items : getItems(ships[1]))
+            var modifier = base * secondShipBonus * itemBonus
+            return [modifier, modifier]
+        default: return [1.0, 1.0]
     }
 }
 
@@ -1997,6 +2479,8 @@ var getPtImpPackItemBonus = function (attacker, defender) {
     var armedDaihatsu = getItemNum(items, 409)
     /** 装甲艇(AB艇)・武装大発 */
     var spBoat = armoredBoat + armedDaihatsu
+    /** 装甲艇(AB艇)・武装大発[改修] */
+    var spBoatLv = spBoat > 0 ? items.filter(function (item) { return [408, 409].indexOf(item.slotitemId) >= 0 }).map(function (item) { return item.level }).reduce(function (p, c) { return p + c }, 0) / spBoat : 0
     /** max(艦上爆撃機, 噴式戦闘爆撃機) */
     var maxBomber = Math.max(bomber, jetBomber)
 
@@ -2008,8 +2492,9 @@ var getPtImpPackItemBonus = function (attacker, defender) {
     bonus *= (aaGun ? 1.2 : 1) * (aaGun >= 2 ? 1.2 : 1)
     bonus *= lookouts ? 1.1 : 1
     bonus *= (spBoat ? 1.2 : 1) * (spBoat >= 2 ? 1.1 : 1)
+    bonus *= (spBoatLv / 50 + 1)
 
-    return (0.3 * postMapBonusValue + Math.sqrt(postMapBonusValue) + 10) * bonus
+    return bonus
 }
 
 /**
@@ -2645,245 +3130,6 @@ var getArmorBonus = function (date, mapCell, attacker, defender) {
     // 北方迷彩(+北方装備)
     var northernSeaBulge = mapCell.map[0] === 3 && getItems(defender).some(function (item) { return item.slotitemId === 268 }) ? 3 : 0
     return mediumBulge + largeBulge - depthCharge + northernSeaBulge
-}
-
-/**
- * 特殊攻撃倍率を返します
- * @param {DayBattlePower|NightBattlePower} that データ
- * @return {Number} 倍率
- */
-var getSpecialAttackBonus = function(that) {
-    var ADD_ITEM_BONUS_DATE = getJstDate(2018, 12, 7, 12, 0, 0)
-    var UPDATE_SPECIAL_ATTACK_BONUS_DATE = getJstDate(2019, 2, 27, 12, 0, 0)
-    var UPDATE_SPECIAL_ATTACK_BONUS_DATE2 = getJstDate(2022, 6, 8, 12, 0, 0)
-    var ships = that.origins[that.attack.mainAttack ? "main" : "escort"]
-    var attackIndex = that.attack.attackIndex
-    var engagement = that.formation[2]
-
-    switch (Number(that.attack.attackType)) {
-        case 100: // Nelson Touch
-            return 2.0 * (engagement === 4 ? 1.25 : 1.0)
-        case 101: // 一斉射かッ…胸が熱いな！
-            var base = attackIndex < 2 ? 1.4 : 1.2
-            var secondShipBonus = function(date, secondShipId) {
-                if (attackIndex < 2) {
-                    switch (secondShipId) {
-                        case 573: return 1.2  // 陸奥改二
-                        case 276: return 1.15 // 陸奥改
-                        case 576: return date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE) ? 1.1 : 1.0  // Nelson改
-                    }
-                } else {
-                    switch (secondShipId) {
-                        case 573: return 1.4  // 陸奥改二
-                        case 276: return 1.35 // 陸奥改
-                        case 576: return date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE) ? 1.25 : 1.0  // Nelson改
-                    }
-                }
-                return 1.0
-            }(that.date, ships[1].shipId)
-            var itemBonus = function(date, items) {
-                if (date.before(ADD_ITEM_BONUS_DATE)) return 1
-                var surfaceRadarBonus = hasSurfaceRadar(items) ? 1.15 : 1
-                var apShellBonus = hasAPShell(items) ? 1.35 : 1
-                return surfaceRadarBonus * apShellBonus
-            }(that.date, attackIndex < 2 ? that.items : getItems(ships[1]))
-            return base * secondShipBonus * itemBonus
-        case 102: // 長門、いい？ いくわよ！ 主砲一斉射ッ！
-            var base = attackIndex < 2 ? 1.4 : 1.2
-            var secondShipBonus = function(secondShipId) {
-                if (attackIndex < 2) {
-                    // 長門改/長門改二
-                    if ([275, 541].indexOf(secondShipId) >= 0) {
-                        return 1.2
-                    }
-                } else {
-                    // 長門改/長門改二
-                    if ([275, 541].indexOf(secondShipId) >= 0) {
-                        return 1.4
-                    }
-                }
-                return 1.0
-            }(ships[1].shipId)
-            var itemBonus = function(items) {
-                var surfaceRadarBonus = hasSurfaceRadar(items) ? 1.15 : 1
-                var apShellBonus = hasAPShell(items) ? 1.35 : 1
-                return surfaceRadarBonus * apShellBonus
-            }(attackIndex < 2 ? that.items : getItems(ships[1]))
-            return base * secondShipBonus * itemBonus
-        case 103: // Colorado 特殊攻撃 ※正式名称不明
-            var base = that.date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE2) ?
-                (attackIndex === 0 ? 1.5 : 1.3) : (attackIndex === 0 ? 1.3 : 1.15)
-            var companionShipBonus = function(secondShipId, thirdShipId) {
-                if (that.date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE2)) {
-                    switch (attackIndex) {
-                        case 1:
-                            return isBig7BonusShipId(secondShipId) ? 1.15 : 1
-                        case 2:
-                            return isBig7BonusShipId(thirdShipId) ? 1.17 : 1
-                    }
-                } else if (that.date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE)) {
-                    switch (attackIndex) {
-                        case 1:
-                            return isBig7BonusShipId(secondShipId) ? 1.1 : 1
-                        case 2:
-                            return isBig7BonusShipId(thirdShipId) ? 1.15 : 1
-                    }
-                } else {
-                    // bug
-                    switch (attackIndex) {
-                        case 1:
-                            return isBig7BonusShipId(secondShipId) ? 1.1 : 1
-                        case 2:
-                            return isBig7BonusShipId(thirdShipId) ? 1.15 * (isBig7BonusShipId(secondShipId) ? 1.1 : 1) : 1
-                    }
-                }
-                return 1
-            }(ships[1].shipId, ships[2].shipId)
-            var itemBonus = function(items, secondShipId, thirdShipId) {
-                var surfaceRadarBonus = function(items) {
-                    return hasSurfaceRadar(items) ? 1.15 : 1
-                }
-                var apShellBonus = function(items) {
-                    return hasAPShell(items) ? 1.35 : 1
-                }
-                var sgRadarBonus = function(items) {
-                    return that.date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE2) && hasSgRadarLateModel(items) ? 1.15 : 1
-                }
-                switch (attackIndex) {
-                    case 0: return surfaceRadarBonus(items) * apShellBonus(items) * sgRadarBonus(items)
-                    case 1:
-                        var secondShipItems = getItems(ships[1])
-                        return surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems) * sgRadarBonus(secondShipItems)
-                    case 2:
-                        var thirdShipItems = getItems(ships[2])
-                        // 艦これ負の遺産
-                        if (that.date.before(getJstDate(2021, 10, 15, 12, 0, 0))) {
-                            var secondShipItems = getItems(ships[1])
-                            if (isBig7BonusShipId(thirdShipId)) {
-                                if (isBig7BonusShipId(secondShipId) || surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems) > 1) {
-                                    return surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems)
-                                }
-                                return surfaceRadarBonus(thirdShipItems) * apShellBonus(thirdShipItems) * sgRadarBonus(thirdShipItems)
-                            }
-                            if (ships[1].item2.size() === 5) {
-                                var item = ships[1].item2.get(4)
-                                // 二番艦に5スロの艦かつ補強増設が空いている状態で、
-                                var cond = ships[1].hasSlotEx() && !ships[1].slotExItem
-                                // 5番スロットに徹甲弾もしくは水上電探を装備
-                                    && (item && (isSurfaceRadar(item) || isAPshell(item)))
-                                // そして三番艦にビッグ7ではない艦を置き、何かしらの装備を載せる
-                                    && thirdShipItems.length > 0
-                                if (cond) {
-                                    return surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems) * (isAPshell(item) ? 1.35 : 1.15)
-                                }
-                            }
-                            return 1
-                        }
-                        return surfaceRadarBonus(thirdShipItems) * apShellBonus(thirdShipItems) * sgRadarBonus(thirdShipItems)
-                }
-                return 1
-            }(that.items, ships[1].shipInfo.flagship, ships[2].shipInfo.flagship)
-            return base * companionShipBonus * itemBonus
-        case 104: // 僚艦夜戦突撃
-            var base = that.date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE2) ? 2.2 : 1.9
-            var engagementBonus = function() {
-                switch (engagement) {
-                    case 3: return 1.25
-                    case 4: return 0.75
-                }
-                return 1.0
-            }()
-            return base * engagementBonus
-        case 200: return 1.35 // 瑞雲立体攻撃
-        case 201: return 1.3 // 海空立体攻撃
-        case 400: // 大和 特殊攻撃(3隻版) ※正式名称不明
-            var base = attackIndex < 2 ? 1.5 : 1.65
-            // 最終改造形態じゃないと発動しないらしい
-            var secondShipCtype = JSON.parse(Ship.get(ships[1].shipId).json).api_ctype | 0
-            var thirdShipCtype = JSON.parse(Ship.get(ships[2].shipId).json).api_ctype | 0
-            var companionCtypes = [secondShipCtype, thirdShipCtype]
-            var companionShipBonus = function(ctypes) {
-                switch (attackIndex) {
-                    case 0:
-                        // 大和型、長門型、伊勢型
-                        if (ctypes.indexOf(37) >= 0 || ctypes.indexOf(19) >= 0 || ctypes.indexOf(2) >= 0) {
-                            return 1.1
-                        }
-                        break
-                    case 1:
-                        // 大和型
-                        if (ctypes.indexOf(37) >= 0) {
-                            return 1.2
-                        }
-                        // 長門型
-                        if (ctypes.indexOf(19) >= 0) {
-                            return 1.1
-                        }
-                        // 伊勢型
-                        if (ctypes.indexOf(2) >= 0) {
-                            return 1.05
-                        }
-                        break
-                }
-                return 1.0
-            }(companionCtypes)
-            var itemBonus = function(items) {
-                var surfaceRadarBonus = function(items) {
-                    return hasSurfaceRadar(items) ? 1.15 : 1
-                }
-                var apShellBonus = function(items) {
-                    return hasAPShell(items) ? 1.35 : 1
-                }
-                var yamatoClassRadarBonus = function(items) {
-                    return hasYamatoClassRadar(items) ? 1.1 : 1
-                }
-                switch (attackIndex) {
-                    case 0: return surfaceRadarBonus(items) * apShellBonus(items) * yamatoClassRadarBonus(items)
-                    case 1:
-                        var secondShipItems = getItems(ships[1])
-                        return surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems) * yamatoClassRadarBonus(secondShipItems)
-                    case 2:
-                        // 艦これ負の遺産
-                        // https://twitter.com/KanColle_STAFF/status/1534778149887950848
-                        if (that.date.before(getJstDate(2022, 6, 9, 15, 3, 0))) {
-                            var secondShipItems = getItems(ships[1])
-                            return surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems) * yamatoClassRadarBonus(secondShipItems)
-                        }
-                        // 正しい方
-                        var thirdShipItems = getItems(ships[2])
-                        return surfaceRadarBonus(thirdShipItems) * apShellBonus(thirdShipItems)
-                }
-                return 1
-            }(that.items)
-            return base * companionShipBonus * itemBonus
-        case 401: // 大和 特殊攻撃(2隻版) ※正式名称不明
-            var base = attackIndex < 2 ? 1.4 : 1.55
-            var secondShipBonus = function(secondShipId) {
-                if (attackIndex < 2) {
-                    // 大和型改二
-                    if ([546, 911, 916].indexOf(secondShipId) >= 0) {
-                        return 1.1
-                    }
-                } else {
-                    if (secondShipId === 916) {
-                        // 大和改二重
-                        return 1.25
-                    } else if ([546, 911].indexOf(secondShipId) >= 0) {
-                        // 大和改二・武蔵改二
-                        return 1.2
-                    }
-                }
-                return 1.0
-            }(ships[1].shipId)
-            var itemBonus = function(items) {
-                var surfaceRadarBonus = hasSurfaceRadar(items) ? 1.15 : 1
-                var apShellBonus = hasAPShell(items) ? 1.35 : 1
-                var yamatoClassRadarBonus = hasYamatoClassRadar(items) ? 1.1 : 1
-                return surfaceRadarBonus * apShellBonus * yamatoClassRadarBonus
-            }(attackIndex < 2 ? that.items : getItems(ships[1]))
-            return base * secondShipBonus * itemBonus
-        default: return 1.0  // それ以外
-    }
 }
 
 /**
@@ -3702,7 +3948,8 @@ function getEquipmentBonus(date, attacker) {
     // 瑞雲(六三四空/熟練)
     // 瑞雲改二(六三四空)
     // 瑞雲改二(六三四空/熟練)
-    // if (num = count(237) + count(322) + count(323)) {}
+    // 試製 夜間瑞雲(攻撃装備)
+    // if (num = count(237) + count(322) + count(323) + count(490)) {}
     // 瑞雲(六三四空/熟練)
     // if (num = count(237)) {}
     // 零式水上偵察機11型乙
