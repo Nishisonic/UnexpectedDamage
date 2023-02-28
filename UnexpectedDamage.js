@@ -14,7 +14,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.87
+var VERSION = 2.88
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -5289,6 +5289,18 @@ function getEquipmentBonus(date, attacker) {
         }
         add({ asw: 1 }, getItemNum(items, 489, 6))
         add({ fp: 1 }, getItemNum(items, 489, 10))
+    }
+    // 一式戦 隼III型改(熟練/20戦隊)
+    if (num = count(491)) {
+        if (["あきつまる", "やましおまる"].indexOf(yomi) >= 0) {
+            add({ fp: 1, asw: 1 }, num)
+        }
+        // 山汐丸改
+        if (shipId === 717) {
+            add({ fp: 2, asw: 1 }, num)
+        }
+        add({ asw: 1 }, getItemNum(items, 491, 6))
+        add({ fp: 1 }, getItemNum(items, 491, 10))
     }
 
     // 1.熟練甲板要員と艦攻の雷装ボーナスの加算は別個で計算して最後に合わせる、また雷装の装備ボーナスは夜襲火力に加算
