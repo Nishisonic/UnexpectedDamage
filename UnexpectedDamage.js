@@ -14,7 +14,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.88
+var VERSION = 2.89
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -5279,26 +5279,17 @@ function getEquipmentBonus(date, attacker) {
         }
     }
     // 一式戦 隼II型改(20戦隊)
-    if (num = count(489)) {
-        if (["あきつまる", "やましおまる"].indexOf(yomi) >= 0) {
+    // 一式戦 隼III型改(熟練/20戦隊)
+    if (num = count(489) + count(491)) {
+        if (["あきつまる", "やましおまる", "くまのまる"].indexOf(yomi) >= 0) {
             add({ fp: 1, asw: 1 }, num)
         }
-        // 山汐丸改
-        if (shipId === 717) {
+        // 山汐丸改、熊野丸改
+        if (shipId === 717 || shipId === 948) {
             add({ fp: 2, asw: 1 }, num)
         }
         add({ asw: 1 }, getItemNum(items, 489, 6))
         add({ fp: 1 }, getItemNum(items, 489, 10))
-    }
-    // 一式戦 隼III型改(熟練/20戦隊)
-    if (num = count(491)) {
-        if (["あきつまる", "やましおまる"].indexOf(yomi) >= 0) {
-            add({ fp: 1, asw: 1 }, num)
-        }
-        // 山汐丸改
-        if (shipId === 717) {
-            add({ fp: 2, asw: 1 }, num)
-        }
         add({ asw: 1 }, getItemNum(items, 491, 6))
         add({ fp: 1 }, getItemNum(items, 491, 10))
     }
