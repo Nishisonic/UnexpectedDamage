@@ -14,7 +14,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = "3.0.0"
+var VERSION = "3.0.1"
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -808,6 +808,7 @@ DayBattlePower.prototype.getImprovementBonus = function () {
                 case 34: return 1    // 司令部施設
                 case 32: return 1    // 潜水艦魚雷
                 case 35: return 1    // 航空要員
+                case 52: return 1    // 陸戦部隊
                 case 54: return 1    // 水上艦装備
                 default: return 0
             }
@@ -1657,6 +1658,7 @@ NightBattlePower.prototype.getImprovementBonus = function () {
                 case 39: return 1 // 水上艦要員
                 case 34: return 1 // 司令部施設
                 case 35: return 1 // 航空要員
+                case 52: return 1 // 陸戦部隊
                 case 54: return 1 // 水上艦装備
                 default: return 0
             }
