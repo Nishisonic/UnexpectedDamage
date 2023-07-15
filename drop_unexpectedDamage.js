@@ -1,6 +1,6 @@
 /**
  * 異常ダメージ検知
- * @version 2.8.9
+ * @version 3.0.0
  * @author Nishikuma
  */
 
@@ -105,8 +105,13 @@ function loadAkakariLogIfNeeded() {
  */
 function updateFile() {
     try {
-        var newVersion = Number(JSON.parse(IOUtils.toString(URI.create(UPDATE_CHECK_URL), StandardCharsets.UTF_8)).tag_name.replace(/v(.*)\.(\d)$/, "$1$2"))
-        if (VERSION < newVersion) {
+        var cv = VERSION.split(".")
+        var nv = JSON.parse(IOUtils.toString(URI.create(UPDATE_CHECK_URL), StandardCharsets.UTF_8)).tag_name.replace(/^v(.*)$/, "$1").split(".")
+        if (
+            Number(nv[0]) > Number(cv[0]) ||
+            (Number(nv[0]) === Number(cv[0]) && Number(nv[1]) > Number(cv[1])) ||
+            (Number(nv[0]) === Number(cv[0]) && Number(nv[1]) === Number(cv[1]) && Number(nv[2]) > Number(cv[2]))
+        ) {
             FILE_URL.forEach(function (url, i) {
                 IOUtils.write(IOUtils.toString(URI.create(url), StandardCharsets.UTF_8), Files.newOutputStream(Paths.get(EXECUTABLE_FILE[i]), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING), StandardCharsets.UTF_8)
             })

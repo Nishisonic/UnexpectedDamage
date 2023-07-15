@@ -14,7 +14,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = 2.89
+var VERSION = "3.0.0"
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -514,6 +514,8 @@ AntiSubmarinePower.prototype.getImprovementBonus = function () {
                     420, // SB2C-3
                     421, // SB2C-5
                     447, // 零式艦戦64型(複座KMX搭載機)
+                    474, // F4U-4
+                    487, // 零式艦戦64型(熟練爆戦)
                 ].indexOf(item.slotitemId) >= 0 ? 0.2 * item.level : 0
             case 8: // 艦上攻撃機
                 return 0.2 * item.level
@@ -639,14 +641,16 @@ AntiSubmarinePower.prototype.getPostcapPower = function (formulaMode) {
     var str = "int(int(" + pc + ")*" + ms + "+" + as + ")*" + m
     // クリティカル判定
     if (isCritical(this.attack)) {
-        // A = [A * クリティカル補正 * 熟練度補正]
-        value *= getCriticalBonus(this.attack)
-        str = "(" + str + ")*" + getCriticalBonus(this.attack)
+        // 熟練度補正が先
+        // A = [A * 熟練度補正 * クリティカル補正]
         var skilled = this.shouldUseSkilled ? getSkilledBonus(this.date, this.attack, this.attacker, this.defender, this.attackerHp) : [1.0, 1.0]
+        var min = Math.floor(value * skilled[0] * getCriticalBonus(this.attack))
+        var max = Math.floor(value * skilled[1] * getCriticalBonus(this.attack))
+        str = "int((" + str + ")*" + skilled[0] + "*" + getCriticalBonus(this.attack) + ")"
         if (formulaMode) {
-            return "int((" + str + ")*" + skilled[0] + ")"
+            return str
         }
-        return [Math.floor(value * skilled[0]), Math.floor(value * skilled[1])]
+        return [min, max]
     }
     if (formulaMode) {
         return str
@@ -739,7 +743,7 @@ var DayBattlePower = function (date, mapCell, kind, friendCombinedKind, isEnemyC
  * @return {Number|String} 昼砲撃火力(基本攻撃力)
  */
 DayBattlePower.prototype.getBasicPower = function (formulaMode) {
-    var landBonus = getLandBonus(this.attacker, this.defender, true)
+    var landBonus = getLandBonus(this.attacker, this.defender, true, this.date)
     // 空撃または陸上型かつ艦上爆撃機,艦上攻撃機,陸上攻撃機,噴式戦闘爆撃機,噴式攻撃機所持時?
     if (getAttackTypeAtDay(this.attack, this.attacker, this.defender) === 1 || isGround(this.attacker) && this.items.some(function (item) { return [7, 8, 47, 57, 58].indexOf(item.type2) >= 0 })) {
         // 空撃
@@ -749,28 +753,24 @@ DayBattlePower.prototype.getBasicPower = function (formulaMode) {
         if (isGround(this.defender)) {
             rai = 0
             if (this.date.after(getJstDate(2019, 3, 27, 12, 0, 0))) {
-                var landAttacker = this.date.after(getJstDate(2021, 7, 15, 12, 0, 0)) ?
-                    // Ju87C改, 試製南山, F4U-1D, FM-2, Ju87C改二(KMX搭載機), Ju87C改二(KMX搭載機/熟練), 彗星一二型(六三四空/三号爆弾搭載機), TBM-3W+3S, 九九式艦爆二二型, 九九式艦爆二二型(熟練), 彗星一二型(三一号光電管爆弾搭載機), SB2C-3, SB2C-5, F4U-4
-                    [64, 148, 233, 277, 305, 306, 319, 389, 391, 392, 320, 420, 421, 474] :
-                    // Ju87C改, 試製南山, F4U-1D, FM-2, Ju87C改二(KMX搭載機), Ju87C改二(KMX搭載機/熟練), 彗星一二型(六三四空/三号爆弾搭載機), TBM-3W+3S
-                    [64, 148, 233, 277, 305, 306, 319, 389]
+                var landAttackers = getLandAttackers(this.date)
                 baku = this.items.filter(function (item) {
-                    return landAttacker.indexOf(item.slotitemId) >= 0
+                    return landAttackers.indexOf(item.slotitemId) >= 0
                 }).reduce(function(p, v) {
                     return p + v.param.baku
                 }, 0)
             }
         }
         if (formulaMode) {
-            return "25+int(1.5*(((((((5+" + this.attacker.karyoku + "+" + this.getImprovementBonus() + "+" + this.getCombinedPowerBonus() + ")*" + landBonus.stypeBonus.a + "+" + landBonus.stypeBonus.b + ")*" + landBonus.basicBonus.a + "*" + landBonus.shikonBonus.a + "+" + landBonus.shikonBonus.b + ")*" + landBonus.m4a1ddBonus.a + "+" + landBonus.m4a1ddBonus.b + ")*" + landBonus.issikihouBonus.a + "+" + landBonus.issikihouBonus.b + ")*" + landBonus.supportBonus.a + "+" + landBonus.supportBonus.b + "+" + landBonus.basicBonus.b + ")+int(int(" + baku  + "*1.3)+" + rai + ")+15))"
+            return "25+int(1.5*(((((((((5+" + this.attacker.karyoku + "+" + this.getImprovementBonus() + "+" + this.getCombinedPowerBonus() + ")*" + landBonus.stypeBonus.a + "+" + landBonus.stypeBonus.b + ")*" + landBonus.basicBonus.a + "*" + landBonus.shikonBonus.a + "+" + landBonus.shikonBonus.b + ")*" + landBonus.m4a1ddBonus.a + "+" + landBonus.m4a1ddBonus.b + ")*" + landBonus.issikihouBonus.a + "+" + landBonus.issikihouBonus.b + ")*" + landBonus.tokuChihaBonus.a + "+" + landBonus.tokuChihaBonus.b + ")*" + landBonus.tokuChihaKaiBonus.a + "+" + landBonus.tokuChihaKaiBonus.b + ")*" + landBonus.supportBonus.a + "+" + landBonus.supportBonus.b + "+" + landBonus.basicBonus.b + ")+int(int(" + baku  + "*1.3)+" + rai + ")+15))"
         }
-        return 25 + Math.floor(1.5 * (((((((5 + this.attacker.karyoku + this.getImprovementBonus() + this.getCombinedPowerBonus()) * landBonus.stypeBonus.a + landBonus.stypeBonus.b) * landBonus.basicBonus.a * landBonus.shikonBonus.a + landBonus.shikonBonus.b) * landBonus.m4a1ddBonus.a + landBonus.m4a1ddBonus.b) * landBonus.issikihouBonus.a + landBonus.issikihouBonus.b) * landBonus.supportBonus.a + landBonus.supportBonus.b + landBonus.basicBonus.b) + Math.floor(Math.floor(baku * 1.3) + rai) + 15))
+        return 25 + Math.floor(1.5 * (((((((((5 + this.attacker.karyoku + this.getImprovementBonus() + this.getCombinedPowerBonus()) * landBonus.stypeBonus.a + landBonus.stypeBonus.b) * landBonus.basicBonus.a * landBonus.shikonBonus.a + landBonus.shikonBonus.b) * landBonus.m4a1ddBonus.a + landBonus.m4a1ddBonus.b) * landBonus.issikihouBonus.a + landBonus.issikihouBonus.b) * landBonus.tokuChihaBonus.a + landBonus.tokuChihaBonus.b) * landBonus.tokuChihaKaiBonus.a + landBonus.tokuChihaKaiBonus.b) * landBonus.supportBonus.a + landBonus.supportBonus.b + landBonus.basicBonus.b) + Math.floor(Math.floor(baku * 1.3) + rai) + 15))
     } else {
         // 砲撃
         if (formulaMode) {
-            return "(((((" + this.attacker.karyoku + "+" + this.getImprovementBonus() + "+" + this.getCombinedPowerBonus() + "+5)*" + landBonus.stypeBonus.a + "+" + landBonus.stypeBonus.b + ")*" + landBonus.basicBonus.a + "*" + landBonus.shikonBonus.a + "+" + landBonus.shikonBonus.b + ")*" + landBonus.m4a1ddBonus.a + "+" + landBonus.m4a1ddBonus.b + ")*" + landBonus.issikihouBonus.a + "+" + landBonus.issikihouBonus.b + ")*" + landBonus.supportBonus.a + "+" + landBonus.supportBonus.b + "+" + landBonus.basicBonus.b
+            return "(((((((" + this.attacker.karyoku + "+" + this.getImprovementBonus() + "+" + this.getCombinedPowerBonus() + "+5)*" + landBonus.stypeBonus.a + "+" + landBonus.stypeBonus.b + ")*" + landBonus.basicBonus.a + "*" + landBonus.shikonBonus.a + "+" + landBonus.shikonBonus.b + ")*" + landBonus.m4a1ddBonus.a + "+" + landBonus.m4a1ddBonus.b + ")*" + landBonus.issikihouBonus.a + "+" + landBonus.issikihouBonus.b + ")*" + landBonus.tokuChihaBonus.a + "+" + landBonus.tokuChihaBonus.b + ")*" + landBonus.tokuChihaKaiBonus.a + "+" + landBonus.tokuChihaKaiBonus.b + ")*" + landBonus.supportBonus.a + "+" + landBonus.supportBonus.b + "+" + landBonus.basicBonus.b
         }
-        return (((((this.attacker.karyoku + this.getImprovementBonus() + this.getCombinedPowerBonus() + 5) * landBonus.stypeBonus.a + landBonus.stypeBonus.b) * landBonus.basicBonus.a * landBonus.shikonBonus.a + landBonus.shikonBonus.b) * landBonus.m4a1ddBonus.a + landBonus.m4a1ddBonus.b) * landBonus.issikihouBonus.a + landBonus.issikihouBonus.b) * landBonus.supportBonus.a + landBonus.supportBonus.b + landBonus.basicBonus.b
+        return (((((((this.attacker.karyoku + this.getImprovementBonus() + this.getCombinedPowerBonus() + 5) * landBonus.stypeBonus.a + landBonus.stypeBonus.b) * landBonus.basicBonus.a * landBonus.shikonBonus.a + landBonus.shikonBonus.b) * landBonus.m4a1ddBonus.a + landBonus.m4a1ddBonus.b) * landBonus.issikihouBonus.a + landBonus.issikihouBonus.b) * landBonus.tokuChihaBonus.a + landBonus.tokuChihaBonus.b) * landBonus.tokuChihaKaiBonus.a + landBonus.tokuChihaKaiBonus.b) * landBonus.supportBonus.a + landBonus.supportBonus.b + landBonus.basicBonus.b
     }
 }
 
@@ -808,6 +808,7 @@ DayBattlePower.prototype.getImprovementBonus = function () {
                 case 34: return 1    // 司令部施設
                 case 32: return 1    // 潜水艦魚雷
                 case 35: return 1    // 航空要員
+                case 54: return 1    // 水上艦装備
                 default: return 0
             }
         })()
@@ -843,7 +844,9 @@ DayBattlePower.prototype.getImprovementBonus = function () {
         if (item.type2 === 7) {
             // 航空砲撃でなければ加算しない
             if (isAirAttack) {
+                var landAttackers = getLandAttackers(this.date)
                 // 爆戦、「彗星一二型(三一号光電管爆弾搭載機)」は改修効果が異なる
+                // 対地は対地艦爆だけ改修効果を加える
                 return [
                     23,  // 九九式艦爆
                     24,  // 彗星
@@ -860,7 +863,8 @@ DayBattlePower.prototype.getImprovementBonus = function () {
                     419, // SBD-5
                     420, // SB2C-3
                     421  // SB2C-5
-                ].indexOf(item.slotitemId) >= 0 ? 0.2 * item.level : 0
+                ].indexOf(item.slotitemId) >= 0 &&
+                (!isGround(this.defender) || landAttackers.indexOf(item.slotitemId) >= 0) ? 0.2 * item.level : 0
             }
             return 0
         }
@@ -912,14 +916,16 @@ DayBattlePower.prototype.getPostcapPower = function (formulaMode) {
     }
     // クリティカル判定
     if (isCritical(this.attack)) {
-        // A = [A * クリティカル補正 * 熟練度補正]
-        value *= getCriticalBonus(this.attack)
-        str = "(" + str + ")*" + getCriticalBonus(this.attack)
+        // 熟練度補正が先
+        // A = [A * 熟練度補正 * クリティカル補正]
         var skilled = this.shouldUseSkilled ? getSkilledBonus(this.date, this.attack, this.attacker, this.defender, this.attackerHp) : [1.0, 1.0]
+        var min = Math.floor(value * skilled[0] * getCriticalBonus(this.attack))
+        var max = Math.floor(value * skilled[1] * getCriticalBonus(this.attack))
+        str = "int((" + str + ")*" + skilled[0] + "*" + getCriticalBonus(this.attack) + ")"
         if (formulaMode) {
-            return "int((" + str + ")*" + skilled[0] + ")"
+            return str
         }
-        return [Math.floor(value * skilled[0]), Math.floor(value * skilled[1])]
+        return [min, max]
     }
     if (formulaMode) {
         return str
@@ -1590,11 +1596,11 @@ NightBattlePower.prototype.getBasicPower = function (formulaMode) {
         }
         return attacker.karyoku + (useRaisou ? attacker.raisou : 0)
     })(this.attacker, this.items, this.date)
-    var landBonus = getLandBonus(this.attacker, this.defender, false)
+    var landBonus = getLandBonus(this.attacker, this.defender, false, this.date)
     if (formulaMode) {
-        return "((((((" + power + "+" + this.getImprovementBonus() + "+" + this.getNightTouchPlaneBonus() + ")*" + landBonus.stypeBonus.a + "+" + landBonus.stypeBonus.b + ")*" + landBonus.basicBonus.a + ")*" + landBonus.shikonBonus.a + "+" + landBonus.shikonBonus.b + ")*" + landBonus.m4a1ddBonus.a + "+" + landBonus.m4a1ddBonus.b + ")*" + landBonus.issikihouBonus.a + "+" + landBonus.issikihouBonus.b + ")*" + landBonus.supportBonus.a + "+" + landBonus.supportBonus.b + "+" + landBonus.basicBonus.b
+        return "((((((((" + power + "+" + this.getImprovementBonus() + "+" + this.getNightTouchPlaneBonus() + ")*" + landBonus.stypeBonus.a + "+" + landBonus.stypeBonus.b + ")*" + landBonus.basicBonus.a + ")*" + landBonus.shikonBonus.a + "+" + landBonus.shikonBonus.b + ")*" + landBonus.m4a1ddBonus.a + "+" + landBonus.m4a1ddBonus.b + ")*" + landBonus.issikihouBonus.a + "+" + landBonus.issikihouBonus.b + ")*" + landBonus.tokuChihaBonus.a + "+" + landBonus.tokuChihaBonus.b + ")*" + landBonus.tokuChihaKaiBonus.a + "+" + landBonus.tokuChihaKaiBonus.b + ")*" + landBonus.supportBonus.a + "+" + landBonus.supportBonus.b + "+" + landBonus.basicBonus.b
     }
-    return ((((((power + this.getImprovementBonus() + this.getNightTouchPlaneBonus()) * landBonus.stypeBonus.a + landBonus.stypeBonus.b) * landBonus.basicBonus.a) * landBonus.shikonBonus.a + landBonus.shikonBonus.b) * landBonus.m4a1ddBonus.a + landBonus.m4a1ddBonus.b) * landBonus.issikihouBonus.a + landBonus.issikihouBonus.b) * landBonus.supportBonus.a + landBonus.supportBonus.b + landBonus.basicBonus.b
+    return ((((((((power + this.getImprovementBonus() + this.getNightTouchPlaneBonus()) * landBonus.stypeBonus.a + landBonus.stypeBonus.b) * landBonus.basicBonus.a) * landBonus.shikonBonus.a + landBonus.shikonBonus.b) * landBonus.m4a1ddBonus.a + landBonus.m4a1ddBonus.b) * landBonus.issikihouBonus.a + landBonus.issikihouBonus.b) * landBonus.tokuChihaBonus.a + landBonus.tokuChihaBonus.b) * landBonus.tokuChihaKaiBonus.a + landBonus.tokuChihaKaiBonus.b) * landBonus.supportBonus.a + landBonus.supportBonus.b + landBonus.basicBonus.b
 }
 
 /**
@@ -1651,6 +1657,7 @@ NightBattlePower.prototype.getImprovementBonus = function () {
                 case 39: return 1 // 水上艦要員
                 case 34: return 1 // 司令部施設
                 case 35: return 1 // 航空要員
+                case 54: return 1 // 水上艦装備
                 default: return 0
             }
         })()
@@ -1694,7 +1701,10 @@ NightBattlePower.prototype.getImprovementBonus = function () {
  */
 NightBattlePower.prototype.getFormationBonus = function () {
     switch (this.formation[this.attack.friendAttack ? 0 : 1]) {
-        case FORMATION.VANGUARD: return this.attack.attacker < Math.floor(this.numOfAttackShips / 2) ? 0.5 : 1.0
+        // 連合艦隊で警戒陣を選んだ場合、第一艦隊の艦数で補正倍率が決まる模様(意味不明)
+        case FORMATION.VANGUARD: return this.friendCombinedKind !== COMBINED_FLEET.NONE ?
+            (this.attack.attacker < Math.floor(this.origins.main.size() / 2) ? 0.5 : 1.0) :
+            (this.attack.attacker < Math.floor(this.numOfAttackShips / 2) ? 0.5 : 1.0)
         default: return 1.0
     }
 }
@@ -1754,15 +1764,16 @@ NightBattlePower.prototype.getPostcapPower = function (formulaMode) {
     var str = "(int(int(" + minpc + ")*" + ms + "+" + as + ")*" + m + "*" + ptbm + "+" + minpta + ")*" + ptim
     // クリティカル判定
     if (isCritical(this.attack)) {
-        // A = [A * クリティカル補正 * 熟練度補正]
-        min *= getCriticalBonus(this.attack)
-        max *= getCriticalBonus(this.attack)
-        str = "(" + str + ")*" + getCriticalBonus(this.attack)
+        // 熟練度補正が先
+        // A = [A * 熟練度補正 * クリティカル補正]
         var skilled = this.shouldUseSkilled ? getSkilledBonus(this.date, this.attack, this.attacker, this.defender, this.attackerHp) : [1.0, 1.0]
+        min *= Math.floor(skilled[0] * getCriticalBonus(this.attack))
+        max *= Math.floor(skilled[1] * getCriticalBonus(this.attack))
+        str = "int((" + str + ")*" + skilled[0] + "*" + getCriticalBonus(this.attack) + ")"
         if (formulaMode) {
-            return "int((" + str + ")*" + skilled[0] + ")"
+            return str
         }
-        return [Math.floor(min * skilled[0]), Math.floor(max * skilled[1])]
+        return [min, max]
     }
     if (formulaMode) {
         return str
@@ -1778,6 +1789,7 @@ NightBattlePower.prototype.getCutinBonus = function () {
     var ADD_ITEM_BONUS_DATE = getJstDate(2018, 12, 7, 12, 0, 0)
     var UPDATE_SPECIAL_ATTACK_BONUS_DATE = getJstDate(2019, 2, 27, 12, 0, 0)
     var UPDATE_SPECIAL_ATTACK_BONUS_DATE2 = getJstDate(2022, 6, 8, 12, 0, 0)
+    var UPDATE_SPECIAL_ATTACK_BONUS_DATE3 = getJstDate(2023, 5, 1, 12, 0, 0)
     var ships = this.origins[this.attack.mainAttack ? "main" : "escort"]
     var attackIndex = this.attack.attackIndex
     var engagement = this.formation[2]
@@ -1982,14 +1994,15 @@ NightBattlePower.prototype.getCutinBonus = function () {
             var modifier = base * companionShipBonus * itemBonus
             return [modifier, modifier]
         case 104: // 僚艦夜戦突撃
-            var base = this.date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE2) ? 2.2 : 1.9
+            var base = this.date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE3) ? 2.4 : (this.date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE2) ? 2.2 : 1.9)
             var engagementBonus = function() {
                 switch (engagement) {
                     case 3: return 1.25
-                    case 4: return 0.75
+                    case 4: return this.date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE3) ? 0.8 : 0.75
                 }
                 return 1.0
             }()
+            // 正確には1.25(交戦形態補正) * 2.4(僚艦夜戦突撃補正)の順序のようだが、このツールにおける算出方法の関係上あまり関係ないのでこの順番のままで
             var modifier = base * engagementBonus
             return [modifier, modifier]
         case 200:
@@ -2299,10 +2312,26 @@ var getMultiplySlayerBonus = function (attacker, defender) {
     var kamisha = getItemNum(items, 167)
     /** 特大発動艇+一式砲戦車 */
     var issikihou = getItemNum(items, 449)
-    /** 大発動艇・特大発動艇・大発動艇(八九式中戦車&陸戦隊)・大発動艇(II号戦車/北アフリカ仕様)・特大発動艇+一式砲戦車 */
-    var jpBoatA = daihatsu + tokuDaihatsu + rikuDaihatsu + pzKpfwII + issikihou
-    /** 特大発動艇+戦車第11連隊・特二式内火艇・特大発動艇+Ⅲ号戦車(北アフリカ仕様) */
-    var jpBoatB = shikonDaihatsu + kamisha + pzKpfwIII
+    /** 特大発動艇+チハ */
+    var tokuChiha = getItemNum(items, 494)
+    /** 特大発動艇+チハ改 */
+    var tokuChihaKai = getItemNum(items, 495)
+    /** 陸軍歩兵部隊 */
+    var armyInfantry = getItemNum(items, 496)
+    /** 九七式中戦車(チハ) */
+    var chiha = getItemNum(items, 497)
+    /** 九七式中戦車 新砲塔(チハ改) */
+    var chihaKai = getItemNum(items, 498)
+    /** 陸軍歩兵部隊＋チハ改 */
+    var armyInfantryWithChihaKai = getItemNum(items, 499)
+    /** catA:武装大発 */
+    var catA = armedDaihatsu
+    /** catB:装甲艇(AB艇) */
+    var catB = armoredBoat
+    /** catC:大発動艇・特大発動艇・大発動艇(八九式中戦車&陸戦隊)・大発動艇(II号戦車/北アフリカ仕様)・特大発動艇+一式砲戦車 */
+    var catC = daihatsu + tokuDaihatsu + rikuDaihatsu + pzKpfwII + issikihou
+    /**  特大発動艇+戦車第11連隊・特二式内火艇・特大発動艇+Ⅲ号戦車(北アフリカ仕様)・特大発動艇+チハ・特大発動艇+チハ改 */
+    var catD = shikonDaihatsu + kamisha + pzKpfwIII + tokuChiha + tokuChihaKai
     /** 装甲艇(AB艇)・武装大発 */
     var spBoat = armoredBoat + armedDaihatsu
     /** [カテゴリ]特型内火艇[改修] */
@@ -2348,8 +2377,9 @@ var getMultiplySlayerBonus = function (attacker, defender) {
             a *= (mortarGroup ? 1.15 : 1) * (mortarGroup >= 2 ? 1.2 : 1)
             a *= daihatsuGroup ? 1.7 : 1
             a *= tokuDaihatsu ? 1.2 : 1
-            a *= ((rikuDaihatsu + issikihou) ? 1.3 : 1) * ((rikuDaihatsu + issikihou) >= 2 ? 1.6 : 1)
-            a *= m4a1dd ? 1.2 : 1
+            a *= (rikuDaihatsu + issikihou) ? 1.3 : 1
+            a *= ((rikuDaihatsu + issikihou) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.6 : 1
+            a *= (m4a1dd + tokuChihaKai) ? 1.2 : 1
             a *= (kamisha ? 1.7 : 1) * (kamisha >= 2 ? 1.5 : 1)
             a *= pzKpfwII ? 1.3 : 1
             a *= (spBoat ? 1.5 : 1) * (spBoat >= 2 ? 1.1 : 1)
@@ -2385,8 +2415,11 @@ var getMultiplySlayerBonus = function (attacker, defender) {
             a *= (kamisha ? 2.4 : 1) * (kamisha >= 2 ? 1.35 : 1)
             a *= daihatsuGroup ? 1.4 : 1
             a *= tokuDaihatsu ? 1.15 : 1
-            a *= ((rikuDaihatsu + issikihou) ? 1.2 : 1) * ((rikuDaihatsu + issikihou) >= 2 ? 1.4 : 1)
-            a *= m4a1dd ? 1.8 : 1
+            // TODO: 仮埋め
+            a *= (rikuDaihatsu + issikihou) ? 1.2 : 1
+            a *= ((rikuDaihatsu + issikihou) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.4 : 1
+            a *= (m4a1dd + tokuChihaKai) ? 1.8 : 1
+            // TODO: ここまで
             a *= (spBoat ? 1.2 : 1) * (spBoat >= 2 ? 1.1 : 1)
             a *= pzKpfwII ? 1.2 : 1
             a *= ["やまと", "むさし", "ながと", "むつ"].indexOf(attacker.shipInfo.flagship) >= 0 ? 1.2 : 1
@@ -2402,8 +2435,11 @@ var getMultiplySlayerBonus = function (attacker, defender) {
             a *= daihatsuGroup ? 1.1 : 1
             // 特大発動艇は1?
             a *= pzKpfwIII ? 1.4 : 1
-            a *= ((rikuDaihatsu + issikihou) ? 1.15 : 1) * ((rikuDaihatsu + issikihou) >= 2 ? 1.15 : 1)
-            a *= m4a1dd ? 1.1 : 1
+            // TODO: 仮埋め
+            a *= (rikuDaihatsu + issikihou) ? 1.15 : 1
+            a *= ((rikuDaihatsu + issikihou) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.15 : 1
+            a *= (m4a1dd + tokuChihaKai) ? 1.1 : 1
+            // TODO: ここまで
             a *= (pzKpfwII ? 1.15 : 1) * (pzKpfwII >= 2 ? 1.15 : 1)
             a *= (spBoat ? 1.1 : 1)
             a *= ITALIAN_SHIPS.indexOf(ctype) >= 0 ? 1.1 : 1
@@ -2702,10 +2738,11 @@ var isDockPrincess = function (ship) {
  * 陸上特効補正を返します
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} defender 防御艦
+ * @param {java.util.Date} date 戦闘日時
  * @param {boolean} isDay 昼戦か
- * @return {{stypeBonus:{a:Number, b:Number}, basicBonus: {a:Number, b:Number}, shikonBonus: {a:Number, b:Number}, m4a1ddBonus: {a:Number, b:Number}, issikihouBonus: {a:Number, b:Number}, supportBonus: {a:Number, b:Number}}} 補正値
+ * @return {{stypeBonus:{a:Number, b:Number}, basicBonus: {a:Number, b:Number}, shikonBonus: {a:Number, b:Number}, m4a1ddBonus: {a:Number, b:Number}, issikihouBonus: {a:Number, b:Number}, tokuChihaBonus: {a:Number, b:Number}, tokuChihaKaiBonus: {a:Number, b:Number}, supportBonus: {a:Number, b:Number}}} 補正値
  */
-var getLandBonus = function (attacker, defender, isDay) {
+var getLandBonus = function (attacker, defender, isDay, date) {
     if (!isGround(defender) && !isAnchorageWaterDemonVacationMode(defender) || isNorthernmostLandingPrincess(defender)) {
         return {
             stypeBonus: {a: 1, b: 0},
@@ -2713,6 +2750,8 @@ var getLandBonus = function (attacker, defender, isDay) {
             shikonBonus: {a: 1, b: 0},
             m4a1ddBonus: {a: 1, b: 0},
             issikihouBonus: {a: 1, b: 0},
+            tokuChihaBonus: {a: 1, b: 0},
+            tokuChihaKaiBonus: {a: 1, b: 0},
             supportBonus: {a: 1, b: 0}
         }
     }
@@ -2747,10 +2786,26 @@ var getLandBonus = function (attacker, defender, isDay) {
     var kamisha = getItemNum(items, 167)
     /** 特大発動艇+一式砲戦車 */
     var issikihou = getItemNum(items, 449)
-    /** 大発動艇・特大発動艇・大発動艇(八九式中戦車&陸戦隊)・大発動艇(II号戦車/北アフリカ仕様)・特大発動艇+一式砲戦車 */
-    var jpBoatA = daihatsu + tokuDaihatsu + rikuDaihatsu + pzKpfwII + issikihou
-    /** 特大発動艇+戦車第11連隊・特二式内火艇・特大発動艇+Ⅲ号戦車(北アフリカ仕様) */
-    var jpBoatB = shikonDaihatsu + kamisha + pzKpfwIII
+    /** 特大発動艇+チハ */
+    var tokuChiha = getItemNum(items, 494)
+    /** 特大発動艇+チハ改 */
+    var tokuChihaKai = getItemNum(items, 495)
+    /** 陸軍歩兵部隊 */
+    var armyInfantry = getItemNum(items, 496)
+    /** 九七式中戦車(チハ) */
+    var chiha = getItemNum(items, 497)
+    /** 九七式中戦車 新砲塔(チハ改) */
+    var chihaKai = getItemNum(items, 498)
+    /** 陸軍歩兵部隊＋チハ改 */
+    var armyInfantryWithChihaKai = getItemNum(items, 499)
+    /** catA:武装大発 */
+    var catA = armedDaihatsu
+    /** catB:装甲艇(AB艇) */
+    var catB = armoredBoat
+    /** catC:大発動艇・特大発動艇・大発動艇(八九式中戦車&陸戦隊)・大発動艇(II号戦車/北アフリカ仕様)・特大発動艇+一式砲戦車 */
+    var catC = daihatsu + tokuDaihatsu + rikuDaihatsu + pzKpfwII + issikihou
+    /**  特大発動艇+戦車第11連隊・特二式内火艇・特大発動艇+Ⅲ号戦車(北アフリカ仕様)・特大発動艇+チハ・特大発動艇+チハ改 */
+    var catD = shikonDaihatsu + kamisha + pzKpfwIII + tokuChiha + tokuChihaKai
     /** 装甲艇(AB艇)・武装大発 */
     var spBoat = armoredBoat + armedDaihatsu
     /** [カテゴリ]特型内火艇[改修] */
@@ -2774,7 +2829,8 @@ var getLandBonus = function (attacker, defender, isDay) {
     /** [カテゴリ]対地噴進砲 */
     var type4RocketGroup = type4Rocket + type4RocketEx
     /** [カテゴリ]艦上爆撃機 */
-    var bomber = items.filter(function (item) { return item.type2 === 7 }).length
+    var landAttackers = getLandAttackers(date)
+    var bomber = items.filter(function (item) { return landAttackers.indexOf(item.slotitemId) >= 0 }).length
     /** Laté 298B */
     var late298B = getItemNum(items, 194)
     /** Swortfish系列 */
@@ -2799,8 +2855,11 @@ var getLandBonus = function (attacker, defender, isDay) {
             a *= (bomber ? 1.5 : 1) * (bomber >= 2 ? 2.0 : 1)
             a *= daihatsuGroup ? 1.8 : 1
             a *= tokuDaihatsu ? 1.15 : 1
-            a *= ((rikuDaihatsu + issikihou) ? 1.5 : 1) * ((rikuDaihatsu + issikihou) >= 2 ? 1.4 : 1)
-            a *= m4a1dd ? 2.0 : 1
+            // TODO: 仮埋め
+            a *= (rikuDaihatsu + issikihou) ? 1.5 : 1
+            a *= ((rikuDaihatsu + issikihou) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.4 : 1
+            a *= (m4a1dd + tokuChihaKai) ? 2.0 : 1
+            // TODO: ここまで
             a *= (kamisha ? 2.4 : 1) * (kamisha >= 2 ? 1.35 : 1)
             if (isDay) {
                 a *= (spBoat ? 1.3 : 1) * (spBoat >= 2 ? 1.2 : 1)
@@ -2814,8 +2873,11 @@ var getLandBonus = function (attacker, defender, isDay) {
             a *= (bomber ? 1.4 : 1) * (bomber >= 2 ? 1.75 : 1)
             a *= daihatsuGroup ? 1.8 : 1
             a *= tokuDaihatsu ? 1.15 : 1
-            a *= ((rikuDaihatsu + issikihou) ? 1.2 : 1) * ((rikuDaihatsu + issikihou) >= 2 ? 1.4 : 1)
-            a *= m4a1dd ? 1.8 : 1
+            // TODO: 仮埋め
+            a *= (rikuDaihatsu + issikihou) ? 1.2 : 1
+            a *= ((rikuDaihatsu + issikihou) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.4 : 1
+            a *= (m4a1dd + tokuChihaKai) ? 1.8 : 1
+            // TODO: ここまで
             a *= (kamisha ? 2.4 : 1) * (kamisha >= 2 ? 1.35 : 1)
             if (isDay) {
                 a *= (spBoat ? 1.3 : 1) * (spBoat >= 2 ? 1.1 : 1)
@@ -2831,8 +2893,11 @@ var getLandBonus = function (attacker, defender, isDay) {
             a *= (bomber ? 1.3 : 1) * (bomber >= 2 ? 1.2 : 1)
             a *= daihatsuGroup ? 1.7 : 1
             a *= tokuDaihatsu ? 1.2 : 1
-            a *= ((rikuDaihatsu + issikihou) ? 1.6 : 1) * ((rikuDaihatsu + issikihou) >= 2 ? 1.5 : 1)
-            a *= m4a1dd ? 2.0 : 1
+            // TODO: 仮埋め
+            a *= (rikuDaihatsu + issikihou) ? 1.6 : 1
+            a *= ((rikuDaihatsu + issikihou) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.5 : 1
+            a *= (m4a1dd + tokuChihaKai) ? 2.0 : 1
+            // TODO: ここまで
             a *= kamisha ? 2.8 : 1
             if (isDay) {
                 a *= (spBoat ? 1.5 : 1) * (spBoat >= 2 ? 1.1 : 1)
@@ -2846,8 +2911,9 @@ var getLandBonus = function (attacker, defender, isDay) {
             a *= suijo ? 1.2 : 1
             a *= daihatsuGroup ? 1.4 : 1
             a *= tokuDaihatsu ? 1.15 : 1
-            a *= ((rikuDaihatsu + issikihou) ? 1.5 : 1) * ((rikuDaihatsu + issikihou) >= 2 ? 1.3 : 1)
-            a *= m4a1dd ? 1.1 : 1
+            a *= (rikuDaihatsu + issikihou) ? 1.5 : 1
+            a *= ((rikuDaihatsu + issikihou) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.3 : 1
+            a *= (m4a1dd + tokuChihaKai) ? 1.1 : 1
             a *= (kamisha ? 1.5 : 1) * (kamisha >= 2 ? 1.2 : 1)
             a *= pzKpfwII ? 1.5 : 1
             if (isDay) {
@@ -2878,25 +2944,27 @@ var getLandBonus = function (attacker, defender, isDay) {
         m4a1ddBonus: m4a1dd ? { a: 1.4, b: 35 } : { a: 1, b: 0 },
         /** 特大発動艇+一式砲戦車 */
         issikihouBonus: issikihou ? { a: 1.3, b: 42 } : { a: 1, b: 0 },
+        /** 特大発動艇+チハ */
+        tokuChihaBonus: tokuChiha ? { a: 1.4, b: 28 } : { a: 1, b: 0 },
+        /** 特大発動艇+チハ改 */
+        tokuChihaKaiBonus: tokuChihaKai ? { a: 1.5, b: 33 } : { a: 1, b: 0 },
         /** 支援上陸用舟艇シナジー */
         supportBonus: (function () {
             // 武装大発だけ2枠以上、または装甲艇(AB艇)だけ2枠以上の場合このシナジーは発生しない
-            if (armedDaihatsu >= 2 || armoredBoat >= 2) {
+            if (catA >= 2 || catB >= 2) {
                 return { a: 1, b: 0 }
             }
-            if (spBoat === 1 && (jpBoatA + jpBoatB)) {
+            if ((catA === 1 && catB === 0) || (catA === 0 && catB === 1) && (catC + catD >= 1)) {
                 return { a: 1.2, b: 10 }
             }
-            if (spBoat >= 2) {
-                if ((jpBoatA + jpBoatB) >= 2) {
-                    return { a: 1.2 * 1.3, b: 15 }
-                }
-                if (jpBoatA) {
-                    return { a: 1.2 * 1.1, b: 12 }
-                }
-                if (jpBoatB) {
-                    return { a: 1.2 * 1.2, b: 13 }
-                }
+            if ((catA >= 1 && catB >= 1) && (catC === 1 && catD === 0)) {
+                return { a: 1.3, b: 15 }
+            }
+            if ((catA >= 1 && catB >= 1) && (catC === 0 && catD === 1)) {
+                return { a: 1.4, b: 20 }
+            }
+            if ((catA >= 1 && catB >= 1) && (catC === 0 && catD === 1)) {
+                return { a: 1.5, b: 25 }
             }
             return { a: 1, b: 0 }
         })(),
@@ -3130,6 +3198,19 @@ var getArmorBonus = function (date, mapCell, attacker, defender) {
     // 北方迷彩(+北方装備)
     var northernSeaBulge = mapCell.map[0] === 3 && getItems(defender).some(function (item) { return item.slotitemId === 268 }) ? 3 : 0
     return mediumBulge + largeBulge - depthCharge + northernSeaBulge
+}
+
+/**
+ * 対地艦爆IDを返す
+ * @param {java.util.Date} date 戦闘日時
+ * @return {Number[]}
+ */
+var getLandAttackers = function (date) {
+    return date.after(getJstDate(2021, 7, 15, 12, 0, 0)) ?
+        // Ju87C改, 試製南山, F4U-1D, FM-2, Ju87C改二(KMX搭載機), Ju87C改二(KMX搭載機/熟練), 彗星一二型(六三四空/三号爆弾搭載機), TBM-3W+3S, 九九式艦爆二二型, 九九式艦爆二二型(熟練), 彗星一二型(三一号光電管爆弾搭載機), SB2C-3, SB2C-5, F4U-4, 熟練甲板要員+航空整備員, 一式戦 隼II型改(20戦隊), 一式戦 隼III型改(熟練/20戦隊)
+        [64, 148, 233, 277, 305, 306, 319, 389, 391, 392, 320, 420, 421, 474, 478, 489, 491] :
+        // Ju87C改, 試製南山, F4U-1D, FM-2, Ju87C改二(KMX搭載機), Ju87C改二(KMX搭載機/熟練), 彗星一二型(六三四空/三号爆弾搭載機), TBM-3W+3S
+        [64, 148, 233, 277, 305, 306, 319, 389]
 }
 
 /**
@@ -5293,6 +5374,20 @@ function getEquipmentBonus(date, attacker) {
         add({ asw: 1 }, getItemNum(items, 491, 6))
         add({ fp: 1 }, getItemNum(items, 491, 10))
     }
+    // 発煙装置(煙幕)
+    // 発煙装置改(煙幕)
+    // if (num = count(500) + count(501)) {}
+    // 35.6cm連装砲改三(ダズル迷彩仕様)
+    // if (num = count(502)) {}
+    // 35.6cm連装砲改四
+    // if (num = count(503)) {}
+    // 25mm対空機銃増備
+    // if (num = count(505)) {}
+    // 電探装備マスト(13号改＋22号電探改四)
+    // if (num = count(506)) {}
+    // 14inch/45 連装砲
+    // 14inch/45 三連装砲
+    // if (num = count(507) + count(508)) {}
 
     // 1.熟練甲板要員と艦攻の雷装ボーナスの加算は別個で計算して最後に合わせる、また雷装の装備ボーナスは夜襲火力に加算
     // 2.夜襲の際、熟練甲板要員の火力ボーナスのみ夜襲火力に加算
