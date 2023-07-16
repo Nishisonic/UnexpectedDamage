@@ -14,7 +14,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = "3.0.1"
+var VERSION = "3.0.2"
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -641,16 +641,13 @@ AntiSubmarinePower.prototype.getPostcapPower = function (formulaMode) {
     var str = "int(int(" + pc + ")*" + ms + "+" + as + ")*" + m
     // クリティカル判定
     if (isCritical(this.attack)) {
-        // 熟練度補正が先
-        // A = [A * 熟練度補正 * クリティカル補正]
+        // A = [A * クリティカル補正 * 熟練度補正]
         var skilled = this.shouldUseSkilled ? getSkilledBonus(this.date, this.attack, this.attacker, this.defender, this.attackerHp) : [1.0, 1.0]
-        var min = Math.floor(value * skilled[0] * getCriticalBonus(this.attack))
-        var max = Math.floor(value * skilled[1] * getCriticalBonus(this.attack))
         str = "int((" + str + ")*" + skilled[0] + "*" + getCriticalBonus(this.attack) + ")"
         if (formulaMode) {
-            return str
+            return "int((" + str + ")*" + skilled[0] + ")"
         }
-        return [min, max]
+        return [Math.floor(value * skilled[0]), Math.floor(value * skilled[1])]
     }
     if (formulaMode) {
         return str
@@ -917,16 +914,14 @@ DayBattlePower.prototype.getPostcapPower = function (formulaMode) {
     }
     // クリティカル判定
     if (isCritical(this.attack)) {
-        // 熟練度補正が先
-        // A = [A * 熟練度補正 * クリティカル補正]
+        // A = [A * クリティカル補正 * 熟練度補正]
+        value *= getCriticalBonus(this.attack)
+        str = "(" + str + ")*" + getCriticalBonus(this.attack)
         var skilled = this.shouldUseSkilled ? getSkilledBonus(this.date, this.attack, this.attacker, this.defender, this.attackerHp) : [1.0, 1.0]
-        var min = Math.floor(value * skilled[0] * getCriticalBonus(this.attack))
-        var max = Math.floor(value * skilled[1] * getCriticalBonus(this.attack))
-        str = "int((" + str + ")*" + skilled[0] + "*" + getCriticalBonus(this.attack) + ")"
         if (formulaMode) {
-            return str
+            return "int((" + str + ")*" + skilled[0] + ")"
         }
-        return [min, max]
+        return [Math.floor(value * skilled[0]), Math.floor(value * skilled[1])]
     }
     if (formulaMode) {
         return str
@@ -1766,16 +1761,15 @@ NightBattlePower.prototype.getPostcapPower = function (formulaMode) {
     var str = "(int(int(" + minpc + ")*" + ms + "+" + as + ")*" + m + "*" + ptbm + "+" + minpta + ")*" + ptim
     // クリティカル判定
     if (isCritical(this.attack)) {
-        // 熟練度補正が先
-        // A = [A * 熟練度補正 * クリティカル補正]
+        // A = [A * クリティカル補正 * 熟練度補正]
+        min *= getCriticalBonus(this.attack)
+        max *= getCriticalBonus(this.attack)
+        str = "(" + str + ")*" + getCriticalBonus(this.attack)
         var skilled = this.shouldUseSkilled ? getSkilledBonus(this.date, this.attack, this.attacker, this.defender, this.attackerHp) : [1.0, 1.0]
-        min *= Math.floor(skilled[0] * getCriticalBonus(this.attack))
-        max *= Math.floor(skilled[1] * getCriticalBonus(this.attack))
-        str = "int((" + str + ")*" + skilled[0] + "*" + getCriticalBonus(this.attack) + ")"
         if (formulaMode) {
-            return str
+            return "int((" + str + ")*" + skilled[0] + ")"
         }
-        return [min, max]
+        return [Math.floor(min * skilled[0]), Math.floor(max * skilled[1])]
     }
     if (formulaMode) {
         return str
