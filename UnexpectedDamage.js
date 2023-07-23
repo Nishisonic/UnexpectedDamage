@@ -14,7 +14,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = "3.0.5"
+var VERSION = "3.0.6"
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -1173,7 +1173,7 @@ DayBattlePower.prototype.getSpottingBonus = function () {
                 }
                 return 1.0
             }(companionCtypes)
-            var itemBonus = function(items) {
+            var itemBonus = function(items, date) {
                 var surfaceRadarBonus = function(items) {
                     return hasSurfaceRadar(items) ? 1.15 : 1
                 }
@@ -1191,7 +1191,7 @@ DayBattlePower.prototype.getSpottingBonus = function () {
                     case 2:
                         // 艦これ負の遺産
                         // https://twitter.com/KanColle_STAFF/status/1534778149887950848
-                        if (this.date.before(getJstDate(2022, 6, 9, 15, 3, 0))) {
+                        if (date.before(getJstDate(2022, 6, 9, 15, 3, 0))) {
                             var secondShipItems = getItems(ships[1])
                             return surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems) * yamatoClassRadarBonus(secondShipItems)
                         }
@@ -1200,7 +1200,7 @@ DayBattlePower.prototype.getSpottingBonus = function () {
                         return surfaceRadarBonus(thirdShipItems) * apShellBonus(thirdShipItems)
                 }
                 return 1
-            }(this.items)
+            }(this.items, this.date)
             return base * companionShipBonus * itemBonus
         case 401: // 大和 特殊攻撃(2隻版) ※正式名称不明
             var base = attackIndex < 2 ? 1.4 : 1.55
@@ -1992,13 +1992,13 @@ NightBattlePower.prototype.getCutinBonus = function () {
             return [modifier, modifier]
         case 104: // 僚艦夜戦突撃
             var base = this.date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE3) ? 2.4 : (this.date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE2) ? 2.2 : 1.9)
-            var engagementBonus = function() {
+            var engagementBonus = function(date) {
                 switch (engagement) {
                     case 3: return 1.25
-                    case 4: return this.date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE3) ? 0.8 : 0.75
+                    case 4: return date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE3) ? 0.8 : 0.75
                 }
                 return 1.0
-            }()
+            }(this.date)
             // 正確には1.25(交戦形態補正) * 2.4(僚艦夜戦突撃補正)の順序のようだが、このツールにおける算出方法の関係上あまり関係ないのでこの順番のままで
             var modifier = base * engagementBonus
             return [modifier, modifier]
@@ -2044,7 +2044,7 @@ NightBattlePower.prototype.getCutinBonus = function () {
                 }
                 return 1.0
             }(companionCtypes)
-            var itemBonus = function(items) {
+            var itemBonus = function(items, date) {
                 var surfaceRadarBonus = function(items) {
                     return hasSurfaceRadar(items) ? 1.15 : 1
                 }
@@ -2062,7 +2062,7 @@ NightBattlePower.prototype.getCutinBonus = function () {
                     case 2:
                         // 艦これ負の遺産
                         // https://twitter.com/KanColle_STAFF/status/1534778149887950848
-                        if (this.date.before(getJstDate(2022, 6, 9, 15, 3, 0))) {
+                        if (date.before(getJstDate(2022, 6, 9, 15, 3, 0))) {
                             var secondShipItems = getItems(ships[1])
                             return surfaceRadarBonus(secondShipItems) * apShellBonus(secondShipItems) * yamatoClassRadarBonus(secondShipItems)
                         }
@@ -2071,7 +2071,7 @@ NightBattlePower.prototype.getCutinBonus = function () {
                         return surfaceRadarBonus(thirdShipItems) * apShellBonus(thirdShipItems)
                 }
                 return 1
-            }(this.items)
+            }(this.items, this.date)
             var modifier = base * companionShipBonus * itemBonus
             return [modifier, modifier]
         case 401: // 大和 特殊攻撃(2隻版) ※正式名称不明
@@ -2192,7 +2192,7 @@ NightBattlePower.prototype.getNightTouchPlaneBonus = function () {
 function getOnSlot(attacker, date) {
     if (isAkakari) {
         var json = AkakariSyutsugekiLogReader.shipAfterBattle(date, attacker.id)
-        if (json) {
+        if (json && json.get("api_onslot")) {
             return JSON.parse(json.get("api_onslot"))
         }
     }
