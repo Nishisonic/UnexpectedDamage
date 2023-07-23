@@ -14,7 +14,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = "3.0.4"
+var VERSION = "3.0.5"
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -1790,7 +1790,7 @@ NightBattlePower.prototype.getCutinBonus = function () {
     var ships = this.origins[this.attack.mainAttack ? "main" : "escort"]
     var attackIndex = this.attack.attackIndex
     var engagement = this.formation[2]
-    var items = Java.from(this.attack.showItem).map(function (id) { return Item.get(Number(id)) })
+    var showItems = Java.from(this.attack.showItem).map(function (id) { return Item.get(Number(id)) })
 
     switch (Number(this.attack.attackType)) {
         case 1: return [1.2, 1.2]  // 連撃
@@ -1821,11 +1821,11 @@ NightBattlePower.prototype.getCutinBonus = function () {
         case 5: return [2.0, 2.0]   // カットイン(主砲/主砲)
         case 6:             // 夜襲カットイン
             // 夜間戦闘機
-            var kind1 = items.filter(function (item) { return item.type3 === 45 }).length
+            var kind1 = showItems.filter(function (item) { return item.type3 === 45 }).length
             // 夜間攻撃機
-            var kind2 = items.filter(function (item) { return item.type3 === 46 }).length
+            var kind2 = showItems.filter(function (item) { return item.type3 === 46 }).length
             // その他(SF,岩井,彗星(31号))
-            var kind3 = items.filter(function (item) { return [154, 242, 243, 244, 320].indexOf(item.id) >= 0 }).length
+            var kind3 = showItems.filter(function (item) { return [154, 242, 243, 244, 320].indexOf(item.id) >= 0 }).length
             if (kind1 === 2 && kind2 === 1) return [1.18, 1.25]
             if ((kind1 + kind2 + kind3) === 2) return [1.2, 1.2]
             if ((kind1 + kind2 + kind3) === 3) return [1.18, 1.18]
@@ -1840,13 +1840,13 @@ NightBattlePower.prototype.getCutinBonus = function () {
                 return [1.2, 1.2]
             }
             // 魚雷
-            var torpedo = items.filter(function (item) { return item.type2 === 5 }).length
+            var torpedo = showItems.filter(function (item) { return item.type2 === 5 }).length
             // 見張員
-            var lookouts = items.filter(function (item) { return item.type2 === 39 }).length
+            var lookouts = showItems.filter(function (item) { return item.type2 === 39 }).length
             // 電探
-            var radar = items.filter(function (item) { return item.type3 === 11 }).length
+            var radar = showItems.filter(function (item) { return item.type3 === 11 }).length
             // ドラム缶
-            var drum = items.filter(function (item) { return item.type2 === 30 }).length
+            var drum = showItems.filter(function (item) { return item.type2 === 30 }).length
             if (torpedo && radar && lookouts) {
                 return [1.2, 1.2]
             }
@@ -2004,18 +2004,15 @@ NightBattlePower.prototype.getCutinBonus = function () {
             return [modifier, modifier]
         case 200:
             // 夜間瑞雲夜戦カットイン
-            var base = 1.2
-            var zuiun = items.filter(function(item) { return item.slotitemId === 490 }).length
+            var base = 1.24
+            var zuiun = this.items.filter(function(item) { return item.slotitemId === 490 }).length
             if (zuiun >= 2) {
                 base += 0.08
             }
-            if (zuiun >= 1) {
+            if (hasSurfaceRadar(this.items)) {
                 base += 0.04
             }
-            if (hasSurfaceRadar(items)) {
-                base += 0.04
-            }
-            return [1.2, base]
+            return [1.24, base]
         case 400: // 大和 特殊攻撃(3隻版) ※正式名称不明
             var base = attackIndex < 2 ? 1.5 : 1.65
             // 最終改造形態じゃないと発動しないらしい
