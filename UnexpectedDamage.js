@@ -14,7 +14,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = "3.0.3"
+var VERSION = "3.0.4"
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -4918,7 +4918,7 @@ function getEquipmentBonus(date, attacker) {
     // 水雷戦隊 熟練見張員
     if (num = count(412)) {
         if (JAPANESE_DD_SHIPS.indexOf(ctype) >= 0) {
-            add({ asw: 2 }, num)
+            add({ asw: 2 }, num, 1)
         }
     }
     // 精鋭水雷戦隊 司令部
@@ -5106,8 +5106,8 @@ function getEquipmentBonus(date, attacker) {
         if ([160, 488, 141].indexOf(shipId) >= 0) {
             // 那珂改二、由良改二、五十鈴改二
             add({ asw: 1 }, num)
-        } else if ([145, 588, 667, 578, 476, 363].indexOf(shipId) >= 0) {
-            // 時雨改二、山風改二、山風改二丁、朝霜改二、神風改、春風改
+        } else if ([145, 588, 667, 578, 476, 363, 961].indexOf(shipId) >= 0) {
+            // 時雨改二、山風改二、山風改二丁、朝霜改二、神風改、春風改、時雨改三
             var asw = Math.max.apply(null, items.filter(function(item) {
                 return item.slotitemId === 438
             }).map(function(item) {
