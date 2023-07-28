@@ -14,7 +14,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = "3.0.6"
+var VERSION = "3.0.7"
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -2957,7 +2957,7 @@ var getLandBonus = function (attacker, defender, isDay, date) {
             if ((catA >= 1 && catB >= 1) && (catC === 0 && catD === 1)) {
                 return { a: 1.4, b: 20 }
             }
-            if ((catA >= 1 && catB >= 1) && (catC === 0 && catD === 1)) {
+            if ((catA >= 1 && catB >= 1) && (catC + catD >= 2)) {
                 return { a: 1.5, b: 25 }
             }
             return { a: 1, b: 0 }
