@@ -14,7 +14,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = "3.0.7"
+var VERSION = "3.0.8"
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -2375,7 +2375,7 @@ var getMultiplySlayerBonus = function (attacker, defender) {
             a *= ((rikuDaihatsu + issikihou) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.6 : 1
             a *= (m4a1dd + tokuChihaKai) ? 1.2 : 1
             a *= (kamisha ? 1.7 : 1) * (kamisha >= 2 ? 1.5 : 1)
-            a *= pzKpfwII ? 1.3 : 1
+            a *= (pzKpfwII ? 1.3 : 1) * (pzKpfwII >= 2 ? 1.6 : 1)
             a *= (spBoat ? 1.5 : 1) * (spBoat >= 2 ? 1.1 : 1)
             return a
         case isBattleshipSummerPrincess(defender): // 戦艦夏姫
@@ -2849,12 +2849,11 @@ var getLandBonus = function (attacker, defender, isDay, date) {
             a *= (bomber ? 1.5 : 1) * (bomber >= 2 ? 2.0 : 1)
             a *= daihatsuGroup ? 1.8 : 1
             a *= tokuDaihatsu ? 1.15 : 1
-            // TODO: 仮埋め
             a *= (rikuDaihatsu + issikihou) ? 1.5 : 1
             a *= ((rikuDaihatsu + issikihou) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.4 : 1
             a *= (m4a1dd + tokuChihaKai) ? 2.0 : 1
-            // TODO: ここまで
             a *= (kamisha ? 2.4 : 1) * (kamisha >= 2 ? 1.35 : 1)
+            a *= (pzKpfwII ? 1.5 : 1) * (pzKpfwII >= 2 ? 1.4 : 1)
             if (isDay) {
                 a *= (spBoat ? 1.3 : 1) * (spBoat >= 2 ? 1.2 : 1)
             }
@@ -2867,12 +2866,11 @@ var getLandBonus = function (attacker, defender, isDay, date) {
             a *= (bomber ? 1.4 : 1) * (bomber >= 2 ? 1.75 : 1)
             a *= daihatsuGroup ? 1.8 : 1
             a *= tokuDaihatsu ? 1.15 : 1
-            // TODO: 仮埋め
             a *= (rikuDaihatsu + issikihou) ? 1.2 : 1
             a *= ((rikuDaihatsu + issikihou) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.4 : 1
             a *= (m4a1dd + tokuChihaKai) ? 1.8 : 1
-            // TODO: ここまで
             a *= (kamisha ? 2.4 : 1) * (kamisha >= 2 ? 1.35 : 1)
+            a *= (pzKpfwII ? 1.2 : 1) * (pzKpfwII >= 2 ? 1.4 : 1)
             if (isDay) {
                 a *= (spBoat ? 1.3 : 1) * (spBoat >= 2 ? 1.1 : 1)
             }
@@ -2887,12 +2885,11 @@ var getLandBonus = function (attacker, defender, isDay, date) {
             a *= (bomber ? 1.3 : 1) * (bomber >= 2 ? 1.2 : 1)
             a *= daihatsuGroup ? 1.7 : 1
             a *= tokuDaihatsu ? 1.2 : 1
-            // TODO: 仮埋め
             a *= (rikuDaihatsu + issikihou) ? 1.6 : 1
             a *= ((rikuDaihatsu + issikihou) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.5 : 1
             a *= (m4a1dd + tokuChihaKai) ? 2.0 : 1
-            // TODO: ここまで
             a *= kamisha ? 2.8 : 1
+            a *= (pzKpfwII ? 1.6 : 1) * (pzKpfwII >= 2 ? 1.5 : 1)
             if (isDay) {
                 a *= (spBoat ? 1.5 : 1) * (spBoat >= 2 ? 1.1 : 1)
             }
@@ -2909,7 +2906,7 @@ var getLandBonus = function (attacker, defender, isDay, date) {
             a *= ((rikuDaihatsu + issikihou) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.3 : 1
             a *= (m4a1dd + tokuChihaKai) ? 1.1 : 1
             a *= (kamisha ? 1.5 : 1) * (kamisha >= 2 ? 1.2 : 1)
-            a *= pzKpfwII ? 1.5 : 1
+            a *= (pzKpfwII ? 1.5 : 1) * (pzKpfwII >= 2 ? 1.3 : 1)
             if (isDay) {
                 a *= (spBoat ? 1.1 : 1) * (spBoat >= 2 ? 1.1 : 1)
             }
