@@ -575,7 +575,7 @@ function genAntiSubMarineHtml(data, power) {
  */
 function genDayBattleHtml(data, power) {
     var result = '<tr><th rowspan="8" style="padding: 0px 3px;">攻<br>撃<br>側</th><th>基本攻撃力</th><th>改修火力</th><th>連合補正</th><th>対陸上敵乗算補正</th><th>対陸上敵加算補正</th><th></th><th></th><th></th></tr>'
-    var landBonus = getLandBonus(data.attacker, data.defender, true, data.date)
+    var landBonus = getLandBonus(data.attack, data.attacker, data.defender, true, data.date)
     var a = landBonus.stypeBonus.a * landBonus.basicBonus.a * landBonus.shikonBonus.a * landBonus.m4a1ddBonus.a * landBonus.issikihouBonus.a * landBonus.tokuChihaBonus.a * landBonus.tokuChihaKaiBonus.a * landBonus.supportBonus.a
     var b = ((((((landBonus.stypeBonus.b * landBonus.basicBonus.a + landBonus.basicBonus.b) * landBonus.shikonBonus.a + landBonus.shikonBonus.b) * landBonus.m4a1ddBonus.a + landBonus.m4a1ddBonus.b) * landBonus.issikihouBonus.a + landBonus.issikihouBonus.b) * landBonus.tokuChihaBonus.a + landBonus.tokuChihaBonus.b) * landBonus.tokuChihaKaiBonus.a + landBonus.tokuChihaKaiBonus.b) * landBonus.supportBonus.a + landBonus.supportBonus.b
     result += '<tr><td>' + power.getBasicPower().toFixed(2) + '</td><td>' + power.getImprovementBonus().toFixed(2) + '</td><td>' + power.getCombinedPowerBonus() + '</td><td>' + a.toFixed(3) + '</td><td>' + b + '</td><td></td><td></td><td></td></tr>'
@@ -583,7 +583,7 @@ function genDayBattleHtml(data, power) {
     result += '<tr><td>' + power.getPrecapPower().toFixed(2) + '</td><td>' + getEngagementBonus(data.formation).toFixed(2) + '</td><td>' + power.getFormationBonus().toFixed(2) + '</td><td>' + power.getConditionBonus().toFixed(2) + '</td><td>' + getOriginalGunPowerBonus(power.attacker, data.date).toFixed(2) + '</td><td></td><td></td><td></td></tr>'
     result += '<tr><th rowspan="2">最終攻撃力</th><th>キャップ値</th><th>キャップ後火力</th><th>弾着観測射撃補正</th><th>戦爆連合CI攻撃補正</th><th>徹甲弾補正</th><th>特殊敵乗算特効</th><th>特殊敵加算特効</th></tr>'
     var pc = getPostcapValue(power.getPrecapPower(), power.CAP_VALUE)
-    var ms = getMultiplySlayerBonus(data.attack, data.attacker, data.defender)
+    var ms = getMultiplySlayerBonus(data.attacker, data.defender)
     var as = getAddSlayerBonus(data.attacker, data.defender)
     var m = getMapBonus(data.mapCell, data.attacker, data.defender)
     var postMapBonusValue = Math.floor(Math.floor(pc) * ms + as) * m
@@ -610,7 +610,7 @@ function genTorpedoAttackHtml(data, power) {
     result += '<tr><td>' + power.getPrecapPower().toFixed(2) + '</td><td>' + getEngagementBonus(data.formation).toFixed(2) + '</td><td>' + power.getFormationBonus().toFixed(2) + '</td><td>' + power.getConditionBonus().toFixed(2) + '</td><td></td><td></td></tr>'
     result += '<tr><th rowspan="2">最終攻撃力</th><th>キャップ値</th><th>キャップ後火力</th><th>特殊敵乗算特効</th><th>特殊敵加算特効</th><th>マップ補正</th></tr>'
     var pc = getPostcapValue(power.getPrecapPower(), power.CAP_VALUE)
-    var ms = getMultiplySlayerBonus(data.attack, data.attacker, data.defender)
+    var ms = getMultiplySlayerBonus(data.attacker, data.defender)
     var as = getAddSlayerBonus(data.attacker, data.defender)
     var m = getMapBonus(data.mapCell, data.attacker, data.defender)
     var postMapBonusValue = Math.floor(Math.floor(pc) * ms + as) * m
@@ -646,7 +646,7 @@ function genNightBattleHtml(data, power) {
     var minpc = getPostcapValue(pp[0], power.CAP_VALUE)
     var maxpc = getPostcapValue(pp[1], power.CAP_VALUE)
     var pcs = minpc !== maxpc ? minpc.toFixed(2) + "~" + maxpc.toFixed(2) : minpc.toFixed(2)
-    var ms = getMultiplySlayerBonus(data.attack, data.attacker, data.defender)
+    var ms = getMultiplySlayerBonus(data.attacker, data.defender)
     var as = getAddSlayerBonus(data.attacker, data.defender)
     var m = getMapBonus(data.mapCell, data.attacker, data.defender)
     var minPostMapBonusValue = Math.floor(Math.floor(minpc) * ms + as) * m

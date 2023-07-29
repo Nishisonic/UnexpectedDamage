@@ -14,7 +14,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = "3.0.9"
+var VERSION = "3.0.10"
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -681,12 +681,11 @@ AntiSubmarinePower.prototype.getPrecapPower = function (formulaMode) {
  */
 AntiSubmarinePower.prototype.getPostcapPower = function (formulaMode) {
     var pc = getPostcapValue(this.getPrecapPower(), this.CAP_VALUE)
-    var ms = getMultiplySlayerBonus(this.attack, this.attacker, this.defender)
+    var ms = getMultiplySlayerBonus(this.attacker, this.defender)
     var as = getAddSlayerBonus(this.attacker, this.defender)
     var m = getMapBonus(this.mapCell, this.attacker, this.defender)
-    var postMapBonusValue = Math.floor(Math.floor(pc) * ms + as) * m
     
-    var value = postMapBonusValue
+    var value = Math.floor(Math.floor(pc) * ms + as) * m
     var str = "int(int(" + pc + ")*" + ms + "+" + as + ")*" + m
     // クリティカル判定
     if (isCritical(this.attack)) {
@@ -941,7 +940,7 @@ DayBattlePower.prototype.getPrecapPower = function (formulaMode) {
  */
 DayBattlePower.prototype.getPostcapPower = function (formulaMode) {
     var pc = getPostcapValue(this.getPrecapPower(), this.CAP_VALUE)
-    var ms = getMultiplySlayerBonus(this.attack, this.attacker, this.defender)
+    var ms = getMultiplySlayerBonus(this.attacker, this.defender)
     var as = getAddSlayerBonus(this.attacker, this.defender)
     var m = getMapBonus(this.mapCell, this.attacker, this.defender)
     var s = this.getSpottingBonus()
@@ -1450,7 +1449,7 @@ TorpedoPower.prototype.getPrecapPower = function (formulaMode) {
  */
 TorpedoPower.prototype.getPostcapPower = function (formulaMode) {
     var pc = getPostcapValue(this.getPrecapPower(), this.CAP_VALUE)
-    var ms = getMultiplySlayerBonus(this.attack, this.attacker, this.defender)
+    var ms = getMultiplySlayerBonus(this.attacker, this.defender)
     var as = getAddSlayerBonus(this.attacker, this.defender)
     var m = getMapBonus(this.mapCell, this.attacker, this.defender)
 
@@ -1810,7 +1809,7 @@ NightBattlePower.prototype.getPostcapPower = function (formulaMode) {
     var pp = this.getPrecapPower()
     var minpc = getPostcapValue(pp[0], this.CAP_VALUE)
     var maxpc = getPostcapValue(pp[1], this.CAP_VALUE)
-    var ms = getMultiplySlayerBonus(this.attack, this.attacker, this.defender)
+    var ms = getMultiplySlayerBonus(this.attacker, this.defender)
     var as = getAddSlayerBonus(this.attacker, this.defender)
     var m = getMapBonus(this.mapCell, this.attacker, this.defender)
 
@@ -2340,12 +2339,11 @@ var getAmmoBonus = function (ship, origins, mapCell) {
 
 /**
  * 特効乗算補正を返す
- * @param {AttackDto} attack 攻撃データ
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} defender 防御艦
  * @return {Number} 倍率
  */
-var getMultiplySlayerBonus = function (attack, attacker, defender) {
+var getMultiplySlayerBonus = function (attacker, defender) {
     var items = getItems(attacker)
     /** [カテゴリ]三式弾 */
     var type3shell = items.filter(function (item) { return item.type2 === 18 }).length
@@ -2420,15 +2418,7 @@ var getMultiplySlayerBonus = function (attack, attacker, defender) {
     /** [カテゴリ]対地噴進砲 */
     var type4RocketGroup = type4Rocket + type4RocketEx
     /** [カテゴリ]艦上爆撃機 */
-    var bomber = (function () {
-        // 砲撃か空撃かで該当する爆撃機が変わるらしい、泣ける
-        var attackType = isDay ? getAttackTypeAtDay(attack, attacker, defender) : getAttackTypeAtNight(attack, attacker, defender)
-        if (attackType === 1) {
-            var landAttackers = getLandAttackers(date)
-            return items.filter(function (item) { return landAttackers.indexOf(item.slotitemId) >= 0 }).length
-        }
-        return items.filter(function (item) { return item.type2 === 7 }).length
-    })()
+    var bomber = items.filter(function (item) { return item.type2 === 7 }).length
     /** Laté 298B */
     var late298B = getItemNum(items, 194)
     /** Swortfish系列 */
