@@ -413,7 +413,7 @@ function genBattleHtml(dataLists) {
         // 昼砲撃戦
         dataLists[0].map(function (data) {
             var power = getDayBattlePower(data.date, data.mapCell, data.kind, data.friendCombinedKind, data.isEnemyCombined,
-                data.numOfAttackShips, data.formation, data.attack, data.attacker, data.defender, data.attackerHp, data.shouldUseSkilled, data.origins)
+                data.numOfAttackShips, data.formation, data.attack, data.attacker, data.defender, data.attackerHp, data.shouldUseSkilled, data.origins, data.isBalloonCell)
             var result = '<div style="border:#000000 solid 1px; padding:5px; margin:5px; background-color:#fce4d6;">'
             result += genHeaderHtml(data)
             result += genFormulaHtml(power)
@@ -581,16 +581,19 @@ function genDayBattleHtml(data, power) {
     result += '<tr><td>' + power.getBasicPower().toFixed(2) + '</td><td>' + power.getImprovementBonus().toFixed(2) + '</td><td>' + power.getCombinedPowerBonus() + '</td><td>' + a.toFixed(3) + '</td><td>' + b + '</td><td></td><td></td><td></td></tr>'
     result += '<tr><th>キャップ前火力</th><th>交戦形態補正</th><th>攻撃側陣形補正</th><th>損傷補正</th><th>特殊砲補正</th><th></th><th></th><th></th></tr>'
     result += '<tr><td>' + power.getPrecapPower().toFixed(2) + '</td><td>' + getEngagementBonus(data.formation).toFixed(2) + '</td><td>' + power.getFormationBonus().toFixed(2) + '</td><td>' + power.getConditionBonus().toFixed(2) + '</td><td>' + getOriginalGunPowerBonus(power.attacker, data.date).toFixed(2) + '</td><td></td><td></td><td></td></tr>'
-    result += '<tr><th rowspan="2">最終攻撃力</th><th>キャップ値</th><th>キャップ後火力</th><th>弾着観測射撃補正</th><th>戦爆連合CI攻撃補正</th><th>徹甲弾補正</th><th>特殊敵乗算特効</th><th>特殊敵加算特効</th></tr>'
+    result += '<tr><th rowspan="2">最終攻撃力</th><th>キャップ値</th><th>キャップ後火力</th><th>弾着観測射撃補正</th><th>戦爆連合CI攻撃補正</th><th>徹甲弾補正</th><th>阻塞気球補正</th><th>特殊敵乗算特効</th></tr>'
     var pc = getPostcapValue(power.getPrecapPower(), power.CAP_VALUE)
-    var ms = getMultiplySlayerBonus(data.attacker, data.defender)
-    var as = getAddSlayerBonus(data.attacker, data.defender)
+    var ms = getMultiplySlayerBonus(data.attacker, data.defender, data.date)
     var m = getMapBonus(data.mapCell, data.attacker, data.defender)
-    var postMapBonusValue = Math.floor(Math.floor(pc) * ms + as) * m
+    var s = power.getSpottingBonus()
+    var ub = power.getUnifiedBombingBonus()
+    var bb = power.getBarrageBalloonBonus()
+    // PTにしか使わないから切り捨ては気にしない
+    var postMapBonusValue = Math.floor(pc) * s * ub * bb * ms * m
     var ptbm = getPtImpPackBasicMultiplyBonus(data.defender)
     var pta = getPtImpPackBasicAddBonus(postMapBonusValue, data.defender)
     var ptim = getPtImpPackItemBonus(data.attacker, data.defender)
-    result += '<tr><td>' + power.CAP_VALUE + '</td><td>' + pc.toFixed(2) + '</td><td>' + power.getSpottingBonus().toFixed(2) + '</td><td>' + power.getUnifiedBombingBonus().toFixed(2) + '</td><td>' + power.getAPshellBonus().toFixed(2) + '</td><td>' + ms.toFixed(2) + '</td><td>' + as + '</td></tr>'
+    result += '<tr><td>' + power.CAP_VALUE + '</td><td>' + pc.toFixed(2) + '</td><td>' + s.toFixed(2) + '</td><td>' + ub.toFixed(2) + '</td><td>' + power.getAPshellBonus().toFixed(2) + '</td><td>' + bb.toFixed(2) + '</td><td>' + ms.toFixed(2) + '</td></tr>'
     result += '<tr><td rowspan="2" style="font-weight:bold;">' + power.getPostcapPower().map(function (power) { return power.toFixed(2) }).join(' ~ ') + '</td><th>マップ補正</th><th>PT乗算補正</th><th>PT加算補正</th><th>PT装備補正</th><th>クリティカル補正</th><th>熟練度補正</th><th></th></tr>'
     var skilled = data.shouldUseSkilled ? getSkilledBonus(data.date, data.attack, data.attacker, data.defender, data.attackerHp).map(function (value) { return value.toFixed(2) }).join(' ~ ') : '1.00'
     result += '<tr><td>' + m.toFixed(2) + '</td><td>' + ptbm.toFixed(2) + '</td><td>' + pta + '</td><td>' + ptim.toFixed(2) + '</td><td>' + getCriticalBonus(data.attack).toFixed(1) + '</td><td>' + skilled + '</td><td></td></tr>'
@@ -604,22 +607,21 @@ function genDayBattleHtml(data, power) {
  * @return {String} HTML
  */
 function genTorpedoAttackHtml(data, power) {
-    var result = '<tr><th rowspan="8" style="padding: 0px 3px;">攻<br>撃<br>側</th><th>基本攻撃力</th><th>改修火力</th><th>連合補正</th><th></th><th></th><th></th></tr>'
-    result += '<tr><td>' + power.getBasicPower().toFixed(2) + '</td><td>' + power.getImprovementBonus().toFixed(2) + '</td><td>' + power.getCombinedPowerBonus() + '</td><td></td><td></td><td></td></tr>'
-    result += '<tr><th>キャップ前火力</th><th>交戦形態補正</th><th>攻撃側陣形補正</th><th>損傷補正</th><th></th><th></th></tr>'
-    result += '<tr><td>' + power.getPrecapPower().toFixed(2) + '</td><td>' + getEngagementBonus(data.formation).toFixed(2) + '</td><td>' + power.getFormationBonus().toFixed(2) + '</td><td>' + power.getConditionBonus().toFixed(2) + '</td><td></td><td></td></tr>'
-    result += '<tr><th rowspan="2">最終攻撃力</th><th>キャップ値</th><th>キャップ後火力</th><th>特殊敵乗算特効</th><th>特殊敵加算特効</th><th>マップ補正</th></tr>'
+    var result = '<tr><th rowspan="8" style="padding: 0px 3px;">攻<br>撃<br>側</th><th>基本攻撃力</th><th>改修火力</th><th>連合補正</th><th></th><th></th></tr>'
+    result += '<tr><td>' + power.getBasicPower().toFixed(2) + '</td><td>' + power.getImprovementBonus().toFixed(2) + '</td><td>' + power.getCombinedPowerBonus() + '</td><td></td><td></td></tr>'
+    result += '<tr><th>キャップ前火力</th><th>交戦形態補正</th><th>攻撃側陣形補正</th><th>損傷補正</th><th></th></tr>'
+    result += '<tr><td>' + power.getPrecapPower().toFixed(2) + '</td><td>' + getEngagementBonus(data.formation).toFixed(2) + '</td><td>' + power.getFormationBonus().toFixed(2) + '</td><td>' + power.getConditionBonus().toFixed(2) + '</td><td></td></tr>'
+    result += '<tr><th rowspan="2">最終攻撃力</th><th>キャップ値</th><th>キャップ後火力</th><th>特殊敵乗算特効</th><th>マップ補正</th></tr>'
     var pc = getPostcapValue(power.getPrecapPower(), power.CAP_VALUE)
-    var ms = getMultiplySlayerBonus(data.attacker, data.defender)
-    var as = getAddSlayerBonus(data.attacker, data.defender)
+    var ms = getMultiplySlayerBonus(data.attacker, data.defender, data.date)
     var m = getMapBonus(data.mapCell, data.attacker, data.defender)
-    var postMapBonusValue = Math.floor(Math.floor(pc) * ms + as) * m
+    var postMapBonusValue = Math.floor(Math.floor(pc) * ms) * m
     var ptbm = getPtImpPackBasicMultiplyBonus(data.defender)
     var pta = getPtImpPackBasicAddBonus(postMapBonusValue, data.defender)
     var ptim = getPtImpPackItemBonus(data.attacker, data.defender)
-    result += '<tr><td>' + power.CAP_VALUE + '</td><td>' + pc.toFixed(2) + '</td><td>' + ms.toFixed(2) + '</td><td>' + as + '</td><td>' + m + '</td></tr>'
-    result += '<tr><td rowspan="2" style="font-weight:bold;">' + power.getPostcapPower()[0] + '</td><th>PT乗算補正</th><th>PT加算補正</th><th>PT装備補正</th><th>クリティカル補正</th><th></th></tr>'
-    result += '<tr><td>' + ptbm.toFixed(2) + '</td><td>' + pta + '</td><td>' + ptim.toFixed(2) + '</td><td>' + getCriticalBonus(data.attack).toFixed(1) + '</td><td></td></tr>'
+    result += '<tr><td>' + power.CAP_VALUE + '</td><td>' + pc.toFixed(2) + '</td><td>' + ms.toFixed(2) + '</td><td>' + m + '</td></tr>'
+    result += '<tr><td rowspan="2" style="font-weight:bold;">' + power.getPostcapPower()[0] + '</td><th>PT乗算補正</th><th>PT加算補正</th><th>PT装備補正</th><th>クリティカル補正</th></tr>'
+    result += '<tr><td>' + ptbm.toFixed(2) + '</td><td>' + pta + '</td><td>' + ptim.toFixed(2) + '</td><td>' + getCriticalBonus(data.attack).toFixed(1) + '</td></tr>'
     return '<table>' + result + '</table>'
 }
 
@@ -641,22 +643,21 @@ function genNightBattleHtml(data, power) {
     var cb = power.getCutinBonus()
     var cbs = cb[0] !== cb[1] ? cb[0].toFixed(2) + "~" + cb[1].toFixed(2) : cb[0].toFixed(2)
     result += '<tr><td>' + pps + '</td><td>' + power.getFormationBonus().toFixed(2) + '</td><td>' + cbs + '</td><td>' + power.getCutinBonus2().toFixed(2) + '</td><td>' + power.getConditionBonus().toFixed(2) + '</td><td>' + power.getPrecapPostMultiplyPower().toFixed(2) + '</td></tr>'
-    result += '<tr><th rowspan="2">最終攻撃力</th><th>キャップ値</th><th>キャップ後火力</th><th>マップ補正</th><th>特殊敵乗算特効</th><th>特殊敵加算特効</th></tr>'
+    result += '<tr><th rowspan="2">最終攻撃力</th><th>キャップ値</th><th>キャップ後火力</th><th>マップ補正</th><th>特殊敵乗算特効</th><th></th></tr>'
     var pp = power.getPrecapPower()
     var minpc = getPostcapValue(pp[0], power.CAP_VALUE)
     var maxpc = getPostcapValue(pp[1], power.CAP_VALUE)
     var pcs = minpc !== maxpc ? minpc.toFixed(2) + "~" + maxpc.toFixed(2) : minpc.toFixed(2)
-    var ms = getMultiplySlayerBonus(data.attacker, data.defender)
-    var as = getAddSlayerBonus(data.attacker, data.defender)
+    var ms = getMultiplySlayerBonus(data.attacker, data.defender, data.date)
     var m = getMapBonus(data.mapCell, data.attacker, data.defender)
-    var minPostMapBonusValue = Math.floor(Math.floor(minpc) * ms + as) * m
-    var maxPostMapBonusValue = Math.floor(Math.floor(maxpc) * ms + as) * m
+    var minPostMapBonusValue = Math.floor(Math.floor(minpc) * ms) * m
+    var maxPostMapBonusValue = Math.floor(Math.floor(maxpc) * ms) * m
     var ptbm = getPtImpPackBasicMultiplyBonus(data.defender)
     var minpta = getPtImpPackBasicAddBonus(minPostMapBonusValue, data.defender)
     var maxpta = getPtImpPackBasicAddBonus(maxPostMapBonusValue, data.defender)
     var ptas = minpta !== maxpta ? minpta.toFixed(2) + "~" + maxpta.toFixed(2) : minpta.toFixed(2)
     var ptim = getPtImpPackItemBonus(data.attacker, data.defender)
-    result += '<tr><td>' + power.CAP_VALUE + '</td><td>' + pcs + '</td><td>' + m.toFixed(2) + '</td><td>' + ms.toFixed(2) + '</td><td>' + as + '</td></tr>'
+    result += '<tr><td>' + power.CAP_VALUE + '</td><td>' + pcs + '</td><td>' + m.toFixed(2) + '</td><td>' + ms.toFixed(2) + '</td><td></td></tr>'
     result += '<tr><td rowspan="2" style="font-weight:bold;">' + power.getPostcapPower().map(function (power) { return power.toFixed(2) }).join('~') + '</td><th>PT乗算補正</th><th>PT加算補正</th><th>PT装備補正</th><th>クリティカル補正</th><th>熟練度補正</th></tr>'
     var skilled = data.shouldUseSkilled ? getSkilledBonus(data.date, data.attack, data.attacker, data.defender, data.attackerHp).map(function (value) { return value.toFixed(2) }).join(' ~ ') : '1.00'
     result += '<tr><td>' + ptbm.toFixed(2) + '</td><td>' + ptas + '</td><td>' + ptim.toFixed(2) + '</td><td>' + getCriticalBonus(data.attack).toFixed(1) + '</td><td>' + skilled + '</td></tr>'

@@ -14,7 +14,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = "3.0.10"
+var VERSION = "3.1.0"
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -141,15 +141,16 @@ var JAPANESE_DD_SHIPS = [66, 28, 12, 1, 5, 10, 23, 18, 30, 38, 22, 54, 101]
  * @param {ShipHpDto} attackerHp 攻撃艦Hp
  * @param {Boolean} shouldUseSkilled 熟練度を使用すべきか
  * @param {FleetDto} origins 攻撃側艦隊
+ * @param {Boolean} isBalloonCell 阻塞気球マスか
  * @return {AntiSubmarinePower|DayBattlePower} 昼戦火力
  */
-var getDayBattlePower = function (date, mapCell, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, attack, attacker, defender, attackerHp, shouldUseSkilled, origins) {
+var getDayBattlePower = function (date, mapCell, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, attack, attacker, defender, attackerHp, shouldUseSkilled, origins, isBalloonCell) {
     if (isSubMarine(defender)) {
         // 対潜水艦
         return new AntiSubmarinePower(date, mapCell, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, attack, attacker, defender, attackerHp, shouldUseSkilled, origins)
     } else {
         // 対水上艦
-        return new DayBattlePower(date, mapCell, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, attack, attacker, defender, attackerHp, shouldUseSkilled, origins)
+        return new DayBattlePower(date, mapCell, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, attack, attacker, defender, attackerHp, shouldUseSkilled, origins, isBalloonCell)
     }
 }
 
@@ -564,6 +565,7 @@ AntiSubmarinePower.prototype.getImprovementBonus = function () {
                     421, // SB2C-5
                     447, // 零式艦戦64型(複座KMX搭載機)
                     474, // F4U-4
+                    475, // AU-1
                     487, // 零式艦戦64型(熟練爆戦)
                 ].indexOf(item.slotitemId) >= 0 ? 0.2 * item.level : 0
             case 8: // 艦上攻撃機
@@ -681,12 +683,11 @@ AntiSubmarinePower.prototype.getPrecapPower = function (formulaMode) {
  */
 AntiSubmarinePower.prototype.getPostcapPower = function (formulaMode) {
     var pc = getPostcapValue(this.getPrecapPower(), this.CAP_VALUE)
-    var ms = getMultiplySlayerBonus(this.attacker, this.defender)
-    var as = getAddSlayerBonus(this.attacker, this.defender)
+    var ms = getMultiplySlayerBonus(this.attacker, this.defender, this.date)
     var m = getMapBonus(this.mapCell, this.attacker, this.defender)
     
-    var value = Math.floor(Math.floor(pc) * ms + as) * m
-    var str = "int(int(" + pc + ")*" + ms + "+" + as + ")*" + m
+    var value = Math.floor(pc) * ms * m
+    var str = "int(" + pc + ")*" + ms + "*" + m
     // クリティカル判定
     if (isCritical(this.attack)) {
         // A = [A * クリティカル補正 * 熟練度補正]
@@ -758,8 +759,9 @@ AntiSubmarinePower.prototype.getConditionBonus = function () {
  * @param {ShipHpDto} attackerHp 攻撃艦Hp
  * @param {Boolean} shouldUseSkilled 熟練度を使用すべきか
  * @param {FleetDto} origins 攻撃側艦隊
+ * @param {Boolean} isBalloonCell 阻塞気球マスか
  */
-var DayBattlePower = function (date, mapCell, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, attack, attacker, defender, attackerHp, shouldUseSkilled, origins) {
+var DayBattlePower = function (date, mapCell, kind, friendCombinedKind, isEnemyCombined, numOfAttackShips, formation, attack, attacker, defender, attackerHp, shouldUseSkilled, origins, isBalloonCell) {
     this.date = date
     this.mapCell = mapCell
     this.kind = kind
@@ -774,6 +776,7 @@ var DayBattlePower = function (date, mapCell, kind, friendCombinedKind, isEnemyC
     this.items = getItems(attacker)
     this.shouldUseSkilled = shouldUseSkilled
     this.origins = origins
+    this.isBalloonCell = isBalloonCell
     this.CAP_VALUE = 150
     if (this.date.after(getJstDate(2017, 3, 17, 12, 0, 0))) {
         this.CAP_VALUE = 180
@@ -909,7 +912,8 @@ DayBattlePower.prototype.getImprovementBonus = function () {
                     392, // 九九式艦爆二二型(熟練)
                     419, // SBD-5
                     420, // SB2C-3
-                    421  // SB2C-5
+                    421, // SB2C-5
+                    475, // AU-1
                 ].indexOf(item.slotitemId) >= 0 &&
                 (!isGround(this.defender) || landAttackers.indexOf(item.slotitemId) >= 0) ? 0.2 * item.level : 0
             }
@@ -940,26 +944,26 @@ DayBattlePower.prototype.getPrecapPower = function (formulaMode) {
  */
 DayBattlePower.prototype.getPostcapPower = function (formulaMode) {
     var pc = getPostcapValue(this.getPrecapPower(), this.CAP_VALUE)
-    var ms = getMultiplySlayerBonus(this.attacker, this.defender)
-    var as = getAddSlayerBonus(this.attacker, this.defender)
+    var ms = getMultiplySlayerBonus(this.attacker, this.defender, this.date)
     var m = getMapBonus(this.mapCell, this.attacker, this.defender)
     var s = this.getSpottingBonus()
     var ub = this.getUnifiedBombingBonus()
+    var bb = this.getBarrageBalloonBonus()
 
     // サイレント修正(Twitterで確認した限りでは17/9/9が最古=>17夏イベ?)以降、集積地棲姫特効のキャップ位置が変化(a5→a6)
     // 17夏以降に登場したPT小鬼群の特効位置もa6に変化?(乗算と加算組み合わせているっぽいので詳細不明)
-    // A = [キャップ後攻撃力] * 弾着観測射撃 * 戦爆連合カットイン攻撃
-    var value = Math.floor(pc) * s * ub
-    var str = "int(" + pc + ")*" + s + "*" + ub
+    // A = [キャップ後攻撃力] * 弾着観測射撃 * 戦爆連合カットイン攻撃 * 阻塞気球補正
+    var value = Math.floor(pc) * s * ub * bb
+    var str = "int(" + pc + ")*" + s + "*" + ub + "*" + bb
     // 徹甲弾補正判定
     if (this.isAPshellBonusTarget()) {
         // A = [A * 徹甲弾補正]
         value = Math.floor(value * this.getAPshellBonus())
         str = "int((" + str + ")*" + this.getAPshellBonus() + ")"
     }
-    // A = [A * 乗算特効補正 + 加算特効補正] * マップ補正
-    value = (value * ms + as) * m
-    str = "int((" + str + ")*" + ms + "+" + as + ")*" + m
+    // A = A * 乗算特効補正 * マップ補正
+    value = value * ms * m
+    str = "(" + str + ")*" + ms + "*" + m
     // TODO: 書き方変えないとダメかも
     if (isPtImpPack(this.defender)) {
         // A = (A * PT基本補正 + PT基本補正(A)) * PT装備補正
@@ -1075,7 +1079,23 @@ DayBattlePower.prototype.getSpottingBonus = function () {
         case 6: return 1.5   // 主砲+主砲
         //case 7: return 1.0 // 戦爆連合CI
         case 100: // Nelson Touch
-            return 2.0 * (engagement === 4 ? 1.25 : 1.0)
+            var base = 2.0
+            var companionShipBonus = function(secondShipYomi, thirdShipYomi) {
+                if (["ネルソン", "ロドニー"].indexOf(secondShipYomi) >= 0) {
+                    switch (attackIndex) {
+                        case 0: return 1.15
+                        case 1: return 1.2
+                    }
+                }
+                if (["ネルソン", "ロドニー"].indexOf(thirdShipYomi) >= 0) {
+                    switch (attackIndex) {
+                        case 0: return 1.15
+                        case 2: return 1.2
+                    }
+                }
+                return 1
+            }(ships[2].shipInfo.flagship, ships[4].shipInfo.flagship)
+            return 2.0 * (engagement === 4 ? 1.25 : 1.0) * companionShipBonus
         case 101: // 一斉射かッ…胸が熱いな！
             var base = attackIndex < 2 ? 1.4 : 1.2
             var secondShipBonus = function(date, secondShipId) {
@@ -1084,12 +1104,14 @@ DayBattlePower.prototype.getSpottingBonus = function () {
                         case 573: return 1.2  // 陸奥改二
                         case 276: return 1.15 // 陸奥改
                         case 576: return date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE) ? 1.1 : 1.0  // Nelson改
+                        case 577: return 1.1  // Rodney改
                     }
                 } else {
                     switch (secondShipId) {
                         case 573: return 1.4  // 陸奥改二
                         case 276: return 1.35 // 陸奥改
                         case 576: return date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE) ? 1.25 : 1.0  // Nelson改
+                        case 577: return 1.25 // Rodney改
                     }
                 }
                 return 1.0
@@ -1195,7 +1217,7 @@ DayBattlePower.prototype.getSpottingBonus = function () {
                         return surfaceRadarBonus(thirdShipItems) * apShellBonus(thirdShipItems) * sgRadarBonus(thirdShipItems)
                 }
                 return 1
-            }(this.items, ships[1].shipInfo.flagship, ships[2].shipInfo.flagship)
+            }(this.items, ships[1].shipId, ships[2].shipId)
             return base * companionShipBonus * itemBonus
         case 200: return 1.35 // 瑞雲立体攻撃
         case 201: return 1.3 // 海空立体攻撃
@@ -1287,6 +1309,28 @@ DayBattlePower.prototype.getSpottingBonus = function () {
             return base * secondShipBonus * itemBonus
         default: return 1.0  // それ以外
     }
+}
+
+/**
+ * 阻塞気球補正を返す
+ * @return {Number} 倍率
+ */
+DayBattlePower.prototype.getBarrageBalloonBonus = function () {
+    if (!this.isBalloonCell) {
+        return 1
+    }
+
+    var ships = []
+    if (this.origins.main) {
+        ships = ships.concat(Java.from(this.origins.main.toArray()))
+    }
+    if (this.origins.escort) {
+        ships = ships.concat(Java.from(this.origins.escort.toArray()))
+    }
+
+    return 1 + 0.02 * Math.min(ships.filter(function (ship) {
+        return getItems(ship).some(function (item) { return item.type3 === 55 })
+    }).length, 3)
 }
 
 /**
@@ -1449,13 +1493,12 @@ TorpedoPower.prototype.getPrecapPower = function (formulaMode) {
  */
 TorpedoPower.prototype.getPostcapPower = function (formulaMode) {
     var pc = getPostcapValue(this.getPrecapPower(), this.CAP_VALUE)
-    var ms = getMultiplySlayerBonus(this.attacker, this.defender)
-    var as = getAddSlayerBonus(this.attacker, this.defender)
+    var ms = getMultiplySlayerBonus(this.attacker, this.defender, this.date)
     var m = getMapBonus(this.mapCell, this.attacker, this.defender)
 
-    // A = [[キャップ後攻撃力] * 乗算特効補正 + 加算特効補正] * マップ補正
-    var value = Math.floor(Math.floor(pc) * ms + as) * m
-    var str = "int(int(" + pc + ")*" + ms + "+" + as + ")*" + m
+    // A = [キャップ後攻撃力] * 乗算特効補正 * マップ補正
+    var value = Math.floor(pc) * ms * m
+    var str = "int(" + pc + ")*" + ms + "*" + m
     // TODO: 書き方変えないとダメかも
     if (isPtImpPack(this.defender)) {
         // A = (A * PT基本補正 + PT基本補正(A)) * PT装備補正
@@ -1809,14 +1852,13 @@ NightBattlePower.prototype.getPostcapPower = function (formulaMode) {
     var pp = this.getPrecapPower()
     var minpc = getPostcapValue(pp[0], this.CAP_VALUE)
     var maxpc = getPostcapValue(pp[1], this.CAP_VALUE)
-    var ms = getMultiplySlayerBonus(this.attacker, this.defender)
-    var as = getAddSlayerBonus(this.attacker, this.defender)
+    var ms = getMultiplySlayerBonus(this.attacker, this.defender, this.date)
     var m = getMapBonus(this.mapCell, this.attacker, this.defender)
 
-    // A = [[キャップ後攻撃力] * 乗算特効補正 + 加算特効補正] * マップ補正
-    var min = Math.floor(Math.floor(minpc) * ms + as) * m
-    var max = Math.floor(Math.floor(maxpc) * ms + as) * m
-    var str = "int(int(" + minpc + ")*" + ms + "+" + as + ")*" + m
+    // A = [キャップ後攻撃力] * 乗算特効補正 * マップ補正
+    var min = Math.floor(minpc) * ms * m
+    var max = Math.floor(maxpc) * ms * m
+    var str = "int(" + minpc + ")*" + ms + "*" + m
     // TODO: 書き方変えないとダメかも
     if (isPtImpPack(this.defender)) {
         // A = (A * PT基本補正 + PT基本補正(A)) * PT装備補正
@@ -1933,7 +1975,23 @@ NightBattlePower.prototype.getCutinBonus = function () {
         case 14:            // 駆逐カットイン(魚雷/ドラム缶/見張員) 二発
             return [1.3, 1.3]
         case 100: // Nelson Touch
-            var modifier = 2.0 * (engagement === 4 ? 1.25 : 1.0)
+            var base = 2.0
+            var companionShipBonus = function(secondShipYomi, thirdShipYomi) {
+                if (["ネルソン", "ロドニー"].indexOf(secondShipYomi) >= 0) {
+                    switch (attackIndex) {
+                        case 0: return 1.15
+                        case 1: return 1.2
+                    }
+                }
+                if (["ネルソン", "ロドニー"].indexOf(thirdShipYomi) >= 0) {
+                    switch (attackIndex) {
+                        case 0: return 1.15
+                        case 2: return 1.2
+                    }
+                }
+                return 1
+            }(ships[2].shipInfo.flagship, ships[4].shipInfo.flagship)
+            var modifier = 2.0 * (engagement === 4 ? 1.25 : 1.0) * companionShipBonus
             return [modifier, modifier]
         case 101: // 一斉射かッ…胸が熱いな！
             var base = attackIndex < 2 ? 1.4 : 1.2
@@ -2056,7 +2114,7 @@ NightBattlePower.prototype.getCutinBonus = function () {
                         return surfaceRadarBonus(thirdShipItems) * apShellBonus(thirdShipItems) * sgRadarBonus(thirdShipItems)
                 }
                 return 1
-            }(this.items, ships[1].shipInfo.flagship, ships[2].shipInfo.flagship)
+            }(this.items, ships[1].shipId, ships[2].shipId)
             var modifier = base * companionShipBonus * itemBonus
             return [modifier, modifier]
         case 104: // 僚艦夜戦突撃
@@ -2341,9 +2399,10 @@ var getAmmoBonus = function (ship, origins, mapCell) {
  * 特効乗算補正を返す
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} defender 防御艦
+ * @param {java.util.Date} date 戦闘日時
  * @return {Number} 倍率
  */
-var getMultiplySlayerBonus = function (attacker, defender) {
+var getMultiplySlayerBonus = function (attacker, defender, date) {
     var items = getItems(attacker)
     /** [カテゴリ]三式弾 */
     var type3shell = items.filter(function (item) { return item.type2 === 18 }).length
@@ -2365,8 +2424,10 @@ var getMultiplySlayerBonus = function (attacker, defender) {
     // Tips: 大発動艇(II号戦車/北アフリカ仕様)は大発動艇(八九式中戦車&陸戦隊)と大体同じ(ただし補正は別個計算)、改修補正が2乗→3乗になるかだけ
     var pzKpfwII = getItemNum(items, 436)
     /** 特大発動艇+Ⅲ号戦車(北アフリカ仕様) */
-    // Tips: 特大発動艇+Ⅲ号戦車(北アフリカ仕様)は特大発動艇+戦車第11連隊と同じ
+    // Tips: 特大発動艇+Ⅲ号戦車(北アフリカ仕様)は特大発動艇+戦車第11連隊と大体同じ
     var pzKpfwIII = getItemNum(items, 482)
+    /** 特大発動艇+Ⅲ号戦車J型 */
+    var pzKpfwIIIJ = getItemNum(items, 514)
     /** [カテゴリ]上陸用舟艇 */
     var daihatsuGroup = items.filter(function (item) { return item.type2 === 24 }).length
     /** [カテゴリ]上陸用舟艇[改修] */
@@ -2429,6 +2490,8 @@ var getMultiplySlayerBonus = function (attacker, defender) {
     var ship = Ship.get(attacker.shipId)
     var ctype = ship && ship.json ? (JSON.parse(ship.json).api_ctype | 0) : -1
 
+    // 仕様変更に合わせた良い書き方が思いつかない
+    var pzKpfwIII_ = date.after(getJstDate(2023, 8, 26, 14, 2, 33)) ? pzKpfwIII : 0
     switch (true) {
         case isSupplyDepotPrincess(defender): // 集積地棲姫
         case isSupplyDepotPrincessVacationModeV3(defender): // 集積地棲姫III バカンスmode
@@ -2438,9 +2501,9 @@ var getMultiplySlayerBonus = function (attacker, defender) {
             a *= (mortarGroup ? 1.15 : 1) * (mortarGroup >= 2 ? 1.2 : 1)
             a *= daihatsuGroup ? 1.7 : 1
             a *= tokuDaihatsu ? 1.2 : 1
-            a *= (rikuDaihatsu + issikihou) ? 1.3 : 1
-            a *= ((rikuDaihatsu + issikihou) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.6 : 1
-            a *= (m4a1dd + tokuChihaKai) ? 1.2 : 1
+            a *= (rikuDaihatsu + issikihou + pzKpfwIII_) ? 1.3 : 1
+            a *= ((rikuDaihatsu + issikihou + pzKpfwIII_) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.6 : 1
+            a *= (m4a1dd + tokuChihaKai + pzKpfwIIIJ) ? 1.2 : 1
             a *= (kamisha ? 1.7 : 1) * (kamisha >= 2 ? 1.5 : 1)
             a *= (pzKpfwII ? 1.3 : 1) * (pzKpfwII >= 2 ? 1.6 : 1)
             a *= (spBoat ? 1.5 : 1) * (spBoat >= 2 ? 1.1 : 1)
@@ -2450,14 +2513,14 @@ var getMultiplySlayerBonus = function (attacker, defender) {
             a *= apShell ? 1.2 : 1
             a *= suijo ? 1.1 : 1
             a *= (swordfish ? 1.15 : 1) * (swordfish >= 2 ? 1.05 : 1)
-            a *= ["アークロイヤル", "ビスマルク", "ネルソン", "プリンツ・オイゲン", "ゴトランド"].indexOf(attacker.shipInfo.flagship) >= 0 ? 1.1 : 1
+            a *= ["アークロイヤル", "ビスマルク", "ネルソン", "プリンツ・オイゲン", "ゴトランド", "ロドニー"].indexOf(attacker.shipInfo.flagship) >= 0 ? 1.1 : 1
             return a
         case isHeavyCrusierSummerPrincess(defender): // 重巡夏姫
             var a = 1
             a *= apShell ? 1.1 : 1
             a *= suijo ? 1.15 : 1
             a *= (swordfish ? 1.15 : 1) * (swordfish >= 2 ? 1.05 : 1)
-            a *= ["アークロイヤル", "ビスマルク", "ネルソン", "プリンツ・オイゲン", "ゴトランド"].indexOf(attacker.shipInfo.flagship) >= 0 ? 1.1 : 1
+            a *= ["アークロイヤル", "ビスマルク", "ネルソン", "プリンツ・オイゲン", "ゴトランド", "ロドニー"].indexOf(attacker.shipInfo.flagship) >= 0 ? 1.1 : 1
             return a
         case isFrenchBattleshipPrincess(defender): // 戦艦仏棲姫
             var a = 1
@@ -2478,9 +2541,9 @@ var getMultiplySlayerBonus = function (attacker, defender) {
             a *= daihatsuGroup ? 1.4 : 1
             a *= tokuDaihatsu ? 1.15 : 1
             // TODO: 仮埋め
-            a *= (rikuDaihatsu + issikihou) ? 1.2 : 1
-            a *= ((rikuDaihatsu + issikihou) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.4 : 1
-            a *= (m4a1dd + tokuChihaKai) ? 1.8 : 1
+            a *= (rikuDaihatsu + issikihou + pzKpfwIII_) ? 1.2 : 1
+            a *= ((rikuDaihatsu + issikihou + pzKpfwIII_) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.4 : 1
+            a *= (m4a1dd + tokuChihaKai + pzKpfwIIIJ) ? 1.8 : 1
             // TODO: ここまで
             a *= (spBoat ? 1.2 : 1) * (spBoat >= 2 ? 1.1 : 1)
             a *= pzKpfwII ? 1.2 : 1
@@ -2498,25 +2561,15 @@ var getMultiplySlayerBonus = function (attacker, defender) {
             // 特大発動艇は1?
             a *= pzKpfwIII ? 1.4 : 1
             // TODO: 仮埋め
-            a *= (rikuDaihatsu + issikihou) ? 1.15 : 1
-            a *= ((rikuDaihatsu + issikihou) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.15 : 1
-            a *= (m4a1dd + tokuChihaKai) ? 1.1 : 1
+            a *= (rikuDaihatsu + issikihou + pzKpfwIII_) ? 1.15 : 1
+            a *= ((rikuDaihatsu + issikihou + pzKpfwIII_) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.15 : 1
+            a *= (m4a1dd + tokuChihaKai + pzKpfwIIIJ) ? 1.1 : 1
             // TODO: ここまで
             a *= (pzKpfwII ? 1.15 : 1) * (pzKpfwII >= 2 ? 1.15 : 1)
             a *= (spBoat ? 1.1 : 1)
             a *= ITALIAN_SHIPS.indexOf(ctype) >= 0 ? 1.1 : 1
     }
     return 1.0
-}
-
-/**
- * 特効加算補正を返す
- * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
- * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} defender 防御艦
- * @return {Number} 倍率
- */
-var getAddSlayerBonus = function (attacker, defender) {
-    return 0
 }
 
 /**
@@ -2841,6 +2894,8 @@ var getLandBonus = function (attack, attacker, defender, isDay, date) {
     /** 特大発動艇+Ⅲ号戦車(北アフリカ仕様) */
     // Tips: 特大発動艇+Ⅲ号戦車(北アフリカ仕様)は特大発動艇+戦車第11連隊と大体同じ
     var pzKpfwIII = getItemNum(items, 482)
+    /** 特大発動艇+Ⅲ号戦車J型 */
+    var pzKpfwIIIJ = getItemNum(items, 514)
     /** [カテゴリ]上陸用舟艇 */
     var daihatsuGroup = items.filter(function (item) { return item.type2 === 24 }).length
     /** [カテゴリ]上陸用舟艇[改修] */
@@ -2915,6 +2970,8 @@ var getLandBonus = function (attack, attacker, defender, isDay, date) {
         + ([0, 55, 115, 160, 190, 190])[type4Rocket]
         + ([0, 80, 170, 230, 260, 260])[type4RocketEx]
 
+    // 仕様変更に合わせた良い書き方が思いつかない
+    var pzKpfwIII_ = date.after(getJstDate(2023, 8, 26, 14, 2, 33)) ? pzKpfwIII : 0
     switch (true) {
         case isArtilleryImp(defender): // 砲台小鬼
             a *= apShell ? 1.85 : 1
@@ -2925,9 +2982,9 @@ var getLandBonus = function (attack, attacker, defender, isDay, date) {
             a *= (bomber ? 1.5 : 1) * (bomber >= 2 ? 2.0 : 1)
             a *= daihatsuGroup ? 1.8 : 1
             a *= tokuDaihatsu ? 1.15 : 1
-            a *= (rikuDaihatsu + issikihou) ? 1.5 : 1
-            a *= ((rikuDaihatsu + issikihou) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.4 : 1
-            a *= (m4a1dd + tokuChihaKai) ? 2.0 : 1
+            a *= (rikuDaihatsu + issikihou + pzKpfwIII_) ? 1.5 : 1
+            a *= ((rikuDaihatsu + issikihou + pzKpfwIII_) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.4 : 1
+            a *= (m4a1dd + tokuChihaKai + pzKpfwIIIJ) ? 2.0 : 1
             a *= (kamisha ? 2.4 : 1) * (kamisha >= 2 ? 1.35 : 1)
             a *= (pzKpfwII ? 1.5 : 1) * (pzKpfwII >= 2 ? 1.4 : 1)
             if (isDay) {
@@ -2942,9 +2999,9 @@ var getLandBonus = function (attack, attacker, defender, isDay, date) {
             a *= (bomber ? 1.4 : 1) * (bomber >= 2 ? 1.75 : 1)
             a *= daihatsuGroup ? 1.8 : 1
             a *= tokuDaihatsu ? 1.15 : 1
-            a *= (rikuDaihatsu + issikihou) ? 1.2 : 1
-            a *= ((rikuDaihatsu + issikihou) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.4 : 1
-            a *= (m4a1dd + tokuChihaKai) ? 1.8 : 1
+            a *= (rikuDaihatsu + issikihou + pzKpfwIII_) ? 1.2 : 1
+            a *= ((rikuDaihatsu + issikihou + pzKpfwIII_) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.4 : 1
+            a *= (m4a1dd + tokuChihaKai + pzKpfwIIIJ) ? 1.8 : 1
             a *= (kamisha ? 2.4 : 1) * (kamisha >= 2 ? 1.35 : 1)
             a *= (pzKpfwII ? 1.2 : 1) * (pzKpfwII >= 2 ? 1.4 : 1)
             if (isDay) {
@@ -2961,9 +3018,9 @@ var getLandBonus = function (attack, attacker, defender, isDay, date) {
             a *= (bomber ? 1.3 : 1) * (bomber >= 2 ? 1.2 : 1)
             a *= daihatsuGroup ? 1.7 : 1
             a *= tokuDaihatsu ? 1.2 : 1
-            a *= (rikuDaihatsu + issikihou) ? 1.6 : 1
-            a *= ((rikuDaihatsu + issikihou) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.5 : 1
-            a *= (m4a1dd + tokuChihaKai) ? 2.0 : 1
+            a *= (rikuDaihatsu + issikihou + pzKpfwIII_) ? 1.6 : 1
+            a *= ((rikuDaihatsu + issikihou + pzKpfwIII_) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.5 : 1
+            a *= (m4a1dd + tokuChihaKai + pzKpfwIIIJ) ? 2.0 : 1
             a *= kamisha ? 2.8 : 1
             a *= (pzKpfwII ? 1.6 : 1) * (pzKpfwII >= 2 ? 1.5 : 1)
             if (isDay) {
@@ -2978,9 +3035,9 @@ var getLandBonus = function (attack, attacker, defender, isDay, date) {
             a *= suijo ? 1.2 : 1
             a *= daihatsuGroup ? 1.4 : 1
             a *= tokuDaihatsu ? 1.15 : 1
-            a *= (rikuDaihatsu + issikihou) ? 1.5 : 1
-            a *= ((rikuDaihatsu + issikihou) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.3 : 1
-            a *= (m4a1dd + tokuChihaKai) ? 1.1 : 1
+            a *= (rikuDaihatsu + issikihou + pzKpfwIII_) ? 1.5 : 1
+            a *= ((rikuDaihatsu + issikihou + pzKpfwIII_) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.3 : 1
+            a *= (m4a1dd + tokuChihaKai + pzKpfwIIIJ) ? 1.1 : 1
             a *= (kamisha ? 1.5 : 1) * (kamisha >= 2 ? 1.2 : 1)
             a *= (pzKpfwII ? 1.5 : 1) * (pzKpfwII >= 2 ? 1.3 : 1)
             if (isDay) {
@@ -3444,6 +3501,7 @@ function isBig7BonusShipId(shipId) {
         276,  // 陸奥改
         573,  // 陸奥改二
         576,  // Nelson改
+        577,  // Rodney改
         601,  // Colorado
         1496, // Colorado改
         913,  // Maryland
