@@ -14,7 +14,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = "3.1.0"
+var VERSION = "3.1.1"
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -1104,14 +1104,12 @@ DayBattlePower.prototype.getSpottingBonus = function () {
                         case 573: return 1.2  // 陸奥改二
                         case 276: return 1.15 // 陸奥改
                         case 576: return date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE) ? 1.1 : 1.0  // Nelson改
-                        case 577: return 1.1  // Rodney改
                     }
                 } else {
                     switch (secondShipId) {
                         case 573: return 1.4  // 陸奥改二
                         case 276: return 1.35 // 陸奥改
                         case 576: return date.after(UPDATE_SPECIAL_ATTACK_BONUS_DATE) ? 1.25 : 1.0  // Nelson改
-                        case 577: return 1.25 // Rodney改
                     }
                 }
                 return 1.0
@@ -1322,10 +1320,22 @@ DayBattlePower.prototype.getBarrageBalloonBonus = function () {
 
     var ships = []
     if (this.origins.main) {
-        ships = ships.concat(Java.from(this.origins.main.toArray()))
+        var main = Java.from(this.origins.main.toArray())
+        for (var i in main) {
+            // undefinedは敵想定
+            if (main[i] && (this.origins.mainEscaped === undefined || !this.origins.mainEscaped[i])) {
+                ships.push(main[i])
+            }
+        }
     }
     if (this.origins.escort) {
-        ships = ships.concat(Java.from(this.origins.escort.toArray()))
+        var escort = Java.from(this.origins.escort.toArray())
+        for (var i in escort) {
+            // undefinedは敵想定
+            if (escort[i] && (this.origins.escortEscaped === undefined || !this.origins.escortEscaped[i])) {
+                ships.push(escort[i])
+            }
+        }
     }
 
     return 1 + 0.02 * Math.min(ships.filter(function (ship) {
@@ -2359,9 +2369,7 @@ var getAmmoBonus = function (ship, origins, mapCell) {
         var bull = ship.bull
         // 洋上補給処理
         if (mapCell.isBoss()) {
-            var replenishment = Object.keys(origins).map(function(pos) {
-                return origins[pos]
-            }).filter(function(ships) {
+            var replenishment = [origins.main, origins.escort].filter(function(ships) {
                 return ships
             }).map(function(ships) {
                 return Java.from(ships.toArray()).filter(function(ship) {
@@ -2381,7 +2389,7 @@ var getAmmoBonus = function (ship, origins, mapCell) {
             }, 0)
 
             if (replenishment > 0) {
-                if (origins["escort"]) {
+                if (origins.escort) {
                     // 連合艦隊
                     bull += Math.floor((Math.min(replenishment, 3) * 12.5 + 2.5) * ship.bullMax / 100)
                 } else {

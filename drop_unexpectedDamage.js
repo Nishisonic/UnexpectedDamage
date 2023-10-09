@@ -1,6 +1,6 @@
 /**
  * 異常ダメージ検知
- * @version 3.1.0
+ * @version 3.1.1
  * @author Nishikuma
  */
 
@@ -160,9 +160,9 @@ var getFriends = function (battle) {
     var dock = battle.dock
     var dockCombined = battle.dockCombined
     if (dockCombined) {
-        return new FleetDto(dock.ships, dockCombined.ships)
+        return new FleetDto(dock.ships, dockCombined.ships, battle.dock.escaped, battle.dockCombined.escaped)
     } else {
-        return new FleetDto(dock.ships)
+        return new FleetDto(dock.ships, undefined, battle.dock.escaped, undefined)
     }
 }
 
@@ -175,9 +175,9 @@ var getEnemies = function (battle) {
     var enemy = battle.enemy
     var enemyCombined = battle.enemyCombined
     if (enemyCombined) {
-        return new FleetDto(enemy, enemyCombined)
+        return new FleetDto(enemy, enemyCombined, undefined, undefined)
     } else {
-        return new FleetDto(enemy)
+        return new FleetDto(enemy, undefined, undefined, undefined)
     }
 }
 
@@ -231,10 +231,14 @@ var getEnemyHp = function (battle) {
  * 艦隊
  * @param {java.util.List<logbook.dto.ShipDto|logbook.dto.EnemyShipDto>} m 主力
  * @param {java.util.List<logbook.dto.ShipDto|logbook.dto.EnemyShipDto>} e 随伴
+ * @param {boolean[]} me 待避主力
+ * @param {boolean[]} ee 待避随伴
  */
-var FleetDto = function (m, e) {
+var FleetDto = function (m, e, me, ee) {
     this.main = m
     this.escort = e
+    this.mainEscaped = me
+    this.escortEscaped = ee
 }
 
 /**
