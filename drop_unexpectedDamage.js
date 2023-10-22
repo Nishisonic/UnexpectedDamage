@@ -1,6 +1,6 @@
 /**
  * 異常ダメージ検知
- * @version 3.1.1
+ * @version 3.1.2
  * @author Nishikuma
  */
 
@@ -388,6 +388,7 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
     var nightTouchPlane = null
     var friendlyBattle = null
     var radarShooting = null
+    var isBalloonCell = false
     // 航空戦フェーズ
     phaseList.forEach(function (phase) {
         // 航空戦全生成
@@ -540,7 +541,7 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
         var formation = Java.from(json.api_formation).map(Number)
         var activeDeck = json.api_active_deck
         var touchPlane = json.api_touch_plane
-        var isBalloonCell = !!json.api_balloon_cell
+        isBalloonCell |= !!Number(json.api_balloon_cell)
         var friendMainAttack = !(activeDeck && Number(activeDeck[0]) === 2
             || [BattlePhaseKind.COMBINED_MIDNIGHT, BattlePhaseKind.COMBINED_SP_MIDNIGHT].indexOf(phase.kind) >= 0)
         if (!phase.isNight()) {
