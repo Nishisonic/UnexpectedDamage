@@ -14,7 +14,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = "3.1.2"
+var VERSION = "3.1.3"
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -5281,11 +5281,11 @@ function getEquipmentBonus(date, attacker) {
     // 三式水中探信儀改
     if (num = count(438)) {
         if (JAPANESE_DD_SHIPS.indexOf(ctype) >= 0) {
-            add({ asw: 1 }, num)
+            add({ asw: 1 }, num, 1)
         }
         if ([160, 488, 141].indexOf(shipId) >= 0) {
             // 那珂改二、由良改二、五十鈴改二
-            add({ asw: 1 }, num)
+            add({ asw: 1 }, num, 1)
         } else if ([145, 588, 667, 578, 476, 363, 961].indexOf(shipId) >= 0) {
             // 時雨改二、山風改二、山風改二丁、朝霜改二、神風改、春風改、時雨改三
             var asw = Math.max.apply(null, items.filter(function(item) {
@@ -5298,9 +5298,9 @@ function getEquipmentBonus(date, attacker) {
             add({ asw: asw }, num, 1)
         }
         if (["うしお", "まいかぜ", "いそかぜ", "はまかぜ", "いかづち", "やまぐも", "うみかぜ", "かわかぜ", "すずかぜ"].indexOf(yomi) >= 0) {
-            add({ asw: 1 }, num)
+            add({ asw: 1 }, num, 1)
         } else if (["しぐれ", "やまかぜ", "かみかぜ", "はるかぜ", "みくら", "いしがき"].indexOf(yomi) >= 0) {
-            add({ asw: 1 }, num)
+            add({ asw: 1 }, num, 1)
         }
     }
     // Hedgehog(初期型)
@@ -5565,6 +5565,8 @@ function getEquipmentBonus(date, attacker) {
     // 14inch/45 連装砲
     // 14inch/45 三連装砲
     // if (num = count(507) + count(508)) {}
+    // 逆探(E27)＋22号対水上電探改四(後期調整型)
+    // if (num = count(517)) {}
 
     // 1.熟練甲板要員と艦攻の雷装ボーナスの加算は別個で計算して最後に合わせる、また雷装の装備ボーナスは夜襲火力に加算
     // 2.夜襲の際、熟練甲板要員の火力ボーナスのみ夜襲火力に加算
