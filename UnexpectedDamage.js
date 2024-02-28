@@ -95,9 +95,9 @@ var STYPE = {
 /** ドイツ艦 */
 var GERMAN_SHIPS = [47, 48, 55, 57, 63]
 /** イタリア艦 */
-var ITALIAN_SHIPS = [58, 61, 64, 68, 80, 92, 113]
+var ITALIAN_SHIPS = [58, 61, 64, 68, 80, 92, 113, 124]
 /** アメリカ艦 */
-var AMERICAN_SHIPS = [65, 69, 83, 84, 87, 91, 93, 95, 99, 102, 105, 106, 107, 110, 114, 116, 118]
+var AMERICAN_SHIPS = [65, 69, 83, 84, 87, 91, 93, 95, 99, 102, 105, 106, 107, 110, 114, 116, 118, 121, 122, 125]
 /** イギリス艦 */
 var BRITISH_SHIPS = [67, 78, 82, 88, 108, 112]
 /** フランス艦 */
@@ -587,6 +587,8 @@ AntiSubmarinePower.prototype.getImprovementBonus = function () {
                         return 0.3 * item.level
                     case 489: // 一式戦 隼II型改(20戦隊)
                         return 0.3 * item.level
+                    case 491: // 一式戦 隼III型改(熟練/20戦隊)
+                        return 0.3 * item.level
                 }
             default:
                 return 0
@@ -916,6 +918,7 @@ DayBattlePower.prototype.getImprovementBonus = function () {
                     419, // SBD-5
                     420, // SB2C-3
                     421, // SB2C-5
+                    474, // F4U-4
                     475, // AU-1
                 ].indexOf(item.slotitemId) >= 0 &&
                 (!isGround(this.defender) || landAttackers.indexOf(item.slotitemId) >= 0) ? 0.2 * item.level : 0
@@ -2523,7 +2526,7 @@ var getMultiplySlayerBonus = function (attacker, defender, date) {
             a *= (type4RocketGroup ? 1.2 : 1) * (type4RocketGroup >= 2 ? 1.4 : 1)
             a *= (mortarGroup ? 1.15 : 1) * (mortarGroup >= 2 ? 1.2 : 1)
             a *= daihatsuGroup ? 1.7 : 1
-            a *= tokuDaihatsu ? 1.2 : 1
+            a *= (tokuDaihatsu + pzKpfwIII_ + pzKpfwIIIJ) ? 1.2 : 1
             a *= (rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) ? 1.3 : 1
             a *= ((rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.6 : 1
             a *= (m4a1dd + tokuChihaKai + pzKpfwIIIJ) ? 1.2 : 1
@@ -2570,7 +2573,7 @@ var getMultiplySlayerBonus = function (attacker, defender, date) {
             a *= type3shell ? 1.45 : 1
             a *= (kamisha ? 2.4 : 1) * (kamisha >= 2 ? 1.35 : 1)
             a *= daihatsuGroup ? 1.4 : 1
-            a *= tokuDaihatsu ? 1.15 : 1
+            a *= (tokuDaihatsu + pzKpfwIII_ + pzKpfwIIIJ) ? 1.15 : 1
             // TODO: 仮埋め
             a *= (rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) ? 1.2 : 1
             a *= ((rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.4 : 1
@@ -3020,7 +3023,7 @@ var getLandBonus = function (attack, attacker, defender, isDay, date) {
             a *= suijo ? 1.5 : 1
             a *= (bomber ? 1.5 : 1) * (bomber >= 2 ? 2.0 : 1)
             a *= daihatsuGroup ? 1.8 : 1
-            a *= tokuDaihatsu ? 1.15 : 1
+            a *= (tokuDaihatsu + pzKpfwIII_ + pzKpfwIIIJ) ? 1.15 : 1
             a *= (rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) ? 1.5 : 1
             a *= ((rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.4 : 1
             a *= (m4a1dd + tokuChihaKai + pzKpfwIIIJ) ? 2.0 : 1
@@ -3037,7 +3040,7 @@ var getLandBonus = function (attack, attacker, defender, isDay, date) {
             a *= (mortarGroup ? 1.2 : 1) * (mortarGroup >= 2 ? 1.4 : 1)
             a *= (bomber ? 1.4 : 1) * (bomber >= 2 ? 1.75 : 1)
             a *= daihatsuGroup ? 1.8 : 1
-            a *= tokuDaihatsu ? 1.15 : 1
+            a *= (tokuDaihatsu + pzKpfwIII_ + pzKpfwIIIJ) ? 1.15 : 1
             a *= (rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) ? 1.2 : 1
             a *= ((rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.4 : 1
             a *= (m4a1dd + tokuChihaKai + pzKpfwIIIJ) ? 1.8 : 1
@@ -3056,7 +3059,7 @@ var getLandBonus = function (attack, attacker, defender, isDay, date) {
             a *= suijo ? 1.3 : 1
             a *= (bomber ? 1.3 : 1) * (bomber >= 2 ? 1.2 : 1)
             a *= daihatsuGroup ? 1.7 : 1
-            a *= tokuDaihatsu ? 1.2 : 1
+            a *= (tokuDaihatsu + pzKpfwIII_ + pzKpfwIIIJ) ? 1.2 : 1
             a *= (rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) ? 1.6 : 1
             a *= ((rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.5 : 1
             a *= (m4a1dd + tokuChihaKai + pzKpfwIIIJ) ? 2.0 : 1
@@ -3073,7 +3076,7 @@ var getLandBonus = function (attack, attacker, defender, isDay, date) {
             a *= (mortarGroup ? 1.2 : 1) * (mortarGroup >= 2 ? 1.3 : 1)
             a *= suijo ? 1.2 : 1
             a *= daihatsuGroup ? 1.4 : 1
-            a *= tokuDaihatsu ? 1.15 : 1
+            a *= (tokuDaihatsu + pzKpfwIII_ + pzKpfwIIIJ) ? 1.15 : 1
             a *= (rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) ? 1.5 : 1
             a *= ((rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.3 : 1
             a *= (m4a1dd + tokuChihaKai + pzKpfwIIIJ) ? 1.1 : 1
@@ -3108,7 +3111,7 @@ var getLandBonus = function (attack, attacker, defender, isDay, date) {
         /** 基本補正 */
         basicBonus: { a: a, b: b },
         /** 特大発動艇+戦車第11連隊・特大発動艇+一式砲戦車・特大発動艇+Ⅲ号戦車(北アフリカ仕様) */
-        shikonBonus: (shikonDaihatsu + issikihou + pzKpfwIII) ? { a: 1.8, b: 25 } : { a: 1, b: 0 },
+        shikonBonus: (shikonDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) ? { a: 1.8, b: 25 } : { a: 1, b: 0 },
         /** M4A1DD */
         m4a1ddBonus: m4a1dd ? { a: 1.4, b: 35 } : { a: 1, b: 0 },
         /** 特大発動艇+一式砲戦車 */
@@ -5518,8 +5521,8 @@ function getEquipmentBonus(date, attacker) {
         if (JAPANESE_DD_SHIPS.indexOf(ctype) >= 0 || [74, 77, 85, 117, 104].indexOf(ctype) >= 0 && stype === STYPE.DE) {
             add({ asw: 1 }, num)
         }
-        // 時雨改二
-        if (shipId === 145) {
+        // 時雨改二、時雨改三
+        if ([145, 961].indexOf(shipId) >= 0) {
             add({ asw: 5 }, num)
             add({ asw: 1 }, getItemNum(items, 488, 5))
             add({ asw: 1 }, getItemNum(items, 488, 9))
