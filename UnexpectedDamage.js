@@ -5568,7 +5568,13 @@ function getEquipmentBonus(date, attacker) {
     // 14inch/45 連装砲
     // 14inch/45 三連装砲
     // if (num = count(507) + count(508)) {}
-    // 逆探(E27)＋22号対水上電探改四(後期調整型)
+    //Walrus
+    if (num = count(510)) {
+		if (BRITISH_SHIPS.indexOf(ctype) >= 0) {
+			add ({ asw: 3 }, num)
+		}
+	}
+	// 逆探(E27)＋22号対水上電探改四(後期調整型)
     // if (num = count(517)) {}
 
     // 1.熟練甲板要員と艦攻の雷装ボーナスの加算は別個で計算して最後に合わせる、また雷装の装備ボーナスは夜襲火力に加算
