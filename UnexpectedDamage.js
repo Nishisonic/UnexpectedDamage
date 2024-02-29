@@ -1942,12 +1942,14 @@ NightBattlePower.prototype.getCutinBonus = function () {
             // 潜水艦後部魚雷発射管4門(後期型)
             // 後期型艦首魚雷(4門)
             // 熟練聴音員+後期型艦首魚雷(4門)
-            var lateTorpedo = [213, 214, 383, 441, 443, 457, 461]
+            // 21inch艦首魚雷発射管4門(後期型)
+            var lateTorpedo = [213, 214, 383, 441, 443, 457, 461, 512]
             // 潜水艦搭載電探&水防式望遠鏡
             // 潜水艦搭載電探&逆探(E27)
             // 後期型潜水艦搭載電探&逆探
             // 後期型電探&逆探+シュノーケル装備
-            var ssRadar = [210, 211, 384, 458]
+            // SJレーダー+潜水艦司令塔装備
+            var ssRadar = [210, 211, 384, 458, 519]
             if (Java.from(this.attack.showItem).filter(function (id) { return lateTorpedo.indexOf(Number(id)) >= 0 }).length
                 && Java.from(this.attack.showItem).filter(function (id) { return ssRadar.indexOf(Number(id)) >= 0 }).length) {
                 return [1.75, 1.75] // カットイン(後魚/潜電)
