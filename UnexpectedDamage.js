@@ -95,9 +95,9 @@ var STYPE = {
 /** ドイツ艦 */
 var GERMAN_SHIPS = [47, 48, 55, 57, 63]
 /** イタリア艦 */
-var ITALIAN_SHIPS = [58, 61, 64, 68, 80, 92, 113]
+var ITALIAN_SHIPS = [58, 61, 64, 68, 80, 92, 113, 124]
 /** アメリカ艦 */
-var AMERICAN_SHIPS = [65, 69, 83, 84, 87, 91, 93, 95, 99, 102, 105, 106, 107, 110, 114, 116, 118]
+var AMERICAN_SHIPS = [65, 69, 83, 84, 87, 91, 93, 95, 99, 102, 105, 106, 107, 110, 114, 116, 118, 121, 122, 125]
 /** イギリス艦 */
 var BRITISH_SHIPS = [67, 78, 82, 88, 108, 112]
 /** フランス艦 */
@@ -587,6 +587,8 @@ AntiSubmarinePower.prototype.getImprovementBonus = function () {
                         return 0.3 * item.level
                     case 489: // 一式戦 隼II型改(20戦隊)
                         return 0.3 * item.level
+                    case 491: // 一式戦 隼III型改(熟練/20戦隊)
+                        return 0.3 * item.level
                 }
             default:
                 return 0
@@ -880,6 +882,7 @@ DayBattlePower.prototype.getImprovementBonus = function () {
                     case 220: // 8cm高角砲改+増設機銃
                     case 275: // 10cm連装高角砲改+増設機銃
                     case 358: // 5inch 単装高角砲群
+                    case 464: // 10cm連装高角砲群 集中配備
                         return 0.2 * item.level
                     case 12:  // 15.5cm三連装副砲
                     case 234: // 15.5cm三連装副砲改
@@ -916,6 +919,7 @@ DayBattlePower.prototype.getImprovementBonus = function () {
                     419, // SBD-5
                     420, // SB2C-3
                     421, // SB2C-5
+                    474, // F4U-4
                     475, // AU-1
                 ].indexOf(item.slotitemId) >= 0 &&
                 (!isGround(this.defender) || landAttackers.indexOf(item.slotitemId) >= 0) ? 0.2 * item.level : 0
@@ -1810,6 +1814,7 @@ NightBattlePower.prototype.getImprovementBonus = function () {
                 case 220: // 8cm高角砲改+増設機銃
                 case 275: // 10cm連装高角砲改+増設機銃
                 case 358: // 5inch 単装高角砲群
+                case 464: // 10cm連装高角砲群 集中配備
                     return 0.2 * item.level
                 case 12:  // 15.5cm三連装副砲
                 case 234: // 15.5cm三連装副砲改
@@ -1939,12 +1944,14 @@ NightBattlePower.prototype.getCutinBonus = function () {
             // 潜水艦後部魚雷発射管4門(後期型)
             // 後期型艦首魚雷(4門)
             // 熟練聴音員+後期型艦首魚雷(4門)
-            var lateTorpedo = [213, 214, 383, 441, 443, 457, 461]
+            // 21inch艦首魚雷発射管4門(後期型)
+            var lateTorpedo = [213, 214, 383, 441, 443, 457, 461, 512]
             // 潜水艦搭載電探&水防式望遠鏡
             // 潜水艦搭載電探&逆探(E27)
             // 後期型潜水艦搭載電探&逆探
             // 後期型電探&逆探+シュノーケル装備
-            var ssRadar = [210, 211, 384, 458]
+            // SJレーダー+潜水艦司令塔装備
+            var ssRadar = [210, 211, 384, 458, 519]
             if (Java.from(this.attack.showItem).filter(function (id) { return lateTorpedo.indexOf(Number(id)) >= 0 }).length
                 && Java.from(this.attack.showItem).filter(function (id) { return ssRadar.indexOf(Number(id)) >= 0 }).length) {
                 return [1.75, 1.75] // カットイン(後魚/潜電)
@@ -2523,7 +2530,7 @@ var getMultiplySlayerBonus = function (attacker, defender, date) {
             a *= (type4RocketGroup ? 1.2 : 1) * (type4RocketGroup >= 2 ? 1.4 : 1)
             a *= (mortarGroup ? 1.15 : 1) * (mortarGroup >= 2 ? 1.2 : 1)
             a *= daihatsuGroup ? 1.7 : 1
-            a *= tokuDaihatsu ? 1.2 : 1
+            a *= (tokuDaihatsu + pzKpfwIII_ + pzKpfwIIIJ) ? 1.2 : 1
             a *= (rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) ? 1.3 : 1
             a *= ((rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.6 : 1
             a *= (m4a1dd + tokuChihaKai + pzKpfwIIIJ) ? 1.2 : 1
@@ -2570,7 +2577,7 @@ var getMultiplySlayerBonus = function (attacker, defender, date) {
             a *= type3shell ? 1.45 : 1
             a *= (kamisha ? 2.4 : 1) * (kamisha >= 2 ? 1.35 : 1)
             a *= daihatsuGroup ? 1.4 : 1
-            a *= tokuDaihatsu ? 1.15 : 1
+            a *= (tokuDaihatsu + pzKpfwIII_ + pzKpfwIIIJ) ? 1.15 : 1
             // TODO: 仮埋め
             a *= (rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) ? 1.2 : 1
             a *= ((rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.4 : 1
@@ -3020,7 +3027,7 @@ var getLandBonus = function (attack, attacker, defender, isDay, date) {
             a *= suijo ? 1.5 : 1
             a *= (bomber ? 1.5 : 1) * (bomber >= 2 ? 2.0 : 1)
             a *= daihatsuGroup ? 1.8 : 1
-            a *= tokuDaihatsu ? 1.15 : 1
+            a *= (tokuDaihatsu + pzKpfwIII_ + pzKpfwIIIJ) ? 1.15 : 1
             a *= (rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) ? 1.5 : 1
             a *= ((rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.4 : 1
             a *= (m4a1dd + tokuChihaKai + pzKpfwIIIJ) ? 2.0 : 1
@@ -3037,7 +3044,7 @@ var getLandBonus = function (attack, attacker, defender, isDay, date) {
             a *= (mortarGroup ? 1.2 : 1) * (mortarGroup >= 2 ? 1.4 : 1)
             a *= (bomber ? 1.4 : 1) * (bomber >= 2 ? 1.75 : 1)
             a *= daihatsuGroup ? 1.8 : 1
-            a *= tokuDaihatsu ? 1.15 : 1
+            a *= (tokuDaihatsu + pzKpfwIII_ + pzKpfwIIIJ) ? 1.15 : 1
             a *= (rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) ? 1.2 : 1
             a *= ((rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.4 : 1
             a *= (m4a1dd + tokuChihaKai + pzKpfwIIIJ) ? 1.8 : 1
@@ -3056,7 +3063,7 @@ var getLandBonus = function (attack, attacker, defender, isDay, date) {
             a *= suijo ? 1.3 : 1
             a *= (bomber ? 1.3 : 1) * (bomber >= 2 ? 1.2 : 1)
             a *= daihatsuGroup ? 1.7 : 1
-            a *= tokuDaihatsu ? 1.2 : 1
+            a *= (tokuDaihatsu + pzKpfwIII_ + pzKpfwIIIJ) ? 1.2 : 1
             a *= (rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) ? 1.6 : 1
             a *= ((rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.5 : 1
             a *= (m4a1dd + tokuChihaKai + pzKpfwIIIJ) ? 2.0 : 1
@@ -3073,7 +3080,7 @@ var getLandBonus = function (attack, attacker, defender, isDay, date) {
             a *= (mortarGroup ? 1.2 : 1) * (mortarGroup >= 2 ? 1.3 : 1)
             a *= suijo ? 1.2 : 1
             a *= daihatsuGroup ? 1.4 : 1
-            a *= tokuDaihatsu ? 1.15 : 1
+            a *= (tokuDaihatsu + pzKpfwIII_ + pzKpfwIIIJ) ? 1.15 : 1
             a *= (rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) ? 1.5 : 1
             a *= ((rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.3 : 1
             a *= (m4a1dd + tokuChihaKai + pzKpfwIIIJ) ? 1.1 : 1
@@ -3108,7 +3115,7 @@ var getLandBonus = function (attack, attacker, defender, isDay, date) {
         /** 基本補正 */
         basicBonus: { a: a, b: b },
         /** 特大発動艇+戦車第11連隊・特大発動艇+一式砲戦車・特大発動艇+Ⅲ号戦車(北アフリカ仕様) */
-        shikonBonus: (shikonDaihatsu + issikihou + pzKpfwIII) ? { a: 1.8, b: 25 } : { a: 1, b: 0 },
+        shikonBonus: (shikonDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) ? { a: 1.8, b: 25 } : { a: 1, b: 0 },
         /** M4A1DD */
         m4a1ddBonus: m4a1dd ? { a: 1.4, b: 35 } : { a: 1, b: 0 },
         /** 特大発動艇+一式砲戦車 */
@@ -5548,8 +5555,8 @@ function getEquipmentBonus(date, attacker) {
         if (JAPANESE_DD_SHIPS.indexOf(ctype) >= 0 || [74, 77, 85, 117, 104].indexOf(ctype) >= 0 && stype === STYPE.DE) {
             add({ asw: 1 }, num)
         }
-        // 時雨改二
-        if (shipId === 145) {
+        // 時雨改二、時雨改三
+        if ([145, 961].indexOf(shipId) >= 0) {
             add({ asw: 5 }, num)
             add({ asw: 1 }, getItemNum(items, 488, 5))
             add({ asw: 1 }, getItemNum(items, 488, 9))
@@ -5595,7 +5602,13 @@ function getEquipmentBonus(date, attacker) {
     // 14inch/45 連装砲
     // 14inch/45 三連装砲
     // if (num = count(507) + count(508)) {}
-    // 逆探(E27)＋22号対水上電探改四(後期調整型)
+    //Walrus
+    if (num = count(510)) {
+		if (BRITISH_SHIPS.indexOf(ctype) >= 0) {
+			add ({ asw: 3 }, num)
+		}
+	}
+	// 逆探(E27)＋22号対水上電探改四(後期調整型)
     // if (num = count(517)) {}
     // 14cm連装砲改二
     if (num = count(518)) {
