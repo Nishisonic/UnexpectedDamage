@@ -3942,6 +3942,27 @@ function getEquipmentBonus(date, attacker) {
             add({ fp: fp }, num, 1)
         }
     }
+    // 3.7cm FlaK M42
+    if (num = count(85)) {
+        if (date.after(getJstDate(2023, 12, 26, 12, 0, 0))) {
+            var fp = items.filter(function(item) {
+                return item.slotitemId === 85
+            }).map(function(item) {
+                if (item.level === 10) {
+                    if (GERMAN_SHIPS.indexOf(shipId) >= 0 || ITALIAN_SHIPS.indexOf(shipId) >= 0) {
+                        return 2
+                    }
+                }
+                if (item.level >= 8) {
+                    return 1
+                }
+                return 0
+            }).reduce(function(p, v) {
+                return p + v
+            }, 0)
+            add({ fp: fp }, num, 1)
+        }
+    }
     // 新型高温高圧缶
     // if (num = count(87)) {}
     // 20.3cm(2号)連装砲
@@ -4185,7 +4206,7 @@ function getEquipmentBonus(date, attacker) {
                 add({ fp: 1, asw: 2 }, num)
             }
             // 軽空母
-            if (stype === 7) {
+            if (stype === STYPE.CVL) {
                 add({ asw: 2 }, num)
             }
         }
@@ -4424,7 +4445,8 @@ function getEquipmentBonus(date, attacker) {
     // 5inch単装砲 Mk.30改+GFCS Mk.37
     // if (num = count(308)) {}
     // 14cm連装砲改
-    if (num = count(310)) {
+    // 14cm連装砲改二
+    if (num = count(310) + count(518)) {
         if (date.after(getJstDate(2020, 1, 14, 12, 0, 0))) {
             // 夕張改二、夕張改二特、夕張改二丁
             if ([622, 623, 624].indexOf(shipId) >= 0) {
@@ -5221,6 +5243,10 @@ function getEquipmentBonus(date, attacker) {
             var fp = items.filter(function(item) {
                 return item.slotitemId === 425
             }).map(function(item) {
+                if (date.after(getJstDate(2023, 11, 28, 12, 0, 0))) {
+                    if (item.level >= 9) return 3
+                    if (item.level >= 7) return 2
+                }
                 if (item.level >= 4) return 1
                 return 0
             }).reduce(function(p, v) {
@@ -5229,6 +5255,10 @@ function getEquipmentBonus(date, attacker) {
             var asw = items.filter(function(item) {
                 return item.slotitemId === 425
             }).map(function(item) {
+                if (date.after(getJstDate(2023, 11, 28, 12, 0, 0))) {
+                    if (item.level === 10) return 4
+                    if (item.level >= 8) return 3
+                }
                 if (item.level === 10) return 3
                 if (item.level >= 6) return 2
                 if (item.level >= 2) return 1
@@ -5567,6 +5597,41 @@ function getEquipmentBonus(date, attacker) {
     // if (num = count(507) + count(508)) {}
     // 逆探(E27)＋22号対水上電探改四(後期調整型)
     // if (num = count(517)) {}
+    // 14cm連装砲改二
+    if (num = count(518)) {
+        // 夕張型、香取型
+        if ([34, 56].indexOf(ctype) >= 0) {
+            add({ asw: 1 }, num)
+        }
+        // 夕張改二丁
+        if (shipId === 624) {
+            add({ asw: 2 }, num)
+        }
+    }
+    // SJレーダー+潜水艦司令塔装備
+    // if (num = count(519)) {}
+    // 試製20.3cm(4号)連装砲
+    // if (num = count(520)) {}
+    // 紫雲(熟練)
+    // if (num = count(521)) {}
+    // 零式小型水上機
+    // 零式小型水上機(熟練)
+    // if (num = count(522) + count(523)) {}
+    // 12cm単装高角砲+25mm機銃増備
+    if (num = count(524)) {
+        var fp = items.filter(function(item) {
+            return item.slotitemId === 524
+        }).map(function(item) {
+            if (item.level === 10) return 1
+            return 0
+        }).reduce(function(p, v) {
+            return p + v
+        }, 0)
+        add({ fp: fp }, num)
+    }
+    // 特四式内火艇
+    // 特四式内火艇改
+    // if (num = count(525) + count(526)) {}
 
     // 1.熟練甲板要員と艦攻の雷装ボーナスの加算は別個で計算して最後に合わせる、また雷装の装備ボーナスは夜襲火力に加算
     // 2.夜襲の際、熟練甲板要員の火力ボーナスのみ夜襲火力に加算
