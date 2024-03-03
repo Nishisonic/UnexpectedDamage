@@ -14,7 +14,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = "3.1.3"
+var VERSION = "3.1.4"
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -5602,13 +5602,13 @@ function getEquipmentBonus(date, attacker) {
     // 14inch/45 連装砲
     // 14inch/45 三連装砲
     // if (num = count(507) + count(508)) {}
-    //Walrus
+    // Walrus
     if (num = count(510)) {
-		if (BRITISH_SHIPS.indexOf(ctype) >= 0) {
-			add ({ asw: 3 }, num)
-		}
-	}
-	// 逆探(E27)＋22号対水上電探改四(後期調整型)
+        if (BRITISH_SHIPS.indexOf(ctype) >= 0) {
+            add ({ asw: 3 }, num)
+        }
+    }
+    // 逆探(E27)＋22号対水上電探改四(後期調整型)
     // if (num = count(517)) {}
     // 14cm連装砲改二
     if (num = count(518)) {
