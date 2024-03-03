@@ -882,6 +882,7 @@ DayBattlePower.prototype.getImprovementBonus = function () {
                     case 220: // 8cm高角砲改+増設機銃
                     case 275: // 10cm連装高角砲改+増設機銃
                     case 358: // 5inch 単装高角砲群
+					case 464: // 10cm連装高角砲群 集中配備 
                         return 0.2 * item.level
                     case 12:  // 15.5cm三連装副砲
                     case 234: // 15.5cm三連装副砲改
@@ -1813,6 +1814,7 @@ NightBattlePower.prototype.getImprovementBonus = function () {
                 case 220: // 8cm高角砲改+増設機銃
                 case 275: // 10cm連装高角砲改+増設機銃
                 case 358: // 5inch 単装高角砲群
+				case 464: // 10cm連装高角砲群 集中配備
                     return 0.2 * item.level
                 case 12:  // 15.5cm三連装副砲
                 case 234: // 15.5cm三連装副砲改
