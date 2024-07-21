@@ -14,7 +14,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = "3.1.4"
+var VERSION = "3.2.0"
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -2158,8 +2158,10 @@ NightBattlePower.prototype.getCutinBonus = function () {
                 }
                 return 1.0
             }(this.date)
+            var jp35_6v3v4 = items.filter(function(item) { return [503, 530].indexOf(item.slotitemId) >= 0 }).length
+            var itemBonus = jp35_6v3v4 >= 2 ? 1.15 : jp35_6v3v4 == 1 ? 1.11 : 1
             // 正確には1.25(交戦形態補正) * 2.4(僚艦夜戦突撃補正)の順序のようだが、このツールにおける算出方法の関係上あまり関係ないのでこの順番のままで
-            var modifier = base * engagementBonus
+            var modifier = base * engagementBonus * itemBonus
             return [modifier, modifier]
         case 200:
             // 夜間瑞雲夜戦カットイン
@@ -3739,7 +3741,8 @@ function getEquipmentBonus(date, attacker) {
     // if (items.some(function(item) { return item.type2 === 42 })) {}
     // 10cm連装高角砲
     // 10cm連装高角砲+高射装置
-    // if (num = count(3) + count(122)) {}
+    // 10cm連装高角砲改+高射装置改
+    // if (num = count(3) + count(122) + count(533)) {}
     // 15.5cm三連装砲
     // if (num = count(5)) {}
     // 15.5cm三連装副砲
@@ -3918,6 +3921,9 @@ function getEquipmentBonus(date, attacker) {
             add({ fp: 1, asw: 1 }, num)
         }
     }
+    // 38cm連装砲
+    // 38cm連装砲改
+    // if (num = count(76) + count(114)) {}
     // 12.7cm単装砲
     // if (num = count(78)) {}
     // 瑞雲(六三四空)
@@ -4032,7 +4038,31 @@ function getEquipmentBonus(date, attacker) {
     // if (num = count(121)) {}
     // 10cm連装高角砲+高射装置
     // if (num = count(122)) {}
-    // 51cm砲補正
+    // SKC34 20.3cm連装砲
+    // if (num = count(123)) {}
+    // FuMO25 レーダー
+    if (num = count(124)) {
+        if (GERMAN_SHIPS.indexOf(ctype) >= 0) {
+            var fp = Math.max.apply(null, items.filter(function(item) {
+                return item.slotitemId === 124
+            }).map(function(item) {
+                if (item.level >= 8) return 1
+                return 0
+            }))
+            add({ fp: fp }, num, 1)
+        }
+        if (ITALIAN_SHIPS.indexOf(ctype) >= 0) {
+            var fp = Math.max.apply(null, items.filter(function(item) {
+                return item.slotitemId === 124
+            }).map(function(item) {
+                if (item.level >= 10) return 1
+                return 0
+            }))
+            add({ fp: fp }, num, 1)
+        }
+    }
+    // 試製51cm連装砲
+    // 51cm連装砲
     // if (num = count(128) + count(281)) {}
     // 熟練見張員
     if (num = count(129)) {
@@ -4042,6 +4072,8 @@ function getEquipmentBonus(date, attacker) {
             }
         }
     }
+    // 12.7cm高角砲+高射装置
+    // if (num = count(130)) {}
     // 零式水中聴音機
     if (num = count(132)) {
         if (date.after(getJstDate(2022, 8, 4, 12, 0, 0))) {
@@ -4271,9 +4303,26 @@ function getEquipmentBonus(date, attacker) {
             // Ark Royal級
             if (ctype === 78) {
                 add({ fp: 4 }, num)
+                var fp = Math.max.apply(null, items.filter(function(item) {
+                    return item.slotitemId === 244
+                }).map(function(item) {
+                    if (item.level >= 10) return 3
+                    if (item.level >= 7) return 2
+                    if (item.level >= 3) return 1
+                    return 0
+                }))
+                add({ fp: fp }, num, 1)
             }
             if (yomi === "ほうしょう") {
                 add({ fp: 3 }, num)
+                var fp = Math.max.apply(null, items.filter(function(item) {
+                    return item.slotitemId === 244
+                }).map(function(item) {
+                    if (item.level >= 10) return 2
+                    if (item.level >= 7) return 1
+                    return 0
+                }))
+                add({ fp: fp }, num, 1)
             }
         }
     }
@@ -4283,6 +4332,20 @@ function getEquipmentBonus(date, attacker) {
     // if (num = count(245) + count(246) + count(468)) {}
     // 15.2cm三連装砲
     // if (num = count(247)) {}
+    // Seafire Mk.III改
+    if (num = count(252)) {
+        if ([78, 112].indexOf(ctype) >= 0) {
+            var fp = Math.max.apply(null, items.filter(function(item) {
+                return item.slotitemId === 252
+            }).map(function(item) {
+                if (item.level >= 10) return 3
+                if (item.level >= 7) return 2
+                if (item.level >= 6) return 1
+                return 0
+            }))
+            add({ fp: fp }, num, 1)
+        }
+    }
     // 12.7cm連装砲C型改二
     // if (num = count(266)) {}
     // 12.7cm連装砲D型改二
@@ -5640,11 +5703,47 @@ function getEquipmentBonus(date, attacker) {
         }).reduce(function(p, v) {
             return p + v
         }, 0)
-        add({ fp: fp }, num)
+        add({ fp: fp }, 1)
     }
     // 特四式内火艇
     // 特四式内火艇改
     // if (num = count(525) + count(526)) {}
+    // Type281 レーダー
+    // if (num = count(527)) {}
+    // Type274 射撃管制レーダー
+    if (num = count(528)) {
+        if (BRITISH_SHIPS.indexOf(ctype) >= 0) {
+            add ({ fp: 1 }, num)
+        }
+        if (ctype === 108) {
+            add ({ fp: 1 }, num)
+        }
+        var fp = items.filter(function(item) {
+            return item.slotitemId === 528
+        }).map(function(item) {
+            if (item.level >= 2) return 1
+            return 0
+        }).reduce(function(p, v) {
+            return p + v
+        }, 0)
+        add({ fp: fp }, 1)
+    }
+    // 35.6cm連装砲改三丙
+    // if (num = count(530)) {}
+    // 艦隊通信アンテナ
+    if (num = count(531)) {
+        var fp = items.filter(function(item) {
+            return item.slotitemId === 531
+        }).map(function(item) {
+            if (item.level >= 8) return 2
+            if (item.level >= 5) return 1
+            return 0
+        }).reduce(function(p, v) {
+            return p + v
+        }, 0)
+        add({ fp: fp }, 1)
+    }
+
 
     // 1.熟練甲板要員と艦攻の雷装ボーナスの加算は別個で計算して最後に合わせる、また雷装の装備ボーナスは夜襲火力に加算
     // 2.夜襲の際、熟練甲板要員の火力ボーナスのみ夜襲火力に加算
