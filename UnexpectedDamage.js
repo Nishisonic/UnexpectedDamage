@@ -14,7 +14,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = "3.2.0"
+var VERSION = "3.2.1"
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -2158,7 +2158,7 @@ NightBattlePower.prototype.getCutinBonus = function () {
                 }
                 return 1.0
             }(this.date)
-            var jp35_6v3v4 = items.filter(function(item) { return [503, 530].indexOf(item.slotitemId) >= 0 }).length
+            var jp35_6v3v4 = this.items.filter(function(item) { return [503, 530].indexOf(item.slotitemId) >= 0 }).length
             var itemBonus = jp35_6v3v4 >= 2 ? 1.15 : jp35_6v3v4 == 1 ? 1.11 : 1
             // 正確には1.25(交戦形態補正) * 2.4(僚艦夜戦突撃補正)の順序のようだが、このツールにおける算出方法の関係上あまり関係ないのでこの順番のままで
             var modifier = base * engagementBonus * itemBonus
@@ -2519,8 +2519,7 @@ var getMultiplySlayerBonus = function (attacker, defender, date) {
     /** [カテゴリ]噴式戦闘爆撃機 */
     var jetBomber = items.filter(function (item) { return item.type2 === 57 }).length
 
-    var ship = Ship.get(attacker.shipId)
-    var ctype = ship && ship.json ? (JSON.parse(ship.json).api_ctype | 0) : -1
+    var ctype = getCtype(attacker.shipId)
 
     // 仕様変更に合わせた良い書き方が思いつかない
     var pzKpfwIII_ = date.after(getJstDate(2023, 8, 26, 14, 2, 33)) ? pzKpfwIII : 0
@@ -3662,6 +3661,19 @@ function getSlotParam(attacker) {
 }
 
 /**
+ * ctypeを返す
+ * @param {Number} shipId
+ * @return {Number}
+ */
+function getCtype(shipId) {
+    try {
+        return JSON.parse(Ship.get(shipId).json).api_ctype | 0
+    } catch (e) {
+        return -1
+    }
+}
+
+/**
  * 装備ボーナスの値を返す
  * @param {java.util.Date} date 戦闘日時
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} attacker 攻撃艦
@@ -3670,7 +3682,7 @@ function getSlotParam(attacker) {
 function getEquipmentBonus(date, attacker) {
     var shipId = attacker.shipId
     var stype = attacker.stype
-    var ctype = (JSON.parse(Ship.get(attacker.shipId).json).api_ctype | 0)
+    var ctype = getCtype(shipId)
     var yomi = attacker.shipInfo.flagship
     var items = getItems(attacker)
     var bonus = { fp: 0, nfp: 0, asw: 0, tp: 0, bomb: 0, itp: 0 }
