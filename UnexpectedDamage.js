@@ -14,7 +14,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = "3.2.1"
+var VERSION = "3.2.2"
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -879,6 +879,7 @@ DayBattlePower.prototype.getImprovementBonus = function () {
                 switch (item.slotitemId) {
                     case 10:  // 12.7cm連装高角砲
                     case 66:  // 8cm高角砲
+                    case 130: // 12.7cm高角砲+高射装置
                     case 220: // 8cm高角砲改+増設機銃
                     case 275: // 10cm連装高角砲改+増設機銃
                     case 358: // 5inch 単装高角砲群
@@ -986,7 +987,7 @@ DayBattlePower.prototype.getPostcapPower = function (formulaMode) {
     // TODO: 書き方変えないとダメかも
     if (isPtImpPack(this.defender)) {
         // A = (A * PT基本補正 + PT基本補正(A)) * PT装備補正
-        // 実際は0.3*A+sqrt(A)+10+装備補正
+        // 実際は(0.3*A+sqrt(A)+10)*装備補正
         var ptbm = getPtImpPackBasicMultiplyBonus(this.defender)
         var pta = getPtImpPackBasicAddBonus(value, this.defender)
         var ptim = getPtImpPackItemBonus(this.attacker, this.defender)
@@ -1531,12 +1532,12 @@ TorpedoPower.prototype.getPostcapPower = function (formulaMode) {
     // TODO: 書き方変えないとダメかも
     if (isPtImpPack(this.defender)) {
         // A = (A * PT基本補正 + PT基本補正(A)) * PT装備補正
-        // 実際は0.3*A+sqrt(A)+10+装備補正
+        // 実際は(0.3*A+sqrt(A)+10)*装備補正
         var ptbm = getPtImpPackBasicMultiplyBonus(this.defender)
         var pta = getPtImpPackBasicAddBonus(value, this.defender)
         var ptim = getPtImpPackItemBonus(this.attacker, this.defender)
-        value = (value * ptbm + pta) * ptim
-        str = "((" + str + ")*" + ptbm + "+" + pta + ")*" + ptim 
+        value = value * ptbm + pta
+        str = "(" + str + ")*" + ptbm + "+" + pta
     }
     // クリティカル判定
     if (isCritical(this.attack)) {
@@ -1811,6 +1812,7 @@ NightBattlePower.prototype.getImprovementBonus = function () {
             switch (item.slotitemId) {
                 case 10:  // 12.7cm連装高角砲
                 case 66:  // 8cm高角砲
+                case 130: // 12.7cm高角砲+高射装置
                 case 220: // 8cm高角砲改+増設機銃
                 case 275: // 10cm連装高角砲改+増設機銃
                 case 358: // 5inch 単装高角砲群
@@ -1892,7 +1894,7 @@ NightBattlePower.prototype.getPostcapPower = function (formulaMode) {
     // TODO: 書き方変えないとダメかも
     if (isPtImpPack(this.defender)) {
         // A = (A * PT基本補正 + PT基本補正(A)) * PT装備補正
-        // 実際は0.3*A+sqrt(A)+10+装備補正
+        // 実際は(0.3*A+sqrt(A)+10)*装備補正
         var ptbm = getPtImpPackBasicMultiplyBonus(this.defender)
         var minpta = getPtImpPackBasicAddBonus(min, this.defender)
         var maxpta = getPtImpPackBasicAddBonus(max, this.defender)
@@ -2480,14 +2482,22 @@ var getMultiplySlayerBonus = function (attacker, defender, date) {
     var chihaKai = getItemNum(items, 498)
     /** 陸軍歩兵部隊＋チハ改 */
     var armyInfantryWithChihaKai = getItemNum(items, 499)
+    /** 特四式内火艇 */
+    var katsu = getItemNum(items, 525)
+    /** 特四式内火艇改 */
+    var katsukai = getItemNum(items, 526)
+    /** [カテゴリ]特四系 */
+    var katsuGroup = getItemNum(items, 525) + getItemNum(items, 526)
+    /** [カテゴリ]特四系[改修] */
+    var katsuGroupLv = katsugroup > 0 ? items.filter(function (item) { return [525, 526].indexOf(item.slotitemId) >= 0 }).map(function (item) { return item.level }).reduce(function (p, c) { return p + c }, 0) / katsuGroup : 0
     /** catA:武装大発 */
     var catA = armedDaihatsu
     /** catB:装甲艇(AB艇) */
     var catB = armoredBoat
-    /** catC:大発動艇・特大発動艇・大発動艇(八九式中戦車&陸戦隊)・大発動艇(II号戦車/北アフリカ仕様)・特大発動艇+一式砲戦車 */
-    var catC = daihatsu + tokuDaihatsu + rikuDaihatsu + pzKpfwII + issikihou
-    /**  特大発動艇+戦車第11連隊・特二式内火艇・特大発動艇+Ⅲ号戦車(北アフリカ仕様)・特大発動艇+チハ・特大発動艇+チハ改 */
-    var catD = shikonDaihatsu + kamisha + pzKpfwIII + tokuChiha + tokuChihaKai
+    /** catC:大発動艇・特大発動艇・大発動艇(八九式中戦車&陸戦隊)・大発動艇(II号戦車/北アフリカ仕様)・特大発動艇+一式砲戦車・特大発動艇+Ⅲ号戦車J型・特四式内火艇・特四式内火艇改 */
+    var catC = daihatsu + tokuDaihatsu + rikuDaihatsu + pzKpfwII + issikihou + pzKpfwIIIJ + katsu + katsukai
+    /**  特大発動艇+戦車第11連隊・特二式内火艇・特大発動艇+Ⅲ号戦車(北アフリカ仕様)・特大発動艇+チハ・特大発動艇+チハ改・特大発動艇+Ⅲ号戦車J型 */
+    var catD = shikonDaihatsu + kamisha + pzKpfwIII + tokuChiha + tokuChihaKai + pzKpfwIIIJ
     /** 装甲艇(AB艇)・武装大発 */
     var spBoat = armoredBoat + armedDaihatsu
     /** [カテゴリ]特型内火艇[改修] */
@@ -2514,7 +2524,7 @@ var getMultiplySlayerBonus = function (attacker, defender, date) {
     var bomber = items.filter(function (item) { return item.type2 === 7 }).length
     /** Laté 298B */
     var late298B = getItemNum(items, 194)
-    /** Swortfish系列 */
+    /** Swordfish系列 */
     var swordfish = getItemNum(items, 242) + getItemNum(items, 243) + getItemNum(items, 244)
     /** [カテゴリ]噴式戦闘爆撃機 */
     var jetBomber = items.filter(function (item) { return item.type2 === 57 }).length
@@ -2526,18 +2536,18 @@ var getMultiplySlayerBonus = function (attacker, defender, date) {
     switch (true) {
         case isSupplyDepotPrincess(defender): // 集積地棲姫
         case isSupplyDepotPrincessVacationModeV3(defender): // 集積地棲姫III バカンスmode
-            var a = Math.pow(daihatsuGroupLv / 50 + 1, !!(rikuDaihatsu + issikihou) + !!(pzKpfwII) + 1) * (kamishaLv / 30 + 1)
+            var a = Math.pow(daihatsuGroupLv / 50 + katsuGroupLv / 50 + 1, !!(rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) + !!(pzKpfwII) + 1) * (kamishaLv / 30 + 1)
             a *= (wg42 ? 1.25 : 1) * (wg42 >= 2 ? 1.3 : 1)
             a *= (type4RocketGroup ? 1.2 : 1) * (type4RocketGroup >= 2 ? 1.4 : 1)
             a *= (mortarGroup ? 1.15 : 1) * (mortarGroup >= 2 ? 1.2 : 1)
-            a *= daihatsuGroup ? 1.7 : 1
+            a *= (daihatsuGroup + katsuGroup) ? 1.7 : 1
             a *= (tokuDaihatsu + pzKpfwIII_ + pzKpfwIIIJ) ? 1.2 : 1
             a *= (rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) ? 1.3 : 1
-            a *= ((rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.6 : 1
+            a *= (rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ + tokuChiha + tokuChihaKai) >= 2 ? 1.6 : 1
             a *= (m4a1dd + tokuChihaKai + pzKpfwIIIJ) ? 1.2 : 1
-            a *= (kamisha ? 1.7 : 1) * (kamisha >= 2 ? 1.5 : 1)
+            a *= (kamisha ? 1.7 : 1) * ((kamisha >= 2 || katsukai) ? 1.5 : 1)
             a *= (pzKpfwII ? 1.3 : 1) * (pzKpfwII >= 2 ? 1.6 : 1)
-            a *= (spBoat ? 1.5 : 1) * (spBoat >= 2 ? 1.1 : 1)
+            a *= (spBoat ? 1.5 : 1) * ((spBoat >= 2 || katsuGroup >= 2) ? 1.1 : 1)
             return a
         case isBattleshipSummerPrincess(defender): // 戦艦夏姫
             var a = 1
@@ -2570,38 +2580,38 @@ var getMultiplySlayerBonus = function (attacker, defender, date) {
             a *= ["アークロイヤル", "ビスマルク", "ネルソン", "プリンツ・オイゲン", "ゴトランド", "ロドニー"].indexOf(attacker.shipInfo.flagship) >= 0 ? 1.1 : 1
             return a
         case isAnchorageWaterDemonVacationMode(defender): // 泊地水鬼 バカンスmode
-            var a = (daihatsuGroupLv / 50 + 1) * (kamishaLv / 30 + 1)
+            var a = (daihatsuGroupLv / 50 + katsuGroupLv / 50 + 1) * (kamishaLv / 30 + 1)
             a *= ((jetBomber + bomber) ? 1.4 : 1) * ((jetBomber || bomber >= 2) ? 1.75 : 1)
             a *= (wg42 ? 1.2 : 1) * (wg42 >= 2 ? 1.3 : 1)
             a *= (type4RocketGroup ? 1.15 : 1) * (type4RocketGroup >= 2 ? 1.4 : 1)
             a *= mortarGroup ? 1.1 : 1
             a *= type3shell ? 1.45 : 1
-            a *= (kamisha ? 2.4 : 1) * (kamisha >= 2 ? 1.35 : 1)
-            a *= daihatsuGroup ? 1.4 : 1
+            a *= (kamisha ? 2.4 : 1) * ((kamisha >= 2 || katsukai) ? 1.35 : 1)
+            a *= (daihatsuGroup || katsuGroup) ? 1.4 : 1
             a *= (tokuDaihatsu + pzKpfwIII_ + pzKpfwIIIJ) ? 1.15 : 1
             // TODO: 仮埋め
             a *= (rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) ? 1.2 : 1
-            a *= ((rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.4 : 1
+            a *= (rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ + tokuChiha + tokuChihaKai) >= 2 ? 1.4 : 1
             a *= (m4a1dd + tokuChihaKai + pzKpfwIIIJ) ? 1.8 : 1
             // TODO: ここまで
-            a *= (spBoat ? 1.2 : 1) * (spBoat >= 2 ? 1.1 : 1)
-            a *= pzKpfwII ? 1.2 : 1
+            a *= (spBoat ? 1.2 : 1) * ((spBoat >= 2 || katsuGroup >= 2) ? 1.1 : 1)
+            a *= (pzKpfwII ? 1.2 : 1) * (pzKpfwII >= 2 ? 1.4 : 1)
             a *= ["やまと", "むさし", "ながと", "むつ"].indexOf(attacker.shipInfo.flagship) >= 0 ? 1.2 : 1
             return a
         case isDockPrincess(defender): // 船渠棲姫
-            var a = (daihatsuGroupLv / 50 + 1) * (kamishaLv / 30 + 1)
+            var a = (daihatsuGroupLv / 50 + katsuGroupLv / 50  + 1) * (kamishaLv / 30 + 1)
             a *= ((jetBomber + bomber) ? 1.1 : 1) * ((jetBomber + bomber) ? 1.1 : 1)
             a *= suijo ? 1.1 : 1
             a *= (wg42 ? 1.1 : 1) * (wg42 >= 2 ? 1.2 : 1)
             // 四式20cm対地噴進砲は不明
             a *= type3shell ? 1.3 : 1
-            a *= (kamisha ? 1.2 : 1) * (kamisha >= 2 ? 1.2 : 1)
-            a *= daihatsuGroup ? 1.1 : 1
+            a *= (kamisha ? 1.2 : 1) * ((kamisha >= 2 || katsukai) ? 1.2 : 1)
+            a *= (daihatsuGroup || katsuGroup) ? 1.1 : 1
             // 特大発動艇は1?
             a *= pzKpfwIII ? 1.4 : 1
             // TODO: 仮埋め
             a *= (rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) ? 1.15 : 1
-            a *= ((rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.15 : 1
+            a *= (rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ + tokuChiha + tokuChihaKai) >= 2 ? 1.15 : 1
             a *= (m4a1dd + tokuChihaKai + pzKpfwIIIJ) ? 1.1 : 1
             // TODO: ここまで
             a *= (pzKpfwII ? 1.15 : 1) * (pzKpfwII >= 2 ? 1.15 : 1)
@@ -2877,7 +2887,7 @@ var isAircraftCarrierSummerDemon = function (ship) {
  * @param {logbook.dto.ShipDto|logbook.dto.EnemyShipDto} ship 艦
  */
 var isArtilleryImp = function (ship) {
-    return [1665, 1666, 1667].indexOf(ship.shipId) >= 0
+    return [1665, 1666, 1667, 2178, 2179, 2188, 2189, 2190, 2191, 2196, 2197].indexOf(ship.shipId) >= 0
 }
 
 /**
@@ -2915,6 +2925,8 @@ var getLandBonus = function (attack, attacker, defender, isDay, date) {
             issikihouBonus: {a: 1, b: 0},
             tokuChihaBonus: {a: 1, b: 0},
             tokuChihaKaiBonus: {a: 1, b: 0},
+            katsuGroupBonus: {a: 1, b: 0},
+            katsukaiBonus: {a: 1, b: 0},
             supportBonus: {a: 1, b: 0}
         }
     }
@@ -2963,14 +2975,22 @@ var getLandBonus = function (attack, attacker, defender, isDay, date) {
     var chihaKai = getItemNum(items, 498)
     /** 陸軍歩兵部隊＋チハ改 */
     var armyInfantryWithChihaKai = getItemNum(items, 499)
+    /** 特四式内火艇 */
+    var katsu = getItemNum(items, 525)
+    /** 特四式内火艇改 */
+    var katsukai = getItemNum(items, 526)
+    /** [カテゴリ]特四系 */
+    var katsuGroup = getItemNum(items, 525) + getItemNum(items, 526)
+    /** [カテゴリ]特四系[改修] */
+    var katsuGroupLv = katsugroup > 0 ? items.filter(function (item) { return [525, 526].indexOf(item.slotitemId) >= 0 }).map(function (item) { return item.level }).reduce(function (p, c) { return p + c }, 0) / katsuGroup : 0
     /** catA:武装大発 */
     var catA = armedDaihatsu
     /** catB:装甲艇(AB艇) */
     var catB = armoredBoat
-    /** catC:大発動艇・特大発動艇・大発動艇(八九式中戦車&陸戦隊)・大発動艇(II号戦車/北アフリカ仕様)・特大発動艇+一式砲戦車 */
-    var catC = daihatsu + tokuDaihatsu + rikuDaihatsu + pzKpfwII + issikihou
-    /**  特大発動艇+戦車第11連隊・特二式内火艇・特大発動艇+Ⅲ号戦車(北アフリカ仕様)・特大発動艇+チハ・特大発動艇+チハ改 */
-    var catD = shikonDaihatsu + kamisha + pzKpfwIII + tokuChiha + tokuChihaKai
+    /** catC:大発動艇・特大発動艇・大発動艇(八九式中戦車&陸戦隊)・大発動艇(II号戦車/北アフリカ仕様)・特大発動艇+一式砲戦車・特大発動艇+Ⅲ号戦車J型・特四式内火艇・特四式内火艇改 */
+    var catC = daihatsu + tokuDaihatsu + rikuDaihatsu + pzKpfwII + issikihou + pzKpfwIIIJ + katsu + katsukai
+    /** catD:特大発動艇+戦車第11連隊・特二式内火艇・特大発動艇+Ⅲ号戦車(北アフリカ仕様)・特大発動艇+チハ・特大発動艇+チハ改・特大発動艇+Ⅲ号戦車J型 */
+    var catD = shikonDaihatsu + kamisha + pzKpfwIII + tokuChiha + tokuChihaKai + pzKpfwIIIJ
     /** 装甲艇(AB艇)・武装大発 */
     var spBoat = armoredBoat + armedDaihatsu
     /** [カテゴリ]特型内火艇[改修] */
@@ -3010,7 +3030,7 @@ var getLandBonus = function (attack, attacker, defender, isDay, date) {
     /** [カテゴリ]噴式戦闘爆撃機 */
     var jetBomber = items.filter(function (item) { return item.type2 === 57 }).length
 
-    var a = (daihatsuGroupLv / 50 + 1) * (kamishaLv / 30 + 1)
+    var a = (daihatsuGroupLv / 50 + katsuGroupLv / 50 + 1) * (kamishaLv / 30 + 1)
     var b = ([0, 75, 110, 140, 160, 160])[wg42]
         + ([0, 30, 55, 75, 90, 90])[type2Mortar]
         + ([0, 60, 110, 150, 180, 180])[type2MortarEx]
@@ -3027,15 +3047,15 @@ var getLandBonus = function (attack, attacker, defender, isDay, date) {
             a *= (mortarGroup ? 1.3 : 1) * (mortarGroup >= 2 ? 1.5 : 1)
             a *= suijo ? 1.5 : 1
             a *= (bomber ? 1.5 : 1) * (bomber >= 2 ? 2.0 : 1)
-            a *= daihatsuGroup ? 1.8 : 1
+            a *= (daihatsuGroup + katsuGroup) ? 1.8 : 1
             a *= (tokuDaihatsu + pzKpfwIII_ + pzKpfwIIIJ) ? 1.15 : 1
             a *= (rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) ? 1.5 : 1
-            a *= ((rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.4 : 1
+            a *= (rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ + tokuChiha + tokuChihaKai) >= 2 ? 1.4 : 1
             a *= (m4a1dd + tokuChihaKai + pzKpfwIIIJ) ? 2.0 : 1
-            a *= (kamisha ? 2.4 : 1) * (kamisha >= 2 ? 1.35 : 1)
+            a *= (kamisha ? 2.4 : 1) * ((kamisha >= 2 || katsukai) ? 1.35 : 1)
             a *= (pzKpfwII ? 1.5 : 1) * (pzKpfwII >= 2 ? 1.4 : 1)
             if (isDay) {
-                a *= (spBoat ? 1.3 : 1) * (spBoat >= 2 ? 1.2 : 1)
+                a *= (spBoat ? 1.3 : 1) * ((spBoat >= 2 || katsuGroup >=2) ? 1.2 : 1)
             }
             break
         case isIsolatedIslandPrincess(defender): // 離島棲姫
@@ -3044,15 +3064,15 @@ var getLandBonus = function (attack, attacker, defender, isDay, date) {
             a *= (type4RocketGroup ? 1.3 : 1) * (type4RocketGroup >= 2 ? 1.65 : 1)
             a *= (mortarGroup ? 1.2 : 1) * (mortarGroup >= 2 ? 1.4 : 1)
             a *= (bomber ? 1.4 : 1) * (bomber >= 2 ? 1.75 : 1)
-            a *= daihatsuGroup ? 1.8 : 1
+            a *= (daihatsuGroup + katsuGroup) ? 1.8 : 1
             a *= (tokuDaihatsu + pzKpfwIII_ + pzKpfwIIIJ) ? 1.15 : 1
             a *= (rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) ? 1.2 : 1
-            a *= ((rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.4 : 1
+            a *= (rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ + tokuChiha + tokuChihaKai) >= 2 ? 1.4 : 1
             a *= (m4a1dd + tokuChihaKai + pzKpfwIIIJ) ? 1.8 : 1
-            a *= (kamisha ? 2.4 : 1) * (kamisha >= 2 ? 1.35 : 1)
+            a *= (kamisha ? 2.4 : 1) * ((kamisha >= 2 || katsukai) ? 1.35 : 1)
             a *= (pzKpfwII ? 1.2 : 1) * (pzKpfwII >= 2 ? 1.4 : 1)
             if (isDay) {
-                a *= (spBoat ? 1.3 : 1) * (spBoat >= 2 ? 1.1 : 1)
+                a *= (spBoat ? 1.3 : 1) * ((spBoat >= 2 || katsuGroup >=2) ? 1.1 : 1)
             }
             break
         case isHarbourSummerPrincess(defender): // 港湾夏姫
@@ -3063,15 +3083,15 @@ var getLandBonus = function (attack, attacker, defender, isDay, date) {
             a *= (mortarGroup ? 1.1 : 1) * (mortarGroup >= 2 ? 1.15 : 1)
             a *= suijo ? 1.3 : 1
             a *= (bomber ? 1.3 : 1) * (bomber >= 2 ? 1.2 : 1)
-            a *= daihatsuGroup ? 1.7 : 1
+            a *= (daihatsuGroup + katsuGroup) ? 1.7 : 1
             a *= (tokuDaihatsu + pzKpfwIII_ + pzKpfwIIIJ) ? 1.2 : 1
             a *= (rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) ? 1.6 : 1
-            a *= ((rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.5 : 1
+            a *= (rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ + tokuChiha + tokuChihaKai) >= 2 ? 1.5 : 1
             a *= (m4a1dd + tokuChihaKai + pzKpfwIIIJ) ? 2.0 : 1
-            a *= kamisha ? 2.8 : 1
+            a *= (kamisha ? 2.8 : 1) * ((kamisha >= 2 || katsukai) ? 1.5 : 1)
             a *= (pzKpfwII ? 1.6 : 1) * (pzKpfwII >= 2 ? 1.5 : 1)
             if (isDay) {
-                a *= (spBoat ? 1.5 : 1) * (spBoat >= 2 ? 1.1 : 1)
+                a *= (spBoat ? 1.5 : 1) * ((spBoat >= 2 || katsuGroup >= 2) ? 1.1 : 1)
             }
             break
         default: // ソフトスキン
@@ -3080,15 +3100,15 @@ var getLandBonus = function (attack, attacker, defender, isDay, date) {
             a *= (type4RocketGroup ? 1.25 : 1) * (type4RocketGroup >= 2 ? 1.5 : 1)
             a *= (mortarGroup ? 1.2 : 1) * (mortarGroup >= 2 ? 1.3 : 1)
             a *= suijo ? 1.2 : 1
-            a *= daihatsuGroup ? 1.4 : 1
+            a *= (daihatsuGroup + katsuGroup) ? 1.4 : 1
             a *= (tokuDaihatsu + pzKpfwIII_ + pzKpfwIIIJ) ? 1.15 : 1
             a *= (rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) ? 1.5 : 1
-            a *= ((rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) >= 2 || (tokuChiha && tokuChihaKai) || (rikuDaihatsu + issikihou) && (tokuChiha + tokuChihaKai)) ? 1.3 : 1
+            a *= (rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ + tokuChiha + tokuChihaKai) >= 2 ? 1.3 : 1
             a *= (m4a1dd + tokuChihaKai + pzKpfwIIIJ) ? 1.1 : 1
-            a *= (kamisha ? 1.5 : 1) * (kamisha >= 2 ? 1.2 : 1)
+            a *= (kamisha ? 1.5 : 1) * ((kamisha >= 2 || katsukai) ? 1.2 : 1)
             a *= (pzKpfwII ? 1.5 : 1) * (pzKpfwII >= 2 ? 1.3 : 1)
             if (isDay) {
-                a *= (spBoat ? 1.1 : 1) * (spBoat >= 2 ? 1.1 : 1)
+                a *= (spBoat ? 1.1 : 1) * ((spBoat >= 2 || katsuGroup >= 2) ? 1.1 : 1)
             }
             break
     }
@@ -3115,7 +3135,7 @@ var getLandBonus = function (attack, attacker, defender, isDay, date) {
         })(),
         /** 基本補正 */
         basicBonus: { a: a, b: b },
-        /** 特大発動艇+戦車第11連隊・特大発動艇+一式砲戦車・特大発動艇+Ⅲ号戦車(北アフリカ仕様) */
+        /** 特大発動艇+戦車第11連隊・特大発動艇+一式砲戦車・特大発動艇+Ⅲ号戦車(北アフリカ仕様)・特大発動艇+Ⅲ号戦車J型 */
         shikonBonus: (shikonDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) ? { a: 1.8, b: 25 } : { a: 1, b: 0 },
         /** M4A1DD */
         m4a1ddBonus: m4a1dd ? { a: 1.4, b: 35 } : { a: 1, b: 0 },
@@ -3125,6 +3145,10 @@ var getLandBonus = function (attack, attacker, defender, isDay, date) {
         tokuChihaBonus: tokuChiha ? { a: 1.4, b: 28 } : { a: 1, b: 0 },
         /** 特大発動艇+チハ改 */
         tokuChihaKaiBonus: tokuChihaKai ? { a: 1.5, b: 33 } : { a: 1, b: 0 },
+        /** 特四式内火艇・特四式内火艇改 */
+        katsuGroupBonus: katsuGroup ? { a: 1.2, b: 42 } : { a: 1, b: 0 },
+        /** 特四式内火艇改 */
+        katsuKaiBonus: katsukai ? { a: 1.1, b: 28 } : { a: 1, b: 0 },
         /** 支援上陸用舟艇シナジー */
         supportBonus: (function () {
             // 武装大発だけ2枠以上、または装甲艇(AB艇)だけ2枠以上の場合このシナジーは発生しない
@@ -3554,7 +3578,6 @@ function isBig7BonusShipId(shipId) {
         276,  // 陸奥改
         573,  // 陸奥改二
         576,  // Nelson改
-        577,  // Rodney改
         601,  // Colorado
         1496, // Colorado改
         913,  // Maryland
@@ -4430,8 +4453,8 @@ function getEquipmentBonus(date, attacker) {
             if ([488, 141, 160, 624, 656].indexOf(shipId) >= 0) {
                 // 由良改二、五十鈴改二、那珂改二、夕張改二丁、雪風改二
                 add({ asw: 1 }, num)
-            } else if (shipId === 662) {
-                // 能代改二
+            } else if ([662,　961].indexOf(shipId) >= 0) {
+                // 能代改二、時雨改三
                 add({ asw: 3 }, num)
             }
         }
@@ -4445,8 +4468,8 @@ function getEquipmentBonus(date, attacker) {
             } else if (shipId === 624) {
                 // 夕張改二丁
                 add({ asw: 3 }, num)
-            } else if (shipId === 662) {
-                // 能代改二
+            } else if ([662, 961].indexOf(shipId) >= 0) {
+                // 能代改二、時雨改三
                 add({ asw: 4 }, num)
             }
         }
@@ -5677,6 +5700,13 @@ function getEquipmentBonus(date, attacker) {
     // 14inch/45 連装砲
     // 14inch/45 三連装砲
     // if (num = count(507) + count(508)) {}
+    // 12cm単装高角砲E型改
+    if (num = count(509)) {
+        // 海防艦
+        if (stype === STYPE.DE) {
+            add({ asw: 1 }, num)
+        }
+    }
     // Walrus
     if (num = count(510)) {
         if (BRITISH_SHIPS.indexOf(ctype) >= 0) {
