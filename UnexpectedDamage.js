@@ -14,7 +14,7 @@ Ship = Java.type("logbook.internal.Ship")
 //#region 全般
 
 /** バージョン */
-var VERSION = "3.2.1"
+var VERSION = "3.2.2"
 /** バージョン確認URL */
 var UPDATE_CHECK_URL = "https://api.github.com/repos/Nishisonic/UnexpectedDamage/releases/latest"
 /** ファイルの場所 */
@@ -2596,7 +2596,7 @@ var getMultiplySlayerBonus = function (attacker, defender, date) {
             a *= (m4a1dd + tokuChihaKai + pzKpfwIIIJ) ? 1.8 : 1
             // TODO: ここまで
             a *= (spBoat ? 1.2 : 1) * ((spBoat >= 2 || katsuGroup >= 2) ? 1.1 : 1)
-            a *= (pzKpfwII ? 1.2 : 1) * (pzKpfwII >=2 ? 1.4 : 1)
+            a *= (pzKpfwII ? 1.2 : 1) * (pzKpfwII >= 2 ? 1.4 : 1)
             a *= ["やまと", "むさし", "ながと", "むつ"].indexOf(attacker.shipInfo.flagship) >= 0 ? 1.2 : 1
             return a
         case isDockPrincess(defender): // 船渠棲姫
@@ -2989,7 +2989,7 @@ var getLandBonus = function (attack, attacker, defender, isDay, date) {
     /** catB:装甲艇(AB艇) */
     var catB = armoredBoat
     /** catC:大発動艇・特大発動艇・大発動艇(八九式中戦車&陸戦隊)・大発動艇(II号戦車/北アフリカ仕様)・特大発動艇+一式砲戦車・特大発動艇+Ⅲ号戦車J型・特四式内火艇・特四式内火艇改 */
-    var catC = daihatsu + tokuDaihatsu + rikuDaihatsu + pzKpfwII + issikihou +pzKpfwIIIJ + katsu +katsuKai
+    var catC = daihatsu + tokuDaihatsu + rikuDaihatsu + pzKpfwII + issikihou + pzKpfwIIIJ + katsu + katsuKai
     /** catD:特大発動艇+戦車第11連隊・特二式内火艇・特大発動艇+Ⅲ号戦車(北アフリカ仕様)・特大発動艇+チハ・特大発動艇+チハ改・特大発動艇+Ⅲ号戦車J型 */
     var catD = shikonDaihatsu + kamisha + pzKpfwIII + tokuChiha + tokuChihaKai + pzKpfwIIIJ
     /** 装甲艇(AB艇)・武装大発 */
@@ -3089,7 +3089,7 @@ var getLandBonus = function (attack, attacker, defender, isDay, date) {
             a *= (rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ) ? 1.6 : 1
             a *= (rikuDaihatsu + issikihou + pzKpfwIII_ + pzKpfwIIIJ + tokuChiha + tokuChihaKai) >= 2 ? 1.5 : 1
             a *= (m4a1dd + tokuChihaKai + pzKpfwIIIJ) ? 2.0 : 1
-            a *= (kamisha ? 2.8 : 1) * ((kamisha >=2 || katsuKai) ? 1.5 : 1)
+            a *= (kamisha ? 2.8 : 1) * ((kamisha >= 2 || katsuKai) ? 1.5 : 1)
             a *= (pzKpfwII ? 1.6 : 1) * (pzKpfwII >= 2 ? 1.5 : 1)
             if (isDay) {
                 a *= (spBoat ? 1.5 : 1) * ((spBoat >= 2 || katsuGroup >= 2) ? 1.1 : 1)
@@ -4454,7 +4454,7 @@ function getEquipmentBonus(date, attacker) {
             if ([488, 141, 160, 624, 656].indexOf(shipId) >= 0) {
                 // 由良改二、五十鈴改二、那珂改二、夕張改二丁、雪風改二
                 add({ asw: 1 }, num)
-            } else if ([662,961].indexOf(shipId) >= 0) {
+            } else if ([662, 961].indexOf(shipId) >= 0) {
                 // 能代改二、時雨改三
                 add({ asw: 3 }, num)
             }
@@ -5703,7 +5703,7 @@ function getEquipmentBonus(date, attacker) {
     // if (num = count(507) + count(508)) {}
     // 12cm単装高角砲E型改
     if (num = count(509)) {
-        //海防艦
+        // 海防艦
         if (stype === STYPE.DE) {
             add({ asw: 1 }, num)
         }
