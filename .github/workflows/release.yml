@@ -1,0 +1,110 @@
+name: Create GitHub Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "リリースするタグ（例: v3.3.1）"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      TAG_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Checkout release source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG_NAME }}
+          path: release-source
+
+      # 手動実行では対象タグにワークフローやリリースノートが含まれない場合があるため、
+      # デフォルトブランチも別ディレクトリへ取得する。
+      - name: Checkout release configuration
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          path: release-config
+
+      - name: Build ZIP archive
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ ! "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Unsupported tag: $TAG_NAME" >&2
+            exit 1
+          fi
+
+          version="${TAG_NAME#v}"
+          archive="UnexpectedDamage-${version}.zip"
+
+          grep -Fq "var VERSION = \"${version}\"" release-source/UnexpectedDamage.js
+          grep -Fq "* @version ${version}" release-source/drop_unexpectedDamage.js
+
+          mkdir -p dist/package
+          cp \
+            release-source/UnexpectedDamage.js \
+            release-source/drop_unexpectedDamage.js \
+            release-source/dropstyle.js \
+            release-source/README.md \
+            release-source/LICENSE \
+            dist/package/
+
+          (cd dist/package && zip -9 -r "../${archive}" .)
+          echo "archive=dist/${archive}" >> "$GITHUB_OUTPUT"
+
+          notes_file=""
+          for candidate in \
+            "release-source/release-notes/${TAG_NAME}.md" \
+            "release-config/release-notes/${TAG_NAME}.md"; do
+            if [[ -f "$candidate" ]]; then
+              notes_file="$candidate"
+              break
+            fi
+          done
+          echo "notes_file=${notes_file}" >> "$GITHUB_OUTPUT"
+
+      - name: Create or update GitHub Release
+        shell: bash
+        env:
+          ARCHIVE: ${{ steps.package.outputs.archive }}
+          NOTES_FILE: ${{ steps.package.outputs.notes_file }}
+        run: |
+          set -euo pipefail
+
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            gh release upload "$TAG_NAME" "$ARCHIVE" --clobber
+            if [[ -n "$NOTES_FILE" ]]; then
+              gh release edit "$TAG_NAME" \
+                --title "$TAG_NAME" \
+                --notes-file "$NOTES_FILE" \
+                --latest
+            fi
+          elif [[ -n "$NOTES_FILE" ]]; then
+            gh release create "$TAG_NAME" "$ARCHIVE" \
+              --verify-tag \
+              --title "$TAG_NAME" \
+              --notes-file "$NOTES_FILE" \
+              --latest
+          else
+            gh release create "$TAG_NAME" "$ARCHIVE" \
+              --verify-tag \
+              --generate-notes \
+              --latest
+          fi
