@@ -5,7 +5,6 @@ load("script/UnexpectedDamage.js")
 //Import部分
 SimpleDateFormat = Java.type("java.text.SimpleDateFormat")
 Optional = Java.type("java.util.Optional")
-Collectors = Java.type("java.util.stream.Collectors")
 IntStream = Java.type("java.util.stream.IntStream")
 FillLayout = Java.type("org.eclipse.swt.layout.FillLayout")
 SWT = Java.type("org.eclipse.swt.SWT")
@@ -24,13 +23,13 @@ var phaseIndex = [-1, -1, -1]
 
 function begin(header) {
     IntStream.range(0, header.length).forEach(function (i) {
-        if (header[i].equals("昼砲撃戦")) {
+        if (String(header[i]) === "昼砲撃戦") {
             phaseIndex[0] = i
         }
-        if (header[i].equals("昼雷撃戦")) {
+        if (String(header[i]) === "昼雷撃戦") {
             phaseIndex[1] = i
         }
-        if (header[i].equals("夜戦")) {
+        if (String(header[i]) === "夜戦") {
             phaseIndex[2] = i
         }
     })
@@ -323,15 +322,15 @@ function genBattleHtml(dataLists) {
             '</script>' +
             (masterData.mapCell.map[0] < 22 ? '' :
                 '<script type="text/javascript">' +
-                    'var ships = ' + JSON.stringify(Java.from(Ship.map.values().stream().map(function(ship){
+                    'var ships = ' + JSON.stringify(toJsArray(Ship.map.values()).map(function(ship){
                         var flagship = (ship.charId > 1500 ? ship.flagship : "")
-                        return [ship.shipId, ship.name + (flagship.length > 0 ? " " + flagship : ""), JSON.parse(ship.json.toString()).api_sort_id]
-                    }).collect(Collectors.toList())).reduce(function(p, v){
+                        return [ship.shipId, ship.name + (flagship.length > 0 ? " " + flagship : ""), JSON.parse(String(ship.json)).api_sort_id]
+                    }).reduce(function(p, v){
                         p[v[0]] = {name:v[1], sortId:v[2]}
                         return p
                     }, {})) + ";" +
                     'var dates = [];' +
-                    'var unexpected = ' + JSON.stringify(getData("unexpected")[JSON.stringify(Java.from(masterData.mapCell.map))]) + ';' +
+                    'var unexpected = ' + JSON.stringify(getData("unexpected")[JSON.stringify(toJsArray(masterData.mapCell.map))]) + ';' +
                     'function selectEnemyName(){' +
                         'var enemyIds = $("#enemy").multipleSelect("getSelects");' +
                         'var datalist = Object.keys(unexpected).filter(function(index){' +
@@ -387,7 +386,7 @@ function genBattleHtml(dataLists) {
                     '<div id="local">' +
                         '<h2 style="margin-bottom: 0">' +
                             masterData.mapCell.map[0] + '-' + masterData.mapCell.map[1] + '-' + masterData.mapCell.map[2] + ' 特効倍率(速報値) ※イベント限定 <span style="font-size: x-small;">対陸上、PT、熟練度は除外</span><br>' +
-                            '<span style="margin-right: 2px;">対象敵:</span>' + toUnexpectedEnemySelectBoxHtml(JSON.stringify(Java.from(masterData.mapCell.map))) +
+                            '<span style="margin-right: 2px;">対象敵:</span>' + toUnexpectedEnemySelectBoxHtml(JSON.stringify(toJsArray(masterData.mapCell.map))) +
                         '</h2>' +
                         '<h2 style="margin-top:3px;margin-bottom:3px;"><span style="margin-right: 2px;">期間:</span>' +
                             '<span class="flatpickr">' +

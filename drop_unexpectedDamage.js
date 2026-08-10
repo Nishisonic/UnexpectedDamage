@@ -14,11 +14,12 @@ StandardCharsets = Java.type("java.nio.charset.StandardCharsets")
 Files = Java.type("java.nio.file.Files")
 Paths = Java.type("java.nio.file.Paths")
 StandardOpenOption = Java.type("java.nio.file.StandardOpenOption")
-Collectors = Java.type("java.util.stream.Collectors")
 BattlePhaseKind = Java.type("logbook.dto.BattlePhaseKind")
 EnemyShipDto = Java.type("logbook.dto.EnemyShipDto")
 Item = Java.type("logbook.internal.Item")
 IOUtils = Java.type("org.apache.commons.io.IOUtils")
+JsonNumber = Java.type("javax.json.JsonNumber")
+JsonString = Java.type("javax.json.JsonString")
 //#endregion
 
 //#region 全般
@@ -58,7 +59,7 @@ function body(battle) {
     // 敵艦隊Hp
     var enemyHp = getEnemyHp(battle)
     // 戦闘データ
-    var battleData = parse(date, battle.mapCellDto, Java.from(battle.phaseList), friendHp.main.length, friendHp.escort.length, enemyHp.main.length, enemyHp.escort.length, calcCombinedKind(battle), battle.isEnemyCombined())
+    var battleData = parse(date, battle.mapCellDto, toJsArray(battle.phaseList), friendHp.main.length, friendHp.escort.length, enemyHp.main.length, enemyHp.escort.length, calcCombinedKind(battle), battle.isEnemyCombined())
     return detectOrDefault(date, battleData, friends, enemies, friendHp, enemyHp)
 }
 
@@ -106,7 +107,7 @@ function loadAkakariLogIfNeeded() {
 function updateFile() {
     try {
         var cv = VERSION.split(".")
-        var nv = JSON.parse(IOUtils.toString(URI.create(UPDATE_CHECK_URL), StandardCharsets.UTF_8)).tag_name.replace(/^v(.*)$/, "$1").split(".")
+        var nv = JSON.parse(String(IOUtils.toString(URI.create(UPDATE_CHECK_URL), StandardCharsets.UTF_8))).tag_name.replace(/^v(.*)$/, "$1").split(".")
         if (
             Number(nv[0]) > Number(cv[0]) ||
             (Number(nv[0]) === Number(cv[0]) && Number(nv[1]) > Number(cv[1])) ||
@@ -172,9 +173,12 @@ var getFriends = function (battle) {
  * @return {FleetDto} 敵艦隊情報
  */
 var getEnemies = function (battle) {
-    var enemy = battle.enemy
-    var enemyCombined = battle.enemyCombined
-    if (enemyCombined) {
+    // BattleExDtoにはisEnemyCombined()とgetEnemyCombined()が同居している。
+    // Java 25側のNashornではenemyCombinedプロパティがBoolean側へ解決されるため、
+    // getterを明示して敵随伴艦隊のListを取得する。
+    var enemy = battle.getEnemy()
+    var enemyCombined = battle.getEnemyCombined()
+    if (battle.isEnemyCombined()) {
         return new FleetDto(enemy, enemyCombined, undefined, undefined)
     } else {
         return new FleetDto(enemy, undefined, undefined, undefined)
@@ -235,8 +239,8 @@ var getEnemyHp = function (battle) {
  * @param {boolean[]} ee 待避随伴
  */
 var FleetDto = function (m, e, me, ee) {
-    this.main = m
-    this.escort = e
+    this.main = toJsArray(m)
+    this.escort = e === null || e === undefined ? undefined : toJsArray(e)
     this.mainEscaped = me
     this.escortEscaped = ee
 }
@@ -400,13 +404,13 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
             phase.air,                                                              // 航空戦1
             phase.air2,                                                             // 航空戦2
             { atacks: (phase.supportType === '航空支援' ? phase.support : null) },  // 航空支援
-        ].concat(Java.from(phase.airBase))                                 // 基地航空隊
+        ].concat(toJsArray(phase.airBase))                                 // 基地航空隊
             // null除外
             .filter(function (battle) { return battle && battle.atacks })
 
         airBattleList.forEach(function (battle) {
-            battle.atacks.forEach(function (atack) {
-                Java.from(atack.damage).forEach(function (damage, i) {
+            toJsArray(battle.atacks).forEach(function (atack) {
+                toJsArray(atack.damage).forEach(function (damage, i) {
                     if (atack.friendAtack) {
                         airDamagedEnemyHp[atack.target[i] < enemyNum ? 'main' : 'escort'][atack.target[i] % Math.max(6, enemyNum)] += damage
                     } else {
@@ -418,8 +422,8 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
     })
     // 支援砲雷撃フェーズ
     phaseList.filter(function (phase) { return phase.supportType === '支援射撃' || phase.supportType === '支援長距離雷撃' }).map(function (phase) { return phase.support }).filter(function (support) { return support }).forEach(function (atacks) {
-        atacks.forEach(function (atack) {
-            Java.from(atack.damage).forEach(function (damage, i) {
+        toJsArray(atacks).forEach(function (atack) {
+            toJsArray(atack.damage).forEach(function (damage, i) {
                 if (atack.friendAtack) {
                     supportDamagedEnemyHp[atack.target[i] < enemyNum ? 'main' : 'escort'][atack.target[i] % Math.max(6, enemyNum)] += damage
                 } else {
@@ -438,7 +442,8 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
                 var showItem = json.api_si_list[idx]
                 result[idx] = []
                 for (var didx in json.api_df_list[idx]) {
-                    var lastAttack = didx + 1 < json.api_df_list[idx].length ? Number(json.api_df_list[idx][didx + 1]) === -1 : true
+                    var nextIndex = Number(didx) + 1
+                    var lastAttack = nextIndex < json.api_df_list[idx].length ? Number(json.api_df_list[idx][nextIndex]) === -1 : true
                     if (Number(json.api_df_list[idx][didx]) !== -1) {
                         var attacker = function () {
                             switch (Number(attackType)) {
@@ -475,16 +480,16 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
     var parseTorpedo = function (phase, atacks) {
         if (atacks) {
             var result = { friend: [], enemy: [] }
-            var atackList = atacks.stream().collect(Collectors.partitioningBy(function (atack) { return atack.friendAtack }))
-            Java.from(atackList.get(true)).forEach(function (atack, i) {
+            var atackList = toJsArray(atacks)
+            atackList.filter(function (atack) { return atack.friendAtack }).forEach(function (atack, i) {
                 result.friend[i] = []
-                Java.from(atack.ot).forEach(function (x, j) {
+                toJsArray(atack.ot).forEach(function (x, j) {
                     result.friend[i][j] = new AttackDto(phase.kind, true, atack.origin[j] < friendNum, atack.origin[j] % Math.max(6, friendNum), atack.target[x] < enemyNum, atack.target[x] % Math.max(6, enemyNum), false, atack.ydam[j], atack.critical ? atack.critical[j] : 0, null, null, 0)
                 })
             })
-            Java.from(atackList.get(false)).forEach(function (atack, i) {
+            atackList.filter(function (atack) { return !atack.friendAtack }).forEach(function (atack, i) {
                 result.enemy[i] = []
-                Java.from(atack.ot).forEach(function (x, j) {
+                toJsArray(atack.ot).forEach(function (x, j) {
                     result.enemy[i][j] = new AttackDto(phase.kind, false, atack.origin[j] < enemyNum, atack.origin[j] % Math.max(6, enemyNum), atack.target[x] < friendNum, atack.target[x] % Math.max(6, friendNum), false, atack.ydam[j], atack.critical ? atack.critical[j] : 0, null, null, 0)
                 })
             })
@@ -502,7 +507,8 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
                 var showItem = json.api_si_list[idx]
                 result[idx] = []
                 for (var didx in json.api_df_list[idx]) {
-                    var lastAttack = didx + 1 < json.api_df_list[idx].length ? Number(json.api_df_list[idx][didx + 1]) === -1 : true
+                    var nextIndex = Number(didx) + 1
+                    var lastAttack = nextIndex < json.api_df_list[idx].length ? Number(json.api_df_list[idx][nextIndex]) === -1 : true
                     if (Number(json.api_df_list[idx][didx]) !== -1) {
                         var attacker = function () {
                             switch (Number(attackType)) {
@@ -538,7 +544,7 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
     for (var idx in phaseList) {
         var phase = phaseList[idx]
         var json = phase.json
-        var formation = Java.from(json.api_formation).map(Number)
+        var formation = toJsArray(json.api_formation).map(Number)
         var activeDeck = json.api_active_deck
         var touchPlane = json.api_touch_plane
         isBalloonCell |= !!Number(json.api_balloon_cell)
@@ -587,6 +593,46 @@ var parse = function (date, mapCell, phaseList, friendNum, friendNumCombined, en
 }
 
 /**
+ * 表示装備IDをJavaのint配列へ変換する
+ * api_si_listの要素はJsonNumberまたはJsonStringで返される
+ * @param {javax.json.JsonArray|int[]|null} showItem 表示装備
+ * @return {int[]|null} 表示装備ID
+ */
+var normalizeShowItemIds = function (showItem) {
+    if (showItem === null || showItem === undefined) {
+        return null
+    }
+    var ids = toJsArray(showItem).map(function (value) {
+        if (value instanceof JsonNumber) {
+            return value.intValue()
+        }
+        if (value instanceof JsonString) {
+            return Number(value.getString())
+        }
+        return Number(value)
+    })
+    return Java.to(ids, "int[]")
+}
+
+/**
+ * JSON-Pの数値/文字列またはJavaScriptの値を数値へ変換する
+ * @param {*} value
+ * @return {Number|null}
+ */
+var normalizeNumber = function (value) {
+    if (value === null || value === undefined) {
+        return null
+    }
+    if (value instanceof JsonNumber) {
+        return value.numberValue().doubleValue()
+    }
+    if (value instanceof JsonString) {
+        return Number(value.getString())
+    }
+    return Number(value)
+}
+
+/**
  * 攻撃
  * @param {logbook.dto.BattlePhaseKind} kind 戦闘の種類
  * @param {Boolean} friendAttack 味方の攻撃か
@@ -605,15 +651,15 @@ var AttackDto = function (kind, friendAttack, mainAttack, attacker, mainDefense,
     this.kind = kind
     this.friendAttack = friendAttack
     this.mainAttack = mainAttack
-    this.attacker = attacker
+    this.attacker = normalizeNumber(attacker)
     this.mainDefense = mainDefense
-    this.defender = defender
+    this.defender = normalizeNumber(defender)
     this.lastAttack = lastAttack
-    this.damage = damage
-    this.critical = critical
-    this.attackType = attackType
-    this.showItem = showItem
-    this.attackIndex = attackIndex
+    this.damage = normalizeNumber(damage)
+    this.critical = normalizeNumber(critical)
+    this.attackType = normalizeNumber(attackType)
+    this.showItem = normalizeShowItemIds(showItem)
+    this.attackIndex = normalizeNumber(attackIndex)
 }
 
 /**
@@ -692,11 +738,11 @@ var detectOrDefault = function (date, battle, friends, enemies, friendHp, enemyH
     var airBattle = function () {
         for (var i in battle.airDamagedFriendHp.main) {
             friendHp.main[i].now -= battle.airDamagedFriendHp.main[i]
-            damageControl(friendHp.main[i], friends.main.get(i))
+            damageControl(friendHp.main[i], friends.main[i])
         }
         for (var i in battle.airDamagedFriendHp.escort) {
             friendHp.escort[i].now -= battle.airDamagedFriendHp.escort[i]
-            damageControl(friendHp.escort[i], friends.escort.get(i))
+            damageControl(friendHp.escort[i], friends.escort[i])
         }
         // ダメコン処理は省略
         for (var i in battle.airDamagedEnemyHp.main) {
@@ -710,11 +756,11 @@ var detectOrDefault = function (date, battle, friends, enemies, friendHp, enemyH
     var supportAttack = function () {
         for (var i in battle.supportDamagedFriendHp.main) {
             friendHp.main[i].now -= battle.supportDamagedFriendHp.main[i]
-            damageControl(friendHp.main[i], friends.main.get(i))
+            damageControl(friendHp.main[i], friends.main[i])
         }
         for (var i in battle.supportDamagedFriendHp.escort) {
             friendHp.escort[i].now -= battle.supportDamagedFriendHp.escort[i]
-            damageControl(friendHp.escort[i], friends.escort.get(i))
+            damageControl(friendHp.escort[i], friends.escort[i])
         }
         // ダメコン処理は省略
         for (var i in battle.supportDamagedEnemyHp.main) {
@@ -992,7 +1038,7 @@ var detectDayBattle = function (date, mapCell, kind, friendCombinedKind, isEnemy
                         if (mapCell.map[0] >= 22 && attack.friendAttack) {
                             // 割合ダメージ等ではない&(敵が陸上型またはPT小鬼群または熟練度補正攻撃ではない)
                             if (!covered && !(isGround(ship.defender) || isPtImpPack(ship.defender) || skilled[0] > 1)) {
-                                var maps = JSON.stringify(Java.from(mapCell.map))
+                                var maps = JSON.stringify(toJsArray(mapCell.map))
                                 var index = ship.attacker.shipId + "_" + ship.attacker.friendlyName.replace(/\(.*\)$/, "") + "_" + ship.defender.shipId + "_" + ship.defender.friendlyName.replace(/\(.*\)$/, "")
 
                                 if (!unexpected[maps]) {
@@ -1071,7 +1117,7 @@ var detectTorpedoAttack = function (date, mapCell, kind, friendCombinedKind, isE
                 if (mapCell.map[0] >= 22) {
                     // 割合ダメージ等ではない&(敵がPT小鬼群ではない)
                     if (!covered && !isPtImpPack(ship.defender)) {
-                        var maps = JSON.stringify(Java.from(mapCell.map))
+                        var maps = JSON.stringify(toJsArray(mapCell.map))
                         var index = ship.attacker.shipId + "_" + ship.attacker.friendlyName.replace(/\(.*\)$/, "") + "_" + ship.defender.shipId + "_" + ship.defender.friendlyName.replace(/\(.*\)$/, "")
 
                         if (!unexpected[maps]) {
@@ -1135,16 +1181,16 @@ var detectTorpedoAttack = function (date, mapCell, kind, friendCombinedKind, isE
 
         // ダメコン処理
         friendHp.main.forEach(function (hp, i) {
-            damageControl(hp, friends.main.get(i))
+            damageControl(hp, friends.main[i])
         })
         friendHp.escort.forEach(function (hp, i) {
-            damageControl(hp, friends.escort.get(i))
+            damageControl(hp, friends.escort[i])
         })
         enemyHp.main.forEach(function (hp, i) {
-            damageControl(hp, enemies.main.get(i))
+            damageControl(hp, enemies.main[i])
         })
         enemyHp.escort.forEach(function (hp, i) {
-            damageControl(hp, enemies.escort.get(i))
+            damageControl(hp, enemies.escort[i])
         })
     }
     return result
@@ -1214,7 +1260,7 @@ var detectNightBattle = function (date, mapCell, kind, friendCombinedKind, isEne
                             var skilled = getSkilledBonus(date, attack, ship.attacker, ship.defender, hp.attacker)
                             // 割合ダメージ等ではない&(敵が陸上型またはPT小鬼群または熟練度補正攻撃ではない)
                             if (!covered && !(isGround(ship.defender) || isPtImpPack(ship.defender) || skilled[0] > 1)) {
-                                var maps = JSON.stringify(Java.from(mapCell.map))
+                                var maps = JSON.stringify(toJsArray(mapCell.map))
                                 var index = ship.attacker.shipId + "_" + ship.attacker.friendlyName.replace(/\(.*\)$/, "") + "_" + ship.defender.shipId + "_" + ship.defender.friendlyName.replace(/\(.*\)$/, "")
 
                                 if (!unexpected[maps]) {
