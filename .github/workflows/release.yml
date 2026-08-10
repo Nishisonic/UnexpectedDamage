@@ -24,10 +24,11 @@ jobs:
     env:
       TAG_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
       GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
 
     steps:
       - name: Checkout release source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ env.TAG_NAME }}
           path: release-source
@@ -35,7 +36,7 @@ jobs:
       # 手動実行では対象タグにワークフローやリリースノートが含まれない場合があるため、
       # デフォルトブランチも別ディレクトリへ取得する。
       - name: Checkout release configuration
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.event.repository.default_branch }}
           path: release-config
