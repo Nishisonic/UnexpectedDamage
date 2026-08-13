@@ -1,6 +1,6 @@
 /**
  * 異常ダメージ検知
- * @version 3.3.1
+ * @version 3.3.2
  * @author Nishikuma
  */
 
@@ -624,7 +624,7 @@ var normalizeNumber = function (value) {
         return null
     }
     if (value instanceof JsonNumber) {
-        return value.numberValue().doubleValue()
+        return value.doubleValue()
     }
     if (value instanceof JsonString) {
         return Number(value.getString())
